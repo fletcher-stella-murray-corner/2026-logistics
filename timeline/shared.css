@@ -16,17 +16,23 @@ html.timeline-page {
 :root { --jump-bar-height: 2.75rem; }
 
 .intro-screen, .quarter-canvas, .trip-done-screen {
-  /* svh (not dvh) deliberately: dvh recalculates live as the mobile
-     browser's address bar collapses mid-scroll, which reflows box heights
-     and makes scroll-snap re-target a second time once it settles — felt
-     as a "double snap". svh stays fixed at the toolbar-expanded size, so
+  /* svh (not dvh) deliberately: dvh recalculates live as a mobile browser's
+     address bar collapses mid-scroll, which reflows box heights and makes
+     scroll-snap re-target a second time once it settles — felt as a
+     "double snap". svh stays fixed at the toolbar-expanded size, so
      there's nothing to recalculate mid-scroll (small tradeoff: a sliver of
      extra space at the bottom once the toolbar auto-hides). */
   min-height: 100vh;
   min-height: 100svh;
   scroll-snap-align: start;
   scroll-snap-stop: always;
-  scroll-margin-top: calc(var(--nav-height) + var(--jump-bar-height));
+  /* No scroll-margin-top here on purpose: it shifts where the box lands
+     for scrollIntoView()/anchor-jump navigation, but real trackpad/wheel-
+     triggered mandatory scroll-snap doesn't reliably honor it the same
+     way — the two navigation paths ended up landing at two different
+     resting positions ("double snap"). Reserving the sticky-bar clearance
+     as plain padding-top instead (below) works identically for every
+     navigation path, since padding is part of the box itself. */
   display: flex;
   flex-direction: column;
   padding: calc(var(--nav-height) + var(--jump-bar-height) + 1rem) 0 2rem;
@@ -43,14 +49,12 @@ html.timeline-page {
   border-bottom: none;
 }
 
-/* Intro/trip-done are cover-style screens: centered, so they keep the
-   large top padding above (it's what clears the sticky bars for
-   vertically-centered content). Each day quarter canvas instead pins its
-   content to the top-left, per requirements/public.md -> What each day
-   quarter shows — scroll-margin-top already clears the sticky bars when
-   snapped, so it only needs a small top gap, not the full bar height. */
+/* Intro/trip-done are cover-style screens: content centered within the
+   padded box. Each day quarter canvas instead pins its content to the
+   top-left, immediately below the reserved padding — per
+   requirements/public.md -> What each day quarter shows. */
 .intro-screen, .trip-done-screen { justify-content: center; }
-.quarter-canvas { justify-content: flex-start; padding-top: 1.5rem; }
+.quarter-canvas { justify-content: flex-start; }
 
 .jump-bar {
   position: sticky;
