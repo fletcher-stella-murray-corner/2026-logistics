@@ -6,7 +6,12 @@ Two features: **Timeline** (the homepage) and **Family Tree**.
 
 ## Terminology
 
-Each day is split into four fixed six-hour segments, officially called **day quarters** (`00-06`, `06-12`, `12-18`, `18-24`). The full-viewport-height slide that displays one day quarter's content is officially called a **day quarter canvas**. Use these terms consistently in code, comments, and docs — not "block"/"block screen".
+Each day is split into four fixed six-hour segments, officially called **day quarters** (`00-06`, `06-12`, `12-18`, `18-24`). The full-viewport-height slide that shows one day quarter is officially called a **quarter screen**, made of two distinct parts:
+
+- **Day quarter canvas padding** — a blank spacer at the top of the quarter screen, sized to clear the sticky nav/jump bars. It holds no content and is a separate element from the canvas, not extra padding on it.
+- **Day quarter canvas** — the actual content: date, time label, and the four arrivals/departures/sleeping/meal rows. This is the only part that counts as "the canvas" — the padding is explicitly *not* part of it.
+
+Use these terms consistently in code, comments, and docs — not "block"/"block screen", and not "the canvas" to mean the whole quarter screen including its padding.
 
 ## Device support
 
@@ -16,11 +21,17 @@ Both features must work well on a computer and on a phone — this is critical, 
 
 ### Layout
 
-Nav bar (`Timeline` active, `Family Tree` link) stays fixed/sticky at the top at all times, so Family Tree is always one tap away no matter where you've scrolled to. Directly below the nav, a sticky "Jump to a day ▾" disclosure lists every remaining day, each with its four day-quarter times as links — clicking one jumps straight there via anchor and closes the disclosure, independent of scroll-snap. This is the reliable way to reach any day quarter canvas; don't assume scroll/swipe alone is enough.
+Nav bar is a single sticky row, always visible, three items left to right:
 
-Below that, a full-screen, swipe/scroll-through experience: an intro screen with the trip title, then one day quarter canvas per day quarter, in order, using CSS scroll-snap on `html` (not `body` — `html`/`documentElement` is the actual scrolling element for the page, so scroll-snap-type must be set there or it silently does nothing) — scrolling or swiping down moves from one day quarter canvas straight to the next, each one filling the whole screen. `scroll-snap-stop: always` makes one scroll/swipe gesture advance exactly one day quarter canvas at a time — a fast fling never skips past several unnoticed. `scroll-behavior: smooth` is deliberately NOT used together with scroll-snap here — that combination is a known Safari/iOS bug that can break snapping entirely. This applies the same way on desktop (mouse wheel / trackpad) and mobile (swipe), since it's native browser scroll-snap, not a custom gesture handler. The homepage has no separate content of its own — the timeline IS the homepage, since that's the entire point of the site.
+1. **Current day quarter label** — live text showing which day quarter is currently in view (e.g. "Sat, Aug 1 · 12am–6am"), updated as you scroll (via `IntersectionObserver` in `timeline/shared.js`). Shows the site title before you've scrolled into any quarter.
+2. **"Jump to a day ▾"** — a dropdown disclosure listing every remaining day, each with its four day-quarter times as links. Clicking one jumps straight there via anchor and closes the disclosure, independent of scroll-snap. This is the reliable way to reach any quarter screen; don't assume scroll/swipe alone is enough.
+3. **Family Tree** — link to the other page, always one tap away no matter where you've scrolled to.
 
-The Family Tree page does *not* use this full-screen snap layout — it's a short reference page, read top-to-bottom normally.
+Below the nav, a full-screen, swipe/scroll-through experience: an intro screen with the trip title, then one **quarter screen** per day quarter, in order, using CSS scroll-snap on `html` (not `body` — `html`/`documentElement` is the actual scrolling element for the page, so scroll-snap-type must be set there or it silently does nothing) — scrolling or swiping down moves from one quarter screen straight to the next, each one filling the whole screen. `scroll-snap-stop: always` makes one scroll/swipe gesture advance exactly one quarter screen at a time — a fast fling never skips past several unnoticed. `scroll-behavior: smooth` is deliberately NOT used together with scroll-snap here — that combination is a known Safari/iOS bug that can break snapping entirely. This applies the same way on desktop (mouse wheel / trackpad) and mobile (swipe), since it's native browser scroll-snap, not a custom gesture handler. The homepage has no separate content of its own — the timeline IS the homepage, since that's the entire point of the site.
+
+Each quarter screen is made of the **day quarter canvas padding** (blank spacer, clears the nav bar) followed by the **day quarter canvas** (the actual content) — see *Terminology* above; these are separate elements, not one padded box.
+
+The Family Tree page does *not* use this full-screen snap layout, the single-row nav's live label, or the jump menu — it keeps the plain two-link nav (`Timeline` link, `Family Tree` active) and is read top-to-bottom normally as a short reference page.
 
 ### Trip window
 
@@ -46,7 +57,7 @@ Content is pinned to the **top-left** of the canvas (not centered) — date/quar
 3. **Sleeping** — everyone present at the cottage during this quarter (arrived by this quarter, not yet departed), grouped by room/house. Computed from each person's arrival/departure, not entered separately — updating someone's travel dates automatically updates every day quarter canvas's sleeping list.
 4. **Meal** — a free-text note for this quarter, if one exists (e.g. "Lobster boil — Dave grilling"). Not every quarter has one; most likely only `06-12` (breakfast), `12-18` (lunch), and `18-24` (dinner) will ever be filled in, but all four quarters support it.
 
-A day quarter canvas with nothing in all four rows still renders as its own full-screen slide — never collapsed or skipped — so scrolling always advances one day quarter canvas at a time and the four-part shape stays consistent (see `brand-guidelines.md` → *Signature visual conventions*).
+A day quarter canvas with nothing in all four rows still renders inside its own full-screen quarter screen — never collapsed or skipped — so scrolling always advances one quarter screen at a time and the four-part shape stays consistent (see `brand-guidelines.md` → *Signature visual conventions*).
 
 ### Data
 

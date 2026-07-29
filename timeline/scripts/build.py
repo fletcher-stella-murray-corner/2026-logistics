@@ -4,11 +4,21 @@ site's homepage (see requirements/public.md -> Homepage = Timeline).
 
 Reads shared/data/people.json, timeline/data/travel.json, and
 timeline/data/meals.json. Renders August 1-15, 2026 split into four day
-quarters (6-hour segments) per day, one full-viewport-height scroll-snap
-"day quarter canvas" per quarter, always starting from max(today, Aug 1)
-so past days quietly drop off the site on every rebuild. A sticky
-"Jump to a day" menu below the nav bar links straight to any day quarter
-canvas via anchor, independent of scroll-snap.
+quarters (6-hour segments) per day, one full-viewport-height "quarter
+screen" per quarter, always starting from max(today, Aug 1) so past days
+quietly drop off the site on every rebuild.
+
+The nav bar is one single row: a live "current day quarter" label on the
+left (updated by shared.js via IntersectionObserver as you scroll), the
+"Jump to a day" disclosure in the middle (links straight to any quarter
+screen via anchor, independent of scroll-snap), and the Family Tree link
+on the right.
+
+Each quarter screen has two parts, per requirements/public.md ->
+Terminology: a "day quarter canvas padding" spacer (blank space reserved
+so the sticky nav bar doesn't cover real content), and the "day quarter
+canvas" itself (the actual date/label/rows content) — the padding is
+explicitly NOT part of the canvas.
 
 Run after hand-editing any of the three data files above, or use
 scripts/build_site.py to rebuild every feature at once.
@@ -46,12 +56,6 @@ MODE_TAGS = {
     "car": "🚗 Car",
 }
 
-NAV_ITEMS = [
-    ("Timeline", None, True),
-    ("Family Tree", "family-tree/index.html", False),
-]
-
-
 def esc(s):
     return nav.esc(s)
 
@@ -64,7 +68,7 @@ def quarter_key(iso_date, quarter):
     return (iso_date, QUARTER_INDEX[quarter])
 
 
-def quarter_canvas_id(iso_date, quarter):
+def quarter_screen_id(iso_date, quarter):
     return f"qc-{iso_date}-{quarter}"
 
 
@@ -75,7 +79,7 @@ def daterange(start, end):
         d += timedelta(days=1)
 
 
-def render_quarter_canvas(day, quarter, travel, people_by_id, meals):
+def render_quarter_screen(day, quarter, travel, people_by_id, meals):
     key = quarter_key(day.isoformat(), quarter)
 
     arrivals = []
@@ -141,11 +145,16 @@ def render_quarter_canvas(day, quarter, travel, people_by_id, meals):
 
     body = "".join(rows) if rows else '<div class="quarter-empty-hint">Nothing scheduled</div>'
     date_label = day.strftime("%A, %B ") + str(day.day)
+    nav_label = day.strftime("%a, %b ") + str(day.day) + " · " + QUARTER_LABELS[quarter]
 
-    return f"""<section class="quarter-canvas" id="{quarter_canvas_id(day.isoformat(), quarter)}">
+    return f"""<section class="quarter-screen" id="{quarter_screen_id(day.isoformat(), quarter)}" \
+data-quarter-label="{esc(nav_label)}">
+<div class="quarter-canvas-padding"></div>
+<div class="quarter-canvas">
 <div class="quarter-date">{date_label}</div>
 <h2 class="quarter-label">{QUARTER_LABELS[quarter]}</h2>
 {body}
+</div>
 </section>"""
 
 
@@ -165,17 +174,25 @@ def render_jump_menu(cutoff):
     for d in daterange(cutoff, TRIP_END):
         day_label = d.strftime("%a, %b ") + str(d.day)
         links = "".join(
-            f'<a href="#{quarter_canvas_id(d.isoformat(), q)}">{QUARTER_LABELS[q]}</a>' for q in QUARTERS
+            f'<a href="#{quarter_screen_id(d.isoformat(), q)}">{QUARTER_LABELS[q]}</a>' for q in QUARTERS
         )
         groups.append(
             f'<div class="jump-day-group"><span class="jump-day-label">{day_label}</span>'
             f'<div class="jump-links">{links}</div></div>'
         )
 
-    return f"""<div class="jump-bar"><details class="jump-menu">
+    return f"""<details class="jump-menu">
 <summary>Jump to a day ▾</summary>
 <div class="jump-panel">{"".join(groups)}</div>
-</details></div>"""
+</details>"""
+
+
+def render_nav(jump_menu):
+    return f"""<nav class="site-nav">
+<span class="current-quarter-label" id="current-quarter-label">{esc(PAGE_TITLE)}</span>
+{jump_menu}
+<a href="family-tree/index.html">Family Tree</a>
+</nav>"""
 
 
 def build_timeline_html(people, travel, meals, cutoff):
@@ -190,15 +207,15 @@ def build_timeline_html(people, travel, meals, cutoff):
     else:
         for d in daterange(cutoff, TRIP_END):
             for q in QUARTERS:
-                screens.append(render_quarter_canvas(d, q, travel, people_by_id, meals))
+                screens.append(render_quarter_screen(d, q, travel, people_by_id, meals))
 
     return "\n".join(screens)
 
 
 def build_page_html(people, travel, meals, shared_base_css, shared_css, shared_js, today=None):
-    nav_row = nav.render_row(NAV_ITEMS)
     cutoff = max(today or date.today(), TRIP_START)
     jump_menu = render_jump_menu(cutoff)
+    nav_row = render_nav(jump_menu)
     timeline_html = build_timeline_html(people, travel, meals, cutoff)
     return f"""<!DOCTYPE html>
 <html lang="en" class="timeline-page">
@@ -213,7 +230,6 @@ def build_page_html(people, travel, meals, shared_base_css, shared_css, shared_j
 </head>
 <body>
 {nav_row}
-{jump_menu}
 <main>
 {timeline_html}
 </main>

@@ -1,8 +1,14 @@
 /* Timeline feature — inlined into site/index.html at build time. Full-screen
    swipe/scroll-through layout: an intro screen, then one full-viewport-height
-   "day quarter canvas" per day quarter (6-hour segment), advanced with
-   native CSS scroll-snap (works the same on desktop scroll/trackpad and
-   mobile swipe — see requirements/public.md -> Device support). */
+   "quarter screen" per day quarter (6-hour segment), advanced with native
+   CSS scroll-snap (works the same on desktop scroll/trackpad and mobile
+   swipe — see requirements/public.md -> Device support).
+
+   Each quarter screen has two parts, per requirements/public.md ->
+   Terminology: the "day quarter canvas padding" (a blank spacer reserved
+   for the single sticky nav bar) and the "day quarter canvas" itself (the
+   actual date/label/rows content). The padding is explicitly NOT part of
+   the canvas — they're separate elements, not one padded box. */
 /* Snap must live on html, not body: html (documentElement) is the actual
    scrolling element for the page, so scroll-snap-type on body has no
    effect on real page scrolling — a common CSS scroll-snap gotcha.
@@ -13,9 +19,7 @@ html.timeline-page {
   scroll-snap-type: y mandatory;
 }
 
-:root { --jump-bar-height: 2.75rem; }
-
-.intro-screen, .quarter-canvas, .trip-done-screen {
+.intro-screen, .quarter-screen, .trip-done-screen {
   /* svh (not dvh) deliberately: dvh recalculates live as a mobile browser's
      address bar collapses mid-scroll, which reflows box heights and makes
      scroll-snap re-target a second time once it settles — felt as a
@@ -31,39 +35,55 @@ html.timeline-page {
      triggered mandatory scroll-snap doesn't reliably honor it the same
      way — the two navigation paths ended up landing at two different
      resting positions ("double snap"). Reserving the sticky-bar clearance
-     as plain padding-top instead (below) works identically for every
-     navigation path, since padding is part of the box itself. */
+     as a plain spacer element instead (below) works identically for every
+     navigation path, since it's part of the box's own layout either way. */
   display: flex;
   flex-direction: column;
-  padding: calc(var(--nav-height) + var(--jump-bar-height) + 1rem) 0 2rem;
   border-bottom: 1px solid var(--border);
 }
+.intro-screen:last-child, .quarter-screen:last-child, .trip-done-screen:last-child {
+  border-bottom: none;
+}
 
-/* DEBUG — outline the exact bounds of each day quarter canvas, to check
-   snap alignment while testing. Remove this rule once done debugging. */
+/* Intro/trip-done have no canvas-padding split — just one centered block. */
+.intro-screen, .trip-done-screen {
+  justify-content: center;
+  padding: calc(var(--nav-height) + 1rem) 0 2rem;
+}
+
+/* The reserved clearance spacer — NOT the canvas, see file header. Fixed
+   height, no content, so the sticky nav bar has somewhere to sit without
+   covering the canvas below it. */
+.quarter-canvas-padding {
+  flex-shrink: 0;
+  height: calc(var(--nav-height) + 1rem);
+}
+
+/* The day quarter canvas itself — the actual content: date, time label,
+   arrivals/departures/sleeping/meal rows. Pinned top-left, per
+   requirements/public.md -> What each day quarter shows. */
+.quarter-canvas {
+  flex: 1;
+  padding-bottom: 2rem;
+}
+
+/* DEBUG — outline the exact bounds of the padding spacer (blue) and the
+   canvas (red) separately, to check they're not being confused with each
+   other while testing snap alignment. Remove both rules once done. */
+.quarter-canvas-padding {
+  outline: 3px dashed dodgerblue;
+  outline-offset: -3px;
+}
 .quarter-canvas {
   outline: 3px dashed red;
   outline-offset: -3px;
 }
-.intro-screen:last-child, .quarter-canvas:last-child, .trip-done-screen:last-child {
-  border-bottom: none;
-}
 
-/* Intro/trip-done are cover-style screens: content centered within the
-   padded box. Each day quarter canvas instead pins its content to the
-   top-left, immediately below the reserved padding — per
-   requirements/public.md -> What each day quarter shows. */
-.intro-screen, .trip-done-screen { justify-content: center; }
-.quarter-canvas { justify-content: flex-start; }
-
-.jump-bar {
-  position: sticky;
-  top: var(--nav-height);
-  background: var(--bg);
-  z-index: 9;
-  min-height: var(--jump-bar-height);
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border);
+/* Jump menu lives directly in the single-row nav (shared/base.css ->
+   .site-nav) as a dropdown, not a second sticky bar. */
+.jump-menu {
+  position: relative;
+  flex-shrink: 0;
 }
 .jump-menu > summary {
   cursor: pointer;
@@ -73,13 +93,18 @@ html.timeline-page {
 }
 .jump-menu > summary::-webkit-details-marker { display: none; }
 .jump-panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: max-content;
+  max-width: min(90vw, 26rem);
   max-height: 60vh;
   overflow-y: auto;
-  margin-top: 0.6rem;
   padding: 0.75rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 .jump-day-group { margin-bottom: 0.6rem; }
 .jump-day-label {
@@ -97,6 +122,20 @@ html.timeline-page {
   border-radius: 4px;
   text-decoration: none;
   color: var(--text);
+}
+
+/* Live "current day quarter" label, left side of the single-row nav.
+   Text is updated by shared.js (IntersectionObserver) as you scroll;
+   starts out as the site title before you've scrolled into any quarter. */
+.current-quarter-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--primary);
+  font-size: 1.05rem;
 }
 
 .trip-title { margin-bottom: 0.25rem; }
