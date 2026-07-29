@@ -26,6 +26,13 @@ html.timeline-page {
   padding: calc(var(--nav-height) + var(--jump-bar-height) + 1rem) 0 2rem;
   border-bottom: 1px solid var(--border);
 }
+
+/* DEBUG — outline the exact bounds of each day quarter canvas, to check
+   snap alignment while testing. Remove this rule once done debugging. */
+.quarter-canvas {
+  outline: 3px dashed red;
+  outline-offset: -3px;
+}
 .intro-screen:last-child, .quarter-canvas:last-child, .trip-done-screen:last-child {
   border-bottom: none;
 }
