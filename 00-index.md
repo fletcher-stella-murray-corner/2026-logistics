@@ -28,13 +28,14 @@ A feature's own requirements (what it does, page by page) live in `requirements/
 | 9 | [shared/nav.py](shared/nav.py) | Shared nav-bar rendering (no CLI) — used by both features' `build.py` so the nav has exactly one implementation. |
 | 10 | [shared/base.css](shared/base.css) | Site-wide chrome shared by both features: nav bar, color variables, base typography. |
 | 11 | [timeline/scripts/build.py](timeline/scripts/build.py) | Regenerates `site/index.html` (the homepage) from `shared/data/people.json` and `timeline/data/travel.json`/`meals.json`. |
-| 12 | [timeline/data/travel.json](timeline/data/travel.json) | Each person's arrival/departure (date, block, mode, detail) and room assignment. Hand-edited directly — no data-entry script. |
-| 13 | [timeline/data/meals.json](timeline/data/meals.json) | The meal plan, keyed by date then time-block. Hand-edited directly. |
-| 14 | [timeline/shared.css](timeline/shared.css) | CSS specific to the timeline's day/block card layout. |
-| 15 | [family-tree/scripts/build.py](family-tree/scripts/build.py) | Regenerates `site/family-tree/index.html` from `shared/data/people.json`. |
-| 16 | [family-tree/shared.css](family-tree/shared.css) | CSS specific to the family-tree page's generation/couple/children layout. |
-| 17 | [scripts/build_site.py](scripts/build_site.py) | Root orchestrator — rebuilds both features in one call. Run this after any data or template edit. |
-| 18 | [.github/workflows/deploy.yml](.github/workflows/deploy.yml) | GitHub Actions workflow that publishes `site/` to GitHub Pages on every push to `main`. |
+| 12 | [timeline/data/travel.json](timeline/data/travel.json) | Each person's arrival/departure (date, day quarter, mode, detail) and room assignment. Hand-edited directly — no data-entry script. |
+| 13 | [timeline/data/meals.json](timeline/data/meals.json) | The meal plan, keyed by date then day quarter. Hand-edited directly. |
+| 14 | [timeline/shared.css](timeline/shared.css) | CSS specific to the timeline's day quarter canvas layout (see `requirements/public.md` → *Terminology*). |
+| 15 | [timeline/shared.js](timeline/shared.js) | Closes the "Jump to a day" disclosure once a link inside it is clicked. |
+| 16 | [family-tree/scripts/build.py](family-tree/scripts/build.py) | Regenerates `site/family-tree/index.html` from `shared/data/people.json`. |
+| 17 | [family-tree/shared.css](family-tree/shared.css) | CSS specific to the family-tree page's generation/couple/children layout. |
+| 18 | [scripts/build_site.py](scripts/build_site.py) | Root orchestrator — rebuilds both features in one call. Run this after any data or template edit. |
+| 19 | [.github/workflows/deploy.yml](.github/workflows/deploy.yml) | GitHub Actions workflow that publishes `site/` to GitHub Pages on every push to `main`. |
 
 ## Site (deployed)
 

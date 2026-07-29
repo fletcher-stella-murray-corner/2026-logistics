@@ -3,11 +3,12 @@
 site's homepage (see requirements/public.md -> Homepage = Timeline).
 
 Reads shared/data/people.json, timeline/data/travel.json, and
-timeline/data/meals.json. Renders August 1-15, 2026 split into four 6-hour
-blocks per day, one full-viewport-height scroll-snap screen per block,
-always starting from max(today, Aug 1) so past days quietly drop off the
-site on every rebuild. A sticky "Jump to a day" menu below the nav bar
-links straight to any block via anchor, independent of scroll-snap.
+timeline/data/meals.json. Renders August 1-15, 2026 split into four day
+quarters (6-hour segments) per day, one full-viewport-height scroll-snap
+"day quarter canvas" per quarter, always starting from max(today, Aug 1)
+so past days quietly drop off the site on every rebuild. A sticky
+"Jump to a day" menu below the nav bar links straight to any day quarter
+canvas via anchor, independent of scroll-snap.
 
 Run after hand-editing any of the three data files above, or use
 scripts/build_site.py to rebuild every feature at once.
@@ -31,9 +32,9 @@ TRIP_SUBTITLE = "Murray Corner, New Brunswick · August 1–15, 2026"
 TRIP_START = date(2026, 8, 1)
 TRIP_END = date(2026, 8, 15)
 
-BLOCKS = ["00-06", "06-12", "12-18", "18-24"]
-BLOCK_INDEX = {b: i for i, b in enumerate(BLOCKS)}
-BLOCK_LABELS = {
+QUARTERS = ["00-06", "06-12", "12-18", "18-24"]
+QUARTER_INDEX = {q: i for i, q in enumerate(QUARTERS)}
+QUARTER_LABELS = {
     "00-06": "12am–6am",
     "06-12": "6am–12pm",
     "12-18": "12pm–6pm",
@@ -59,12 +60,12 @@ def load_json(path):
     return json.loads(path.read_text())
 
 
-def block_key(iso_date, block):
-    return (iso_date, BLOCK_INDEX[block])
+def quarter_key(iso_date, quarter):
+    return (iso_date, QUARTER_INDEX[quarter])
 
 
-def block_id(iso_date, block):
-    return f"blk-{iso_date}-{block}"
+def quarter_canvas_id(iso_date, quarter):
+    return f"qc-{iso_date}-{quarter}"
 
 
 def daterange(start, end):
@@ -74,8 +75,8 @@ def daterange(start, end):
         d += timedelta(days=1)
 
 
-def render_block(day, block, travel, people_by_id, meals):
-    key = block_key(day.isoformat(), block)
+def render_quarter_canvas(day, quarter, travel, people_by_id, meals):
+    key = quarter_key(day.isoformat(), quarter)
 
     arrivals = []
     departures = []
@@ -88,8 +89,8 @@ def render_block(day, block, travel, people_by_id, meals):
 
         arrival = entry.get("arrival")
         departure = entry.get("departure")
-        arrival_key = block_key(arrival["date"], arrival["block"]) if arrival else None
-        departure_key = block_key(departure["date"], departure["block"]) if departure else None
+        arrival_key = quarter_key(arrival["date"], arrival["quarter"]) if arrival else None
+        departure_key = quarter_key(departure["date"], departure["quarter"]) if departure else None
 
         if arrival_key == key:
             arrivals.append((person, arrival))
@@ -111,7 +112,7 @@ def render_block(day, block, travel, people_by_id, meals):
             f"</span>"
             for p, a in arrivals
         )
-        rows.append(f'<div class="block-row"><span class="block-row-label">Arriving:</span>{lines}</div>')
+        rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Arriving:</span>{lines}</div>')
 
     if departures:
         lines = "".join(
@@ -121,7 +122,7 @@ def render_block(day, block, travel, people_by_id, meals):
             f"</span>"
             for p, d in departures
         )
-        rows.append(f'<div class="block-row"><span class="block-row-label">Departing:</span>{lines}</div>')
+        rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Departing:</span>{lines}</div>')
 
     if present:
         by_room = {}
@@ -132,18 +133,18 @@ def render_block(day, block, travel, people_by_id, meals):
             f'{esc(", ".join(sorted(names)))}</span>'
             for room, names in sorted(by_room.items())
         )
-        rows.append(f'<div class="block-row"><span class="block-row-label">Sleeping:</span>{room_lines}</div>')
+        rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Sleeping:</span>{room_lines}</div>')
 
-    meal = meals.get(day.isoformat(), {}).get(block)
+    meal = meals.get(day.isoformat(), {}).get(quarter)
     if meal:
-        rows.append(f'<div class="block-row"><span class="block-row-label">Meal:</span> {esc(meal)}</div>')
+        rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Meal:</span> {esc(meal)}</div>')
 
-    body = "".join(rows) if rows else '<div class="block-empty-hint">Nothing scheduled</div>'
+    body = "".join(rows) if rows else '<div class="quarter-empty-hint">Nothing scheduled</div>'
     date_label = day.strftime("%A, %B ") + str(day.day)
 
-    return f"""<section class="block-screen" id="{block_id(day.isoformat(), block)}">
-<div class="block-date">{date_label}</div>
-<h2 class="block-time">{BLOCK_LABELS[block]}</h2>
+    return f"""<section class="quarter-canvas" id="{quarter_canvas_id(day.isoformat(), quarter)}">
+<div class="quarter-date">{date_label}</div>
+<h2 class="quarter-label">{QUARTER_LABELS[quarter]}</h2>
 {body}
 </section>"""
 
@@ -164,7 +165,7 @@ def render_jump_menu(cutoff):
     for d in daterange(cutoff, TRIP_END):
         day_label = d.strftime("%a, %b ") + str(d.day)
         links = "".join(
-            f'<a href="#{block_id(d.isoformat(), b)}">{BLOCK_LABELS[b]}</a>' for b in BLOCKS
+            f'<a href="#{quarter_canvas_id(d.isoformat(), q)}">{QUARTER_LABELS[q]}</a>' for q in QUARTERS
         )
         groups.append(
             f'<div class="jump-day-group"><span class="jump-day-label">{day_label}</span>'
@@ -188,8 +189,8 @@ def build_timeline_html(people, travel, meals, cutoff):
         )
     else:
         for d in daterange(cutoff, TRIP_END):
-            for b in BLOCKS:
-                screens.append(render_block(d, b, travel, people_by_id, meals))
+            for q in QUARTERS:
+                screens.append(render_quarter_canvas(d, q, travel, people_by_id, meals))
 
     return "\n".join(screens)
 

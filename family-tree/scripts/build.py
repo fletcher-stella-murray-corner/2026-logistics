@@ -80,7 +80,7 @@ def render_unit(person, people_by_id, children_by_parent, rendered_ids):
 
 def build_tree_html(people):
     if not people:
-        return '<p class="block-empty-hint">No one added to the family tree yet.</p>'
+        return '<p class="empty-hint">No one added to the family tree yet.</p>'
 
     people_by_id = {p["id"]: p for p in people}
     children_by_parent = build_children_map(people)

@@ -54,9 +54,9 @@ a { color: var(--secondary); }
 
 /* Timeline feature — inlined into site/index.html at build time. Full-screen
    swipe/scroll-through layout: an intro screen, then one full-viewport-height
-   screen per 6-hour block, advanced with native CSS scroll-snap (works the
-   same on desktop scroll/trackpad and mobile swipe — see
-   requirements/public.md -> Device support). */
+   "day quarter canvas" per day quarter (6-hour segment), advanced with
+   native CSS scroll-snap (works the same on desktop scroll/trackpad and
+   mobile swipe — see requirements/public.md -> Device support). */
 /* Snap must live on html, not body: html (documentElement) is the actual
    scrolling element for the page, so scroll-snap-type on body has no
    effect on real page scrolling — a common CSS scroll-snap gotcha.
@@ -69,7 +69,7 @@ html.timeline-page {
 
 :root { --jump-bar-height: 2.75rem; }
 
-.intro-screen, .block-screen, .trip-done-screen {
+.intro-screen, .quarter-canvas, .trip-done-screen {
   min-height: 100vh;
   min-height: 100dvh;
   scroll-snap-align: start;
@@ -77,13 +77,18 @@ html.timeline-page {
   scroll-margin-top: calc(var(--nav-height) + var(--jump-bar-height));
   display: flex;
   flex-direction: column;
-  justify-content: center;
   padding: calc(var(--nav-height) + var(--jump-bar-height) + 1rem) 0 2rem;
   border-bottom: 1px solid var(--border);
 }
-.intro-screen:last-child, .block-screen:last-child, .trip-done-screen:last-child {
+.intro-screen:last-child, .quarter-canvas:last-child, .trip-done-screen:last-child {
   border-bottom: none;
 }
+
+/* Intro/trip-done are cover-style screens: centered. Each day quarter
+   canvas instead pins its content to the top-left, per
+   requirements/public.md -> What each day quarter shows. */
+.intro-screen, .trip-done-screen { justify-content: center; }
+.quarter-canvas { justify-content: flex-start; }
 
 .jump-bar {
   position: sticky;
@@ -138,23 +143,23 @@ html.timeline-page {
 
 .trip-done-screen { font-size: 1.2rem; }
 
-.block-date {
+.quarter-date {
   font-size: 0.95rem;
   color: var(--secondary);
   font-weight: 600;
 }
-.block-time {
+.quarter-label {
   font-size: 2.25rem;
   margin: 0.25rem 0 1.5rem;
 }
 
-.block-row { margin: 0.6rem 0; font-size: 1.05rem; }
-.block-row-label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 0.2rem; }
+.quarter-row { margin: 0.6rem 0; font-size: 1.05rem; }
+.quarter-row-label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 0.2rem; }
 .person-line { display: block; margin-left: 0.1rem; }
 .mode-tag { margin-right: 0.3rem; }
 .room-group { display: block; margin: 0.15rem 0; }
 .room-name { font-weight: 600; }
-.block-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
+.quarter-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
 
 </style>
 </head>
@@ -162,7 +167,7 @@ html.timeline-page {
 <nav class="site-nav"><strong class="active">Timeline</strong><a href="family-tree/index.html">Family Tree</a></nav>
 <div class="jump-bar"><details class="jump-menu">
 <summary>Jump to a day ▾</summary>
-<div class="jump-panel"><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 1</span><div class="jump-links"><a href="#blk-2026-08-01-00-06">12am–6am</a><a href="#blk-2026-08-01-06-12">6am–12pm</a><a href="#blk-2026-08-01-12-18">12pm–6pm</a><a href="#blk-2026-08-01-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 2</span><div class="jump-links"><a href="#blk-2026-08-02-00-06">12am–6am</a><a href="#blk-2026-08-02-06-12">6am–12pm</a><a href="#blk-2026-08-02-12-18">12pm–6pm</a><a href="#blk-2026-08-02-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 3</span><div class="jump-links"><a href="#blk-2026-08-03-00-06">12am–6am</a><a href="#blk-2026-08-03-06-12">6am–12pm</a><a href="#blk-2026-08-03-12-18">12pm–6pm</a><a href="#blk-2026-08-03-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 4</span><div class="jump-links"><a href="#blk-2026-08-04-00-06">12am–6am</a><a href="#blk-2026-08-04-06-12">6am–12pm</a><a href="#blk-2026-08-04-12-18">12pm–6pm</a><a href="#blk-2026-08-04-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 5</span><div class="jump-links"><a href="#blk-2026-08-05-00-06">12am–6am</a><a href="#blk-2026-08-05-06-12">6am–12pm</a><a href="#blk-2026-08-05-12-18">12pm–6pm</a><a href="#blk-2026-08-05-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 6</span><div class="jump-links"><a href="#blk-2026-08-06-00-06">12am–6am</a><a href="#blk-2026-08-06-06-12">6am–12pm</a><a href="#blk-2026-08-06-12-18">12pm–6pm</a><a href="#blk-2026-08-06-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 7</span><div class="jump-links"><a href="#blk-2026-08-07-00-06">12am–6am</a><a href="#blk-2026-08-07-06-12">6am–12pm</a><a href="#blk-2026-08-07-12-18">12pm–6pm</a><a href="#blk-2026-08-07-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 8</span><div class="jump-links"><a href="#blk-2026-08-08-00-06">12am–6am</a><a href="#blk-2026-08-08-06-12">6am–12pm</a><a href="#blk-2026-08-08-12-18">12pm–6pm</a><a href="#blk-2026-08-08-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 9</span><div class="jump-links"><a href="#blk-2026-08-09-00-06">12am–6am</a><a href="#blk-2026-08-09-06-12">6am–12pm</a><a href="#blk-2026-08-09-12-18">12pm–6pm</a><a href="#blk-2026-08-09-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 10</span><div class="jump-links"><a href="#blk-2026-08-10-00-06">12am–6am</a><a href="#blk-2026-08-10-06-12">6am–12pm</a><a href="#blk-2026-08-10-12-18">12pm–6pm</a><a href="#blk-2026-08-10-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 11</span><div class="jump-links"><a href="#blk-2026-08-11-00-06">12am–6am</a><a href="#blk-2026-08-11-06-12">6am–12pm</a><a href="#blk-2026-08-11-12-18">12pm–6pm</a><a href="#blk-2026-08-11-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 12</span><div class="jump-links"><a href="#blk-2026-08-12-00-06">12am–6am</a><a href="#blk-2026-08-12-06-12">6am–12pm</a><a href="#blk-2026-08-12-12-18">12pm–6pm</a><a href="#blk-2026-08-12-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 13</span><div class="jump-links"><a href="#blk-2026-08-13-00-06">12am–6am</a><a href="#blk-2026-08-13-06-12">6am–12pm</a><a href="#blk-2026-08-13-12-18">12pm–6pm</a><a href="#blk-2026-08-13-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 14</span><div class="jump-links"><a href="#blk-2026-08-14-00-06">12am–6am</a><a href="#blk-2026-08-14-06-12">6am–12pm</a><a href="#blk-2026-08-14-12-18">12pm–6pm</a><a href="#blk-2026-08-14-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 15</span><div class="jump-links"><a href="#blk-2026-08-15-00-06">12am–6am</a><a href="#blk-2026-08-15-06-12">6am–12pm</a><a href="#blk-2026-08-15-12-18">12pm–6pm</a><a href="#blk-2026-08-15-18-24">6pm–12am</a></div></div></div>
+<div class="jump-panel"><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 1</span><div class="jump-links"><a href="#qc-2026-08-01-00-06">12am–6am</a><a href="#qc-2026-08-01-06-12">6am–12pm</a><a href="#qc-2026-08-01-12-18">12pm–6pm</a><a href="#qc-2026-08-01-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 2</span><div class="jump-links"><a href="#qc-2026-08-02-00-06">12am–6am</a><a href="#qc-2026-08-02-06-12">6am–12pm</a><a href="#qc-2026-08-02-12-18">12pm–6pm</a><a href="#qc-2026-08-02-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 3</span><div class="jump-links"><a href="#qc-2026-08-03-00-06">12am–6am</a><a href="#qc-2026-08-03-06-12">6am–12pm</a><a href="#qc-2026-08-03-12-18">12pm–6pm</a><a href="#qc-2026-08-03-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 4</span><div class="jump-links"><a href="#qc-2026-08-04-00-06">12am–6am</a><a href="#qc-2026-08-04-06-12">6am–12pm</a><a href="#qc-2026-08-04-12-18">12pm–6pm</a><a href="#qc-2026-08-04-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 5</span><div class="jump-links"><a href="#qc-2026-08-05-00-06">12am–6am</a><a href="#qc-2026-08-05-06-12">6am–12pm</a><a href="#qc-2026-08-05-12-18">12pm–6pm</a><a href="#qc-2026-08-05-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 6</span><div class="jump-links"><a href="#qc-2026-08-06-00-06">12am–6am</a><a href="#qc-2026-08-06-06-12">6am–12pm</a><a href="#qc-2026-08-06-12-18">12pm–6pm</a><a href="#qc-2026-08-06-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 7</span><div class="jump-links"><a href="#qc-2026-08-07-00-06">12am–6am</a><a href="#qc-2026-08-07-06-12">6am–12pm</a><a href="#qc-2026-08-07-12-18">12pm–6pm</a><a href="#qc-2026-08-07-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 8</span><div class="jump-links"><a href="#qc-2026-08-08-00-06">12am–6am</a><a href="#qc-2026-08-08-06-12">6am–12pm</a><a href="#qc-2026-08-08-12-18">12pm–6pm</a><a href="#qc-2026-08-08-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 9</span><div class="jump-links"><a href="#qc-2026-08-09-00-06">12am–6am</a><a href="#qc-2026-08-09-06-12">6am–12pm</a><a href="#qc-2026-08-09-12-18">12pm–6pm</a><a href="#qc-2026-08-09-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 10</span><div class="jump-links"><a href="#qc-2026-08-10-00-06">12am–6am</a><a href="#qc-2026-08-10-06-12">6am–12pm</a><a href="#qc-2026-08-10-12-18">12pm–6pm</a><a href="#qc-2026-08-10-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 11</span><div class="jump-links"><a href="#qc-2026-08-11-00-06">12am–6am</a><a href="#qc-2026-08-11-06-12">6am–12pm</a><a href="#qc-2026-08-11-12-18">12pm–6pm</a><a href="#qc-2026-08-11-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 12</span><div class="jump-links"><a href="#qc-2026-08-12-00-06">12am–6am</a><a href="#qc-2026-08-12-06-12">6am–12pm</a><a href="#qc-2026-08-12-12-18">12pm–6pm</a><a href="#qc-2026-08-12-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 13</span><div class="jump-links"><a href="#qc-2026-08-13-00-06">12am–6am</a><a href="#qc-2026-08-13-06-12">6am–12pm</a><a href="#qc-2026-08-13-12-18">12pm–6pm</a><a href="#qc-2026-08-13-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 14</span><div class="jump-links"><a href="#qc-2026-08-14-00-06">12am–6am</a><a href="#qc-2026-08-14-06-12">6am–12pm</a><a href="#qc-2026-08-14-12-18">12pm–6pm</a><a href="#qc-2026-08-14-18-24">6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 15</span><div class="jump-links"><a href="#qc-2026-08-15-00-06">12am–6am</a><a href="#qc-2026-08-15-06-12">6am–12pm</a><a href="#qc-2026-08-15-12-18">12pm–6pm</a><a href="#qc-2026-08-15-18-24">6pm–12am</a></div></div></div>
 </details></div>
 <main>
 <section class="intro-screen">
@@ -170,311 +175,311 @@ html.timeline-page {
 <p class="trip-subtitle">Murray Corner, New Brunswick · August 1–15, 2026</p>
 <p class="scroll-hint">Scroll or swipe down to start ↓</p>
 </section>
-<section class="block-screen" id="blk-2026-08-01-00-06">
-<div class="block-date">Saturday, August 1</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-01-00-06">
+<div class="quarter-date">Saturday, August 1</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-01-06-12">
-<div class="block-date">Saturday, August 1</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-01-06-12">
+<div class="quarter-date">Saturday, August 1</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-01-12-18">
-<div class="block-date">Saturday, August 1</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-01-12-18">
+<div class="quarter-date">Saturday, August 1</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-01-18-24">
-<div class="block-date">Saturday, August 1</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-01-18-24">
+<div class="quarter-date">Saturday, August 1</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-02-00-06">
-<div class="block-date">Sunday, August 2</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-02-00-06">
+<div class="quarter-date">Sunday, August 2</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-02-06-12">
-<div class="block-date">Sunday, August 2</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-02-06-12">
+<div class="quarter-date">Sunday, August 2</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-02-12-18">
-<div class="block-date">Sunday, August 2</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-02-12-18">
+<div class="quarter-date">Sunday, August 2</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-02-18-24">
-<div class="block-date">Sunday, August 2</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-02-18-24">
+<div class="quarter-date">Sunday, August 2</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-03-00-06">
-<div class="block-date">Monday, August 3</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-03-00-06">
+<div class="quarter-date">Monday, August 3</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-03-06-12">
-<div class="block-date">Monday, August 3</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-03-06-12">
+<div class="quarter-date">Monday, August 3</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-03-12-18">
-<div class="block-date">Monday, August 3</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-03-12-18">
+<div class="quarter-date">Monday, August 3</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-03-18-24">
-<div class="block-date">Monday, August 3</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-03-18-24">
+<div class="quarter-date">Monday, August 3</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-04-00-06">
-<div class="block-date">Tuesday, August 4</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-04-00-06">
+<div class="quarter-date">Tuesday, August 4</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-04-06-12">
-<div class="block-date">Tuesday, August 4</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-04-06-12">
+<div class="quarter-date">Tuesday, August 4</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-04-12-18">
-<div class="block-date">Tuesday, August 4</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-04-12-18">
+<div class="quarter-date">Tuesday, August 4</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-04-18-24">
-<div class="block-date">Tuesday, August 4</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-04-18-24">
+<div class="quarter-date">Tuesday, August 4</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-05-00-06">
-<div class="block-date">Wednesday, August 5</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-05-00-06">
+<div class="quarter-date">Wednesday, August 5</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-05-06-12">
-<div class="block-date">Wednesday, August 5</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-05-06-12">
+<div class="quarter-date">Wednesday, August 5</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-05-12-18">
-<div class="block-date">Wednesday, August 5</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-05-12-18">
+<div class="quarter-date">Wednesday, August 5</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-05-18-24">
-<div class="block-date">Wednesday, August 5</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-05-18-24">
+<div class="quarter-date">Wednesday, August 5</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-06-00-06">
-<div class="block-date">Thursday, August 6</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-06-00-06">
+<div class="quarter-date">Thursday, August 6</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-06-06-12">
-<div class="block-date">Thursday, August 6</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-06-06-12">
+<div class="quarter-date">Thursday, August 6</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-06-12-18">
-<div class="block-date">Thursday, August 6</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-06-12-18">
+<div class="quarter-date">Thursday, August 6</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-06-18-24">
-<div class="block-date">Thursday, August 6</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-06-18-24">
+<div class="quarter-date">Thursday, August 6</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-07-00-06">
-<div class="block-date">Friday, August 7</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-07-00-06">
+<div class="quarter-date">Friday, August 7</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-07-06-12">
-<div class="block-date">Friday, August 7</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-07-06-12">
+<div class="quarter-date">Friday, August 7</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-07-12-18">
-<div class="block-date">Friday, August 7</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-07-12-18">
+<div class="quarter-date">Friday, August 7</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-07-18-24">
-<div class="block-date">Friday, August 7</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-07-18-24">
+<div class="quarter-date">Friday, August 7</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-08-00-06">
-<div class="block-date">Saturday, August 8</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-08-00-06">
+<div class="quarter-date">Saturday, August 8</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-08-06-12">
-<div class="block-date">Saturday, August 8</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-08-06-12">
+<div class="quarter-date">Saturday, August 8</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-08-12-18">
-<div class="block-date">Saturday, August 8</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-08-12-18">
+<div class="quarter-date">Saturday, August 8</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-08-18-24">
-<div class="block-date">Saturday, August 8</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-08-18-24">
+<div class="quarter-date">Saturday, August 8</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-09-00-06">
-<div class="block-date">Sunday, August 9</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-09-00-06">
+<div class="quarter-date">Sunday, August 9</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-09-06-12">
-<div class="block-date">Sunday, August 9</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-09-06-12">
+<div class="quarter-date">Sunday, August 9</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-09-12-18">
-<div class="block-date">Sunday, August 9</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-09-12-18">
+<div class="quarter-date">Sunday, August 9</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-09-18-24">
-<div class="block-date">Sunday, August 9</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-09-18-24">
+<div class="quarter-date">Sunday, August 9</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-10-00-06">
-<div class="block-date">Monday, August 10</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-10-00-06">
+<div class="quarter-date">Monday, August 10</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-10-06-12">
-<div class="block-date">Monday, August 10</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-10-06-12">
+<div class="quarter-date">Monday, August 10</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-10-12-18">
-<div class="block-date">Monday, August 10</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-10-12-18">
+<div class="quarter-date">Monday, August 10</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-10-18-24">
-<div class="block-date">Monday, August 10</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-10-18-24">
+<div class="quarter-date">Monday, August 10</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-11-00-06">
-<div class="block-date">Tuesday, August 11</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-11-00-06">
+<div class="quarter-date">Tuesday, August 11</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-11-06-12">
-<div class="block-date">Tuesday, August 11</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-11-06-12">
+<div class="quarter-date">Tuesday, August 11</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-11-12-18">
-<div class="block-date">Tuesday, August 11</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-11-12-18">
+<div class="quarter-date">Tuesday, August 11</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-11-18-24">
-<div class="block-date">Tuesday, August 11</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-11-18-24">
+<div class="quarter-date">Tuesday, August 11</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-12-00-06">
-<div class="block-date">Wednesday, August 12</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-12-00-06">
+<div class="quarter-date">Wednesday, August 12</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-12-06-12">
-<div class="block-date">Wednesday, August 12</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-12-06-12">
+<div class="quarter-date">Wednesday, August 12</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-12-12-18">
-<div class="block-date">Wednesday, August 12</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-12-12-18">
+<div class="quarter-date">Wednesday, August 12</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-12-18-24">
-<div class="block-date">Wednesday, August 12</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-12-18-24">
+<div class="quarter-date">Wednesday, August 12</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-13-00-06">
-<div class="block-date">Thursday, August 13</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-13-00-06">
+<div class="quarter-date">Thursday, August 13</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-13-06-12">
-<div class="block-date">Thursday, August 13</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-13-06-12">
+<div class="quarter-date">Thursday, August 13</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-13-12-18">
-<div class="block-date">Thursday, August 13</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-13-12-18">
+<div class="quarter-date">Thursday, August 13</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-13-18-24">
-<div class="block-date">Thursday, August 13</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-13-18-24">
+<div class="quarter-date">Thursday, August 13</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-14-00-06">
-<div class="block-date">Friday, August 14</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-14-00-06">
+<div class="quarter-date">Friday, August 14</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-14-06-12">
-<div class="block-date">Friday, August 14</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-14-06-12">
+<div class="quarter-date">Friday, August 14</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-14-12-18">
-<div class="block-date">Friday, August 14</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-14-12-18">
+<div class="quarter-date">Friday, August 14</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-14-18-24">
-<div class="block-date">Friday, August 14</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-14-18-24">
+<div class="quarter-date">Friday, August 14</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-15-00-06">
-<div class="block-date">Saturday, August 15</div>
-<h2 class="block-time">12am–6am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-15-00-06">
+<div class="quarter-date">Saturday, August 15</div>
+<h2 class="quarter-label">12am–6am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-15-06-12">
-<div class="block-date">Saturday, August 15</div>
-<h2 class="block-time">6am–12pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-15-06-12">
+<div class="quarter-date">Saturday, August 15</div>
+<h2 class="quarter-label">6am–12pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-15-12-18">
-<div class="block-date">Saturday, August 15</div>
-<h2 class="block-time">12pm–6pm</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-15-12-18">
+<div class="quarter-date">Saturday, August 15</div>
+<h2 class="quarter-label">12pm–6pm</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
-<section class="block-screen" id="blk-2026-08-15-18-24">
-<div class="block-date">Saturday, August 15</div>
-<h2 class="block-time">6pm–12am</h2>
-<div class="block-empty-hint">Nothing scheduled</div>
+<section class="quarter-canvas" id="qc-2026-08-15-18-24">
+<div class="quarter-date">Saturday, August 15</div>
+<h2 class="quarter-label">6pm–12am</h2>
+<div class="quarter-empty-hint">Nothing scheduled</div>
 </section>
 </main>
 <script>
 // Timeline feature — inlined into site/index.html at build time. Closes the
 // "Jump to a day" disclosure once a link inside it is clicked, so it doesn't
-// keep covering the block you just jumped to.
+// keep covering the day quarter canvas you just jumped to.
 document.addEventListener('DOMContentLoaded', function () {
   var menu = document.querySelector('.jump-menu');
   if (!menu) return;

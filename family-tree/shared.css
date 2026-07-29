@@ -22,6 +22,7 @@
   background: #fff;
 }
 .couple-joiner { color: var(--secondary); }
+.empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
 .children {
   margin: 0.5rem 0 0 1.5rem;
   padding-left: 1rem;

@@ -35,7 +35,7 @@ Every script lives in a feature's `scripts/` folder, is plain Python 3 with no d
 ## Where CSS and JS changes go
 
 - **`shared/base.css`** — site-wide chrome shared by both features: nav bar, color variables, base typography. Change here affects every page.
-- **A feature's `shared.css`** (e.g. `timeline/shared.css`) — CSS specific to that feature's page(s) only (day/block card layout, family-tree diagram styling).
+- **A feature's `shared.css`** (e.g. `timeline/shared.css`) — CSS specific to that feature's page(s) only (day quarter canvas layout, family-tree diagram styling).
 - **Inline `<style>`/`<script>` in the page** — page-specific setup only: rendered content and any page configuration constants. Nothing else belongs here.
 
 When in doubt: if a change would need to be made in more than one page, it belongs in `shared/base.css` (site-wide) or the owning feature's `shared.css` (feature-wide), not copied into each page's inline block.

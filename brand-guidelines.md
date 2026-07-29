@@ -46,11 +46,11 @@ A page torn from a simple paper travel itinerary someone left on the kitchen tab
 
 ## Materials / Design Language
 
-Flat, plain HTML shapes: simple cards per time block, thin rules between days, no gradients, no drop shadows, no illustration. If it wouldn't look at home printed on a single sheet of paper, it doesn't belong.
+Flat, plain HTML shapes: one full-screen canvas per day quarter, thin rules between days, no gradients, no drop shadows, no illustration. If it wouldn't look at home printed on a single sheet of paper, it doesn't belong.
 
 ## Craftsmanship
 
-Precise and legible over decorative. Evidence of care shows up as consistent alignment and spacing, not ornamentation — every block laid out exactly the same way makes it fast to scan, which matters more here than looking designed.
+Precise and legible over decorative. Evidence of care shows up as consistent alignment and spacing, not ornamentation — every day quarter canvas laid out exactly the same way makes it fast to scan, which matters more here than looking designed.
 
 ## Colours
 
@@ -73,7 +73,7 @@ System sans throughout — no webfont loading, since some family will read this 
 Same system-sans stack, regular weight, Text color. Arrival/departure/meal/sleeping lines.
 
 ### Labels / Small Text
-Same stack, smaller size, Secondary color — time-block labels ("6am–12pm"), mode tags (plane/train/car).
+Same stack, smaller size, Secondary color — day quarter labels ("6am–12pm"), mode tags (plane/train/car).
 
 ---
 
@@ -85,7 +85,7 @@ None. No icons beyond a small text/emoji tag for travel mode (✈️ / 🚆 / �
 
 # Signature visual conventions
 
-- Every time block, whether or not it has content, always shows the same four-part shape (arrivals, departures, sleeping, meal) so the eye learns one layout and can skip straight to what's filled in.
+- Every day quarter canvas, whether or not it has content, always shows the same four-part shape (arrivals, departures, sleeping, meal), content pinned top-left, so the eye learns one layout and can skip straight to what's filled in.
 - Days that have already passed are never shown — the page always starts at today (or August 1st, whichever is later). This isn't an archival record; it's a live "what's next" view.
 
 ---
@@ -113,8 +113,8 @@ Named plainly after the place and the year — the point is clarity, not clevern
 # Core Principles
 
 * If it wouldn't fit on one printed page, it's too much decoration.
-* Today's block is always one scroll away from the top — never buried under finished days.
-* Every block shows the same four things in the same order, filled in or not.
+* Today's day quarter canvas is always one scroll away from the top — never buried under finished days.
+* Every day quarter canvas shows the same four things, top-left, in the same order, filled in or not.
 * Legible on a phone, one-handed, in bad light, on bad wifi, beats anything visually clever.
 * No login, no interactivity beyond scrolling and links — a page anyone in the family can open cold.
 * Never show a day that's already over.

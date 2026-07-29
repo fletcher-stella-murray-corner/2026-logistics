@@ -1,8 +1,8 @@
 /* Timeline feature — inlined into site/index.html at build time. Full-screen
    swipe/scroll-through layout: an intro screen, then one full-viewport-height
-   screen per 6-hour block, advanced with native CSS scroll-snap (works the
-   same on desktop scroll/trackpad and mobile swipe — see
-   requirements/public.md -> Device support). */
+   "day quarter canvas" per day quarter (6-hour segment), advanced with
+   native CSS scroll-snap (works the same on desktop scroll/trackpad and
+   mobile swipe — see requirements/public.md -> Device support). */
 /* Snap must live on html, not body: html (documentElement) is the actual
    scrolling element for the page, so scroll-snap-type on body has no
    effect on real page scrolling — a common CSS scroll-snap gotcha.
@@ -15,7 +15,7 @@ html.timeline-page {
 
 :root { --jump-bar-height: 2.75rem; }
 
-.intro-screen, .block-screen, .trip-done-screen {
+.intro-screen, .quarter-canvas, .trip-done-screen {
   min-height: 100vh;
   min-height: 100dvh;
   scroll-snap-align: start;
@@ -23,13 +23,18 @@ html.timeline-page {
   scroll-margin-top: calc(var(--nav-height) + var(--jump-bar-height));
   display: flex;
   flex-direction: column;
-  justify-content: center;
   padding: calc(var(--nav-height) + var(--jump-bar-height) + 1rem) 0 2rem;
   border-bottom: 1px solid var(--border);
 }
-.intro-screen:last-child, .block-screen:last-child, .trip-done-screen:last-child {
+.intro-screen:last-child, .quarter-canvas:last-child, .trip-done-screen:last-child {
   border-bottom: none;
 }
+
+/* Intro/trip-done are cover-style screens: centered. Each day quarter
+   canvas instead pins its content to the top-left, per
+   requirements/public.md -> What each day quarter shows. */
+.intro-screen, .trip-done-screen { justify-content: center; }
+.quarter-canvas { justify-content: flex-start; }
 
 .jump-bar {
   position: sticky;
@@ -84,20 +89,20 @@ html.timeline-page {
 
 .trip-done-screen { font-size: 1.2rem; }
 
-.block-date {
+.quarter-date {
   font-size: 0.95rem;
   color: var(--secondary);
   font-weight: 600;
 }
-.block-time {
+.quarter-label {
   font-size: 2.25rem;
   margin: 0.25rem 0 1.5rem;
 }
 
-.block-row { margin: 0.6rem 0; font-size: 1.05rem; }
-.block-row-label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 0.2rem; }
+.quarter-row { margin: 0.6rem 0; font-size: 1.05rem; }
+.quarter-row-label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 0.2rem; }
 .person-line { display: block; margin-left: 0.1rem; }
 .mode-tag { margin-right: 0.3rem; }
 .room-group { display: block; margin: 0.15rem 0; }
 .room-name { font-weight: 600; }
-.block-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
+.quarter-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
