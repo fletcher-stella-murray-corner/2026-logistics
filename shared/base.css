@@ -8,6 +8,7 @@
   --bg: #faf8f4;
   --text: #23282b;
   --border: #ddd6c4;
+  --nav-height: 3.75rem;
 }
 * { box-sizing: border-box; }
 html { color-scheme: light; }
@@ -24,10 +25,15 @@ body {
 }
 .site-nav {
   display: flex;
+  align-items: center;
   gap: 1.25rem;
-  padding: 1rem 0;
+  min-height: var(--nav-height);
+  padding: 0.5rem 0;
   border-bottom: 2px solid var(--border);
-  margin-bottom: 1.5rem;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
 }
 .site-nav a, .site-nav strong {
   text-decoration: none;

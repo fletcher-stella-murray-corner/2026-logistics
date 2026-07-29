@@ -1,37 +1,51 @@
-/* Timeline feature — inlined into site/index.html at build time. Day/block
-   card layout, per brand-guidelines.md -> Signature visual conventions:
-   every block always renders the same four-row shape. */
+/* Timeline feature — inlined into site/index.html at build time. Full-screen
+   swipe/scroll-through layout: an intro screen, then one full-viewport-height
+   screen per 6-hour block, advanced with native CSS scroll-snap (works the
+   same on desktop scroll/trackpad and mobile swipe — see
+   requirements/public.md -> Device support). */
+body.timeline-page {
+  scroll-snap-type: y mandatory;
+}
+
+.intro-screen, .block-screen, .trip-done-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  scroll-snap-align: start;
+  scroll-margin-top: var(--nav-height);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: calc(var(--nav-height) + 1rem) 0 2rem;
+  border-bottom: 1px solid var(--border);
+}
+.intro-screen:last-child, .block-screen:last-child, .trip-done-screen:last-child {
+  border-bottom: none;
+}
+
 .trip-title { margin-bottom: 0.25rem; }
-.trip-subtitle { color: var(--secondary); margin-top: 0; margin-bottom: 2rem; }
-.trip-done { padding: 2rem 0; font-size: 1.1rem; }
-
-.day { margin-bottom: 2.25rem; }
-.day-heading {
-  font-size: 1.25rem;
-  border-bottom: 2px solid var(--border);
-  padding-bottom: 0.35rem;
-  margin-bottom: 0.9rem;
+.trip-subtitle { color: var(--secondary); margin-top: 0; }
+.scroll-hint {
+  margin-top: 3rem;
+  color: var(--secondary);
+  font-size: 0.9rem;
 }
 
-.blocks { display: flex; flex-direction: column; gap: 0.75rem; }
-.block {
-  background: #f5efe0;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
-}
-.block-label {
-  font-size: 0.8rem;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+.trip-done-screen { font-size: 1.2rem; }
+
+.block-date {
+  font-size: 0.95rem;
   color: var(--secondary);
   font-weight: 600;
-  margin-bottom: 0.4rem;
 }
-.block-row { margin: 0.3rem 0; font-size: 0.95rem; }
-.block-row-label { font-weight: 600; color: var(--primary); margin-right: 0.35rem; }
+.block-time {
+  font-size: 2.25rem;
+  margin: 0.25rem 0 1.5rem;
+}
+
+.block-row { margin: 0.6rem 0; font-size: 1.05rem; }
+.block-row-label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 0.2rem; }
 .person-line { display: block; margin-left: 0.1rem; }
 .mode-tag { margin-right: 0.3rem; }
-.room-group { display: block; }
+.room-group { display: block; margin: 0.15rem 0; }
 .room-name { font-weight: 600; }
-.block-empty-hint { color: #8a8378; font-size: 0.85rem; font-style: italic; }
+.block-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }

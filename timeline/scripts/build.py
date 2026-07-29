@@ -4,8 +4,9 @@ site's homepage (see requirements/public.md -> Homepage = Timeline).
 
 Reads shared/data/people.json, timeline/data/travel.json, and
 timeline/data/meals.json. Renders August 1-15, 2026 split into four 6-hour
-blocks per day, always starting from max(today, Aug 1) so past days quietly
-drop off the site on every rebuild.
+blocks per day, one full-viewport-height scroll-snap screen per block,
+always starting from max(today, Aug 1) so past days quietly drop off the
+site on every rebuild.
 
 Run after hand-editing any of the three data files above, or use
 scripts/build_site.py to rebuild every feature at once.
@@ -133,21 +134,20 @@ def render_block(day, block, travel, people_by_id, meals):
         rows.append(f'<div class="block-row"><span class="block-row-label">Meal:</span> {esc(meal)}</div>')
 
     body = "".join(rows) if rows else '<div class="block-empty-hint">Nothing scheduled</div>'
+    date_label = day.strftime("%A, %B ") + str(day.day)
 
-    return f"""<div class="block">
-<div class="block-label">{BLOCK_LABELS[block]}</div>
+    return f"""<section class="block-screen">
+<div class="block-date">{date_label}</div>
+<h2 class="block-time">{BLOCK_LABELS[block]}</h2>
 {body}
-</div>"""
+</section>"""
 
 
-def render_day(day, travel, people_by_id, meals):
-    heading = day.strftime("%A, %B ") + str(day.day)
-    blocks_html = "\n".join(render_block(day, b, travel, people_by_id, meals) for b in BLOCKS)
-    return f"""<section class="day">
-<h2 class="day-heading">{heading}</h2>
-<div class="blocks">
-{blocks_html}
-</div>
+def render_intro_screen():
+    return f"""<section class="intro-screen">
+<h1 class="trip-title">{PAGE_TITLE}</h1>
+<p class="trip-subtitle">{TRIP_SUBTITLE}</p>
+<p class="scroll-hint">Scroll or swipe down to start ↓</p>
 </section>"""
 
 
@@ -155,10 +155,18 @@ def build_timeline_html(people, travel, meals, today=None):
     people_by_id = {p["id"]: p for p in people}
     cutoff = max(today or date.today(), TRIP_START)
 
-    if cutoff > TRIP_END:
-        return '<p class="trip-done">The trip is over — thanks for a great one!</p>'
+    screens = [render_intro_screen()]
 
-    return "\n".join(render_day(d, travel, people_by_id, meals) for d in daterange(cutoff, TRIP_END))
+    if cutoff > TRIP_END:
+        screens.append(
+            '<section class="trip-done-screen"><p>The trip is over — thanks for a great one!</p></section>'
+        )
+    else:
+        for d in daterange(cutoff, TRIP_END):
+            for b in BLOCKS:
+                screens.append(render_block(d, b, travel, people_by_id, meals))
+
+    return "\n".join(screens)
 
 
 def build_page_html(people, travel, meals, shared_base_css, shared_css):
@@ -175,10 +183,8 @@ def build_page_html(people, travel, meals, shared_base_css, shared_css):
 {shared_css}
 </style>
 </head>
-<body>
+<body class="timeline-page">
 {nav_row}
-<h1 class="trip-title">{PAGE_TITLE}</h1>
-<p class="trip-subtitle">{TRIP_SUBTITLE}</p>
 <main>
 {timeline_html}
 </main>

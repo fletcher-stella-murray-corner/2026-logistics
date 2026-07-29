@@ -15,6 +15,7 @@
   --bg: #faf8f4;
   --text: #23282b;
   --border: #ddd6c4;
+  --nav-height: 3.75rem;
 }
 * { box-sizing: border-box; }
 html { color-scheme: light; }
@@ -31,10 +32,15 @@ body {
 }
 .site-nav {
   display: flex;
+  align-items: center;
   gap: 1.25rem;
-  padding: 1rem 0;
+  min-height: var(--nav-height);
+  padding: 0.5rem 0;
   border-bottom: 2px solid var(--border);
-  margin-bottom: 1.5rem;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
 }
 .site-nav a, .site-nav strong {
   text-decoration: none;
@@ -46,365 +52,367 @@ body {
 h1, h2, h3 { color: var(--primary); }
 a { color: var(--secondary); }
 
-/* Timeline feature — inlined into site/index.html at build time. Day/block
-   card layout, per brand-guidelines.md -> Signature visual conventions:
-   every block always renders the same four-row shape. */
+/* Timeline feature — inlined into site/index.html at build time. Full-screen
+   swipe/scroll-through layout: an intro screen, then one full-viewport-height
+   screen per 6-hour block, advanced with native CSS scroll-snap (works the
+   same on desktop scroll/trackpad and mobile swipe — see
+   requirements/public.md -> Device support). */
+body.timeline-page {
+  scroll-snap-type: y mandatory;
+}
+
+.intro-screen, .block-screen, .trip-done-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  scroll-snap-align: start;
+  scroll-margin-top: var(--nav-height);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: calc(var(--nav-height) + 1rem) 0 2rem;
+  border-bottom: 1px solid var(--border);
+}
+.intro-screen:last-child, .block-screen:last-child, .trip-done-screen:last-child {
+  border-bottom: none;
+}
+
 .trip-title { margin-bottom: 0.25rem; }
-.trip-subtitle { color: var(--secondary); margin-top: 0; margin-bottom: 2rem; }
-.trip-done { padding: 2rem 0; font-size: 1.1rem; }
-
-.day { margin-bottom: 2.25rem; }
-.day-heading {
-  font-size: 1.25rem;
-  border-bottom: 2px solid var(--border);
-  padding-bottom: 0.35rem;
-  margin-bottom: 0.9rem;
+.trip-subtitle { color: var(--secondary); margin-top: 0; }
+.scroll-hint {
+  margin-top: 3rem;
+  color: var(--secondary);
+  font-size: 0.9rem;
 }
 
-.blocks { display: flex; flex-direction: column; gap: 0.75rem; }
-.block {
-  background: #f5efe0;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.75rem 1rem;
-}
-.block-label {
-  font-size: 0.8rem;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+.trip-done-screen { font-size: 1.2rem; }
+
+.block-date {
+  font-size: 0.95rem;
   color: var(--secondary);
   font-weight: 600;
-  margin-bottom: 0.4rem;
 }
-.block-row { margin: 0.3rem 0; font-size: 0.95rem; }
-.block-row-label { font-weight: 600; color: var(--primary); margin-right: 0.35rem; }
+.block-time {
+  font-size: 2.25rem;
+  margin: 0.25rem 0 1.5rem;
+}
+
+.block-row { margin: 0.6rem 0; font-size: 1.05rem; }
+.block-row-label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 0.2rem; }
 .person-line { display: block; margin-left: 0.1rem; }
 .mode-tag { margin-right: 0.3rem; }
-.room-group { display: block; }
+.room-group { display: block; margin: 0.15rem 0; }
 .room-name { font-weight: 600; }
-.block-empty-hint { color: #8a8378; font-size: 0.85rem; font-style: italic; }
+.block-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
 
 </style>
 </head>
-<body>
+<body class="timeline-page">
 <nav class="site-nav"><strong class="active">Timeline</strong><a href="family-tree/index.html">Family Tree</a></nav>
+<main>
+<section class="intro-screen">
 <h1 class="trip-title">Murray Corner 2026</h1>
 <p class="trip-subtitle">Murray Corner, New Brunswick · August 1–15, 2026</p>
-<main>
-<section class="day">
-<h2 class="day-heading">Saturday, August 1</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<p class="scroll-hint">Scroll or swipe down to start ↓</p>
+</section>
+<section class="block-screen">
+<div class="block-date">Saturday, August 1</div>
+<h2 class="block-time">12am–6am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Saturday, August 1</div>
+<h2 class="block-time">6am–12pm</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Saturday, August 1</div>
+<h2 class="block-time">12pm–6pm</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Saturday, August 1</div>
+<h2 class="block-time">6pm–12am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div><div class="block-row"><span class="block-row-label">Meal:</span> Welcome BBQ at the Main House</div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Sunday, August 2</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Sunday, August 2</div>
+<h2 class="block-time">12am–6am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Sunday, August 2</div>
+<h2 class="block-time">6am–12pm</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Sunday, August 2</div>
+<h2 class="block-time">12pm–6pm</h2>
 <div class="block-row"><span class="block-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">✈️ Plane</span>Susan (sample) — AC 619 into YQM, 3:10pm</span><span class="person-line"><span class="mode-tag">✈️ Plane</span>Tom (sample) — AC 619 into YQM, 3:10pm</span><span class="person-line"><span class="mode-tag">✈️ Plane</span>Emma (sample) — AC 619 into YQM, 3:10pm</span></div><div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div><div class="block-row"><span class="block-row-label">Meal:</span> Arrival lunch — sandwiches on the dock</div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Sunday, August 2</div>
+<h2 class="block-time">6pm–12am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div><div class="block-row"><span class="block-row-label">Meal:</span> Lobster boil</div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Monday, August 3</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Monday, August 3</div>
+<h2 class="block-time">12am–6am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Monday, August 3</div>
+<h2 class="block-time">6am–12pm</h2>
 <div class="block-row"><span class="block-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>David (sample) — Driving up from Halifax</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Sarah (sample) — Driving up from Halifax</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Jack (sample) — Driving up from Halifax</span></div><div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div><div class="block-row"><span class="block-row-label">Meal:</span> Pancake breakfast</div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Monday, August 3</div>
+<h2 class="block-time">12pm–6pm</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Monday, August 3</div>
+<h2 class="block-time">6pm–12am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div><div class="block-row"><span class="block-row-label">Meal:</span> Taco night</div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Tuesday, August 4</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Tuesday, August 4</div>
+<h2 class="block-time">12am–6am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Wednesday, August 5</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Tuesday, August 4</div>
+<h2 class="block-time">6am–12pm</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Thursday, August 6</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Tuesday, August 4</div>
+<h2 class="block-time">12pm–6pm</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Friday, August 7</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Tuesday, August 4</div>
+<h2 class="block-time">6pm–12am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Saturday, August 8</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Wednesday, August 5</div>
+<h2 class="block-time">12am–6am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Sunday, August 9</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Wednesday, August 5</div>
+<h2 class="block-time">6am–12pm</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Wednesday, August 5</div>
+<h2 class="block-time">12pm–6pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Wednesday, August 5</div>
+<h2 class="block-time">6pm–12am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Thursday, August 6</div>
+<h2 class="block-time">12am–6am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Thursday, August 6</div>
+<h2 class="block-time">6am–12pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Thursday, August 6</div>
+<h2 class="block-time">12pm–6pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Thursday, August 6</div>
+<h2 class="block-time">6pm–12am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Friday, August 7</div>
+<h2 class="block-time">12am–6am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Friday, August 7</div>
+<h2 class="block-time">6am–12pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Friday, August 7</div>
+<h2 class="block-time">12pm–6pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Friday, August 7</div>
+<h2 class="block-time">6pm–12am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Saturday, August 8</div>
+<h2 class="block-time">12am–6am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Saturday, August 8</div>
+<h2 class="block-time">6am–12pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Saturday, August 8</div>
+<h2 class="block-time">12pm–6pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Saturday, August 8</div>
+<h2 class="block-time">6pm–12am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Sunday, August 9</div>
+<h2 class="block-time">12am–6am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Guest Cottage — Room A:</span> Emma (sample), Susan (sample), Tom (sample)</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Sunday, August 9</div>
+<h2 class="block-time">6am–12pm</h2>
 <div class="block-row"><span class="block-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Susan (sample) — Driving back with Tom</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Tom (sample) — Driving back with Susan</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Emma (sample) — Driving back with Susan &amp; Tom</span></div><div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Monday, August 10</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Sunday, August 9</div>
+<h2 class="block-time">12pm–6pm</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Tuesday, August 11</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Sunday, August 9</div>
+<h2 class="block-time">6pm–12am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Wednesday, August 12</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Monday, August 10</div>
+<h2 class="block-time">12am–6am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Monday, August 10</div>
+<h2 class="block-time">6am–12pm</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Monday, August 10</div>
+<h2 class="block-time">12pm–6pm</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Monday, August 10</div>
+<h2 class="block-time">6pm–12am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Tuesday, August 11</div>
+<h2 class="block-time">12am–6am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Tuesday, August 11</div>
+<h2 class="block-time">6am–12pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Tuesday, August 11</div>
+<h2 class="block-time">12pm–6pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Tuesday, August 11</div>
+<h2 class="block-time">6pm–12am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Wednesday, August 12</div>
+<h2 class="block-time">12am–6am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Wednesday, August 12</div>
+<h2 class="block-time">6am–12pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Wednesday, August 12</div>
+<h2 class="block-time">12pm–6pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span><span class="room-group"><span class="room-name">Main House — Room 2:</span> David (sample), Jack (sample), Sarah (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Wednesday, August 12</div>
+<h2 class="block-time">6pm–12am</h2>
 <div class="block-row"><span class="block-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚆 Train</span>David (sample) — VIA Rail out of Moncton</span><span class="person-line"><span class="mode-tag">🚆 Train</span>Sarah (sample) — VIA Rail out of Moncton</span><span class="person-line"><span class="mode-tag">🚆 Train</span>Jack (sample) — VIA Rail out of Moncton</span></div><div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Thursday, August 13</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Thursday, August 13</div>
+<h2 class="block-time">12am–6am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Friday, August 14</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Thursday, August 13</div>
+<h2 class="block-time">6am–12pm</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
-<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-</div>
 </section>
-<section class="day">
-<h2 class="day-heading">Saturday, August 15</h2>
-<div class="blocks">
-<div class="block">
-<div class="block-label">12am–6am</div>
+<section class="block-screen">
+<div class="block-date">Thursday, August 13</div>
+<h2 class="block-time">12pm–6pm</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6am–12pm</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Thursday, August 13</div>
+<h2 class="block-time">6pm–12am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">12pm–6pm</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Friday, August 14</div>
+<h2 class="block-time">12am–6am</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-<div class="block">
-<div class="block-label">6pm–12am</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Friday, August 14</div>
+<h2 class="block-time">6am–12pm</h2>
 <div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
-</div>
-</div>
+</section>
+<section class="block-screen">
+<div class="block-date">Friday, August 14</div>
+<h2 class="block-time">12pm–6pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Friday, August 14</div>
+<h2 class="block-time">6pm–12am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Saturday, August 15</div>
+<h2 class="block-time">12am–6am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Saturday, August 15</div>
+<h2 class="block-time">6am–12pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Saturday, August 15</div>
+<h2 class="block-time">12pm–6pm</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
+</section>
+<section class="block-screen">
+<div class="block-date">Saturday, August 15</div>
+<h2 class="block-time">6pm–12am</h2>
+<div class="block-row"><span class="block-row-label">Sleeping:</span><span class="room-group"><span class="room-name">Main House — Primary Suite:</span> Jean (sample), Joe (sample)</span></div>
 </section>
 </main>
 </body>

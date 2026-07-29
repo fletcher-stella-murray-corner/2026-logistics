@@ -4,11 +4,17 @@ What the public-facing site (`site/`) should be/do. There is no admin site for t
 
 Two features: **Timeline** (the homepage) and **Family Tree**.
 
+## Device support
+
+Both features must work well on a computer and on a phone — this is critical, not a nice-to-have, since most family will be checking the Timeline from a phone while traveling. Prefer native browser behavior (CSS scroll-snap, normal scrolling) over custom JS gesture handling, since native scrolling already works correctly on both.
+
 ## Homepage = Timeline (`site/index.html`)
 
 ### Layout
 
-Single nav bar (`Timeline` active, `Family Tree` link), centered content column, then the timeline itself. The homepage has no separate content of its own — the timeline IS the homepage, since that's the entire point of the site.
+Nav bar (`Timeline` active, `Family Tree` link) stays fixed/sticky at the top at all times, so Family Tree is always one tap away no matter where you've scrolled to. Below it, a full-screen, swipe/scroll-through experience: an intro screen with the trip title, then one full-viewport-height screen per 6-hour block, in order, using CSS scroll-snap — scrolling or swiping down moves from one block straight to the next, each one filling the whole screen. This applies the same way on desktop (mouse wheel / trackpad) and mobile (swipe), since it's native browser scroll-snap, not a custom gesture handler. The homepage has no separate content of its own — the timeline IS the homepage, since that's the entire point of the site.
+
+The Family Tree page does *not* use this full-screen snap layout — it's a short reference page, read top-to-bottom normally.
 
 ### Trip window
 
@@ -34,7 +40,7 @@ Every block always renders the same four rows, in this order, each showing nothi
 3. **Sleeping** — everyone present at the cottage during this block (arrived by this block, not yet departed), grouped by room/house. Computed from each person's arrival/departure, not entered separately — updating someone's travel dates automatically updates every block's sleeping list.
 4. **Meal** — a free-text note for this block, if one exists (e.g. "Lobster boil — Dave grilling"). Not every block has one; most likely only `06-12` (breakfast), `12-18` (lunch), and `18-24` (dinner) will ever be filled in, but all four blocks support it.
 
-A block with nothing in all four rows still renders as a light/empty card — never collapsed or skipped — so the four-part shape stays consistent (see `brand-guidelines.md` → *Signature visual conventions*).
+A block with nothing in all four rows still renders as its own full-screen slide — never collapsed or skipped — so scrolling always advances one block at a time and the four-part shape stays consistent (see `brand-guidelines.md` → *Signature visual conventions*).
 
 ### Data
 
