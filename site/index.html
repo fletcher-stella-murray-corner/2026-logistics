@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="timeline-page">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -57,7 +57,10 @@ a { color: var(--secondary); }
    screen per 6-hour block, advanced with native CSS scroll-snap (works the
    same on desktop scroll/trackpad and mobile swipe — see
    requirements/public.md -> Device support). */
-body.timeline-page {
+/* Snap must live on html, not body: html (documentElement) is the actual
+   scrolling element for the page, so scroll-snap-type on body has no
+   effect on real page scrolling — a common CSS scroll-snap gotcha. */
+html.timeline-page {
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
 }
@@ -108,7 +111,7 @@ body.timeline-page {
 
 </style>
 </head>
-<body class="timeline-page">
+<body>
 <nav class="site-nav"><strong class="active">Timeline</strong><a href="family-tree/index.html">Family Tree</a></nav>
 <main>
 <section class="intro-screen">

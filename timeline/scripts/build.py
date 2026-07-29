@@ -173,7 +173,7 @@ def build_page_html(people, travel, meals, shared_base_css, shared_css):
     nav_row = nav.render_row(NAV_ITEMS)
     timeline_html = build_timeline_html(people, travel, meals)
     return f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="timeline-page">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -183,7 +183,7 @@ def build_page_html(people, travel, meals, shared_base_css, shared_css):
 {shared_css}
 </style>
 </head>
-<body class="timeline-page">
+<body>
 {nav_row}
 <main>
 {timeline_html}
