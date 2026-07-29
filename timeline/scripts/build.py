@@ -10,9 +10,9 @@ quietly drop off the site on every rebuild.
 
 The nav bar is one single row: a live "current day quarter" label on the
 left (updated by shared.js via IntersectionObserver as you scroll), the
-"Jump to a day" disclosure in the middle (links straight to any quarter
-screen via anchor, independent of scroll-snap), and the Family Tree link
-on the right.
+"Jump" disclosure in the middle (links straight to any quarter screen
+via anchor, independent of scroll-snap), and the Family Tree link on
+the right.
 
 Each quarter screen has two parts, per requirements/public.md ->
 Terminology: a "day quarter canvas padding" spacer (blank space reserved
@@ -182,7 +182,7 @@ def render_jump_menu(cutoff):
         )
 
     return f"""<details class="jump-menu">
-<summary>Jump to a day ▾</summary>
+<summary>Jump ▾</summary>
 <div class="jump-panel">{"".join(groups)}</div>
 </details>"""
 

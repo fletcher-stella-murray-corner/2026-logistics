@@ -31,7 +31,7 @@ A feature's own requirements (what it does, page by page) live in `requirements/
 | 12 | [timeline/data/travel.json](timeline/data/travel.json) | Each person's arrival/departure (date, day quarter, mode, detail) and room assignment. Hand-edited directly — no data-entry script. |
 | 13 | [timeline/data/meals.json](timeline/data/meals.json) | The meal plan, keyed by date then day quarter. Hand-edited directly. |
 | 14 | [timeline/shared.css](timeline/shared.css) | CSS specific to the timeline's day quarter canvas layout (see `requirements/public.md` → *Terminology*). |
-| 15 | [timeline/shared.js](timeline/shared.js) | Closes the "Jump to a day" disclosure once a link inside it is clicked. |
+| 15 | [timeline/shared.js](timeline/shared.js) | Closes the "Jump" disclosure once a link inside it is clicked. |
 | 16 | [family-tree/scripts/build.py](family-tree/scripts/build.py) | Regenerates `site/family-tree/index.html` from `shared/data/people.json`. |
 | 17 | [family-tree/shared.css](family-tree/shared.css) | CSS specific to the family-tree page's generation/couple/children layout. |
 | 18 | [scripts/build_site.py](scripts/build_site.py) | Root orchestrator — rebuilds both features in one call. Run this after any data or template edit. |

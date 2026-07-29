@@ -1,8 +1,7 @@
 // Timeline feature — inlined into site/index.html at build time.
 document.addEventListener('DOMContentLoaded', function () {
-  // Closes the "Jump to a day" disclosure once a link inside it is
-  // clicked, so it doesn't keep covering the day quarter canvas you just
-  // jumped to.
+  // Closes the "Jump" disclosure once a link inside it is clicked, so it
+  // doesn't keep covering the day quarter canvas you just jumped to.
   var menu = document.querySelector('.jump-menu');
   if (menu) {
     var links = menu.querySelectorAll('a');
