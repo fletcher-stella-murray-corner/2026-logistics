@@ -6,7 +6,8 @@ Reads shared/data/people.json, timeline/data/travel.json, and
 timeline/data/meals.json. Renders August 1-15, 2026 split into four 6-hour
 blocks per day, one full-viewport-height scroll-snap screen per block,
 always starting from max(today, Aug 1) so past days quietly drop off the
-site on every rebuild.
+site on every rebuild. A sticky "Jump to a day" menu below the nav bar
+links straight to any block via anchor, independent of scroll-snap.
 
 Run after hand-editing any of the three data files above, or use
 scripts/build_site.py to rebuild every feature at once.
@@ -60,6 +61,10 @@ def load_json(path):
 
 def block_key(iso_date, block):
     return (iso_date, BLOCK_INDEX[block])
+
+
+def block_id(iso_date, block):
+    return f"blk-{iso_date}-{block}"
 
 
 def daterange(start, end):
@@ -136,7 +141,7 @@ def render_block(day, block, travel, people_by_id, meals):
     body = "".join(rows) if rows else '<div class="block-empty-hint">Nothing scheduled</div>'
     date_label = day.strftime("%A, %B ") + str(day.day)
 
-    return f"""<section class="block-screen">
+    return f"""<section class="block-screen" id="{block_id(day.isoformat(), block)}">
 <div class="block-date">{date_label}</div>
 <h2 class="block-time">{BLOCK_LABELS[block]}</h2>
 {body}
@@ -151,9 +156,29 @@ def render_intro_screen():
 </section>"""
 
 
-def build_timeline_html(people, travel, meals, today=None):
+def render_jump_menu(cutoff):
+    if cutoff > TRIP_END:
+        return ""
+
+    groups = []
+    for d in daterange(cutoff, TRIP_END):
+        day_label = d.strftime("%a, %b ") + str(d.day)
+        links = "".join(
+            f'<a href="#{block_id(d.isoformat(), b)}">{BLOCK_LABELS[b]}</a>' for b in BLOCKS
+        )
+        groups.append(
+            f'<div class="jump-day-group"><span class="jump-day-label">{day_label}</span>'
+            f'<div class="jump-links">{links}</div></div>'
+        )
+
+    return f"""<div class="jump-bar"><details class="jump-menu">
+<summary>Jump to a day ▾</summary>
+<div class="jump-panel">{"".join(groups)}</div>
+</details></div>"""
+
+
+def build_timeline_html(people, travel, meals, cutoff):
     people_by_id = {p["id"]: p for p in people}
-    cutoff = max(today or date.today(), TRIP_START)
 
     screens = [render_intro_screen()]
 
@@ -169,9 +194,11 @@ def build_timeline_html(people, travel, meals, today=None):
     return "\n".join(screens)
 
 
-def build_page_html(people, travel, meals, shared_base_css, shared_css):
+def build_page_html(people, travel, meals, shared_base_css, shared_css, shared_js, today=None):
     nav_row = nav.render_row(NAV_ITEMS)
-    timeline_html = build_timeline_html(people, travel, meals)
+    cutoff = max(today or date.today(), TRIP_START)
+    jump_menu = render_jump_menu(cutoff)
+    timeline_html = build_timeline_html(people, travel, meals, cutoff)
     return f"""<!DOCTYPE html>
 <html lang="en" class="timeline-page">
 <head>
@@ -185,9 +212,13 @@ def build_page_html(people, travel, meals, shared_base_css, shared_css):
 </head>
 <body>
 {nav_row}
+{jump_menu}
 <main>
 {timeline_html}
 </main>
+<script>
+{shared_js}
+</script>
 </body>
 </html>
 """
@@ -203,8 +234,9 @@ def main():
     meals = load_json(ROOT / "data" / "meals.json")
     shared_base_css = (PROJECT_ROOT / "shared" / "base.css").read_text()
     shared_css = (ROOT / "shared.css").read_text()
+    shared_js = (ROOT / "shared.js").read_text()
 
-    html = build_page_html(people, travel, meals, shared_base_css, shared_css)
+    html = build_page_html(people, travel, meals, shared_base_css, shared_css, shared_js)
     out_path = PROJECT_ROOT / "site" / "index.html"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html)

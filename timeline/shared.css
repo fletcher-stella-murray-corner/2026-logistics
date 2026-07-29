@@ -5,26 +5,73 @@
    requirements/public.md -> Device support). */
 /* Snap must live on html, not body: html (documentElement) is the actual
    scrolling element for the page, so scroll-snap-type on body has no
-   effect on real page scrolling — a common CSS scroll-snap gotcha. */
+   effect on real page scrolling — a common CSS scroll-snap gotcha.
+   scroll-behavior: smooth is deliberately NOT set here — combining it with
+   scroll-snap-type is a known Safari/iOS bug that can break snapping
+   entirely; native snap-settling already animates without it. */
 html.timeline-page {
   scroll-snap-type: y mandatory;
-  scroll-behavior: smooth;
 }
+
+:root { --jump-bar-height: 2.75rem; }
 
 .intro-screen, .block-screen, .trip-done-screen {
   min-height: 100vh;
   min-height: 100dvh;
   scroll-snap-align: start;
   scroll-snap-stop: always;
-  scroll-margin-top: var(--nav-height);
+  scroll-margin-top: calc(var(--nav-height) + var(--jump-bar-height));
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: calc(var(--nav-height) + 1rem) 0 2rem;
+  padding: calc(var(--nav-height) + var(--jump-bar-height) + 1rem) 0 2rem;
   border-bottom: 1px solid var(--border);
 }
 .intro-screen:last-child, .block-screen:last-child, .trip-done-screen:last-child {
   border-bottom: none;
+}
+
+.jump-bar {
+  position: sticky;
+  top: var(--nav-height);
+  background: var(--bg);
+  z-index: 9;
+  min-height: var(--jump-bar-height);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.jump-menu > summary {
+  cursor: pointer;
+  color: var(--secondary);
+  font-weight: 600;
+  list-style: none;
+}
+.jump-menu > summary::-webkit-details-marker { display: none; }
+.jump-panel {
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-top: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+}
+.jump-day-group { margin-bottom: 0.6rem; }
+.jump-day-label {
+  display: block;
+  font-weight: 600;
+  color: var(--primary);
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+}
+.jump-links { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.jump-links a {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--text);
 }
 
 .trip-title { margin-bottom: 0.25rem; }
