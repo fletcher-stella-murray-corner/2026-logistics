@@ -2,21 +2,20 @@
 
 Account inventory, domain/DNS, and hosting facts for the live project. Reference only — not a build doc. Passwords are never stored here.
 
-**Pending real values.** Fill in once the GitHub account and repo exist — see `GETTING-STARTED.md` → Step 6.
-
 ## Domain & hosting
 
-- Public URL: `https://{{GITHUB_ACCOUNT}}.github.io/{{REPO}}/` (GitHub Pages default subdomain — no custom domain/DNS needed)
+- Public URL: `https://fletcher-stella-murray-corner.github.io/2026-logistics/` (GitHub Pages default subdomain — no custom domain/DNS needed)
 - Hosting: GitHub Pages, deployed via `.github/workflows/deploy.yml` (GitHub Actions) — see `technical.md` → *Repo & deployment*
 - One-time setup after the repo exists: Settings → Pages → *Source* = "GitHub Actions"
 
 ## Accounts
 
-- **Project GitHub account**: — fill in once created.
+- **Project email**: fletcher.stella.murray.corner@gmail.com
+- **Project GitHub account**: fletcher-stella-murray-corner
 
 ## Repository
 
-- `{{GITHUB_ACCOUNT}}/{{REPO}}` — single repo, holds source and `site/` output together (see `technical.md` → *Repo & deployment*). Can be private or public; either works with GitHub Actions Pages deployment.
+- `fletcher-stella-murray-corner/2026-logistics` — public, single repo, holds source and `site/` output together (see `technical.md` → *Repo & deployment*).
 
 ### Push access
 

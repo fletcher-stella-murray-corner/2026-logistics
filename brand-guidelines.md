@@ -104,7 +104,7 @@ Named plainly after the place and the year — the point is clarity, not clevern
 
 ### Associated Properties
 
-* Domain: `https://{{GITHUB_ACCOUNT}}.github.io/{{REPO}}/`
+* Domain: `https://fletcher-stella-murray-corner.github.io/2026-logistics/`
 * Email: n/a
 * Socials: n/a — shared by direct link only
 

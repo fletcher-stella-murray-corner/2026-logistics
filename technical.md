@@ -1,6 +1,6 @@
 # Technical Architecture
 
-How this project is actually built: the two-repo split, the build pipeline, what every script does, and where a CSS/JS/markup change belongs. This is architecture reference, not process — for how we (human + AI) actually work together (the requirements-doc loop, git rhythm, milestone tracking), see `way-of-working.md`. For account/domain/hosting facts, see `operations.md`.
+How this project is actually built: the single-repo structure, the build pipeline, what every script does, and where a CSS/JS/markup change belongs. This is architecture reference, not process — for how we (human + AI) actually work together (the requirements-doc loop, git rhythm, milestone tracking), see `way-of-working.md`. For account/domain/hosting facts, see `operations.md`.
 
 ## Shape of the system
 
@@ -11,20 +11,16 @@ How this project is actually built: the two-repo split, the build pipeline, what
 
 ## Repo & deployment
 
-One GitHub repo, `{{GITHUB_ACCOUNT}}/{{REPO}}`, holds everything: source data, scripts, docs, and the built `site/` output. It can be private or public — either way, GitHub Pages can serve from it.
+One GitHub repo, `fletcher-stella-murray-corner/2026-logistics`, holds everything: source data, scripts, docs, and the built `site/` output. It can be private or public — either way, GitHub Pages can serve from it.
 
-**Deploying:** a GitHub Actions workflow (`.github/workflows/deploy.yml`) publishes the contents of `site/` to GitHub Pages on every push to `main`. There is no manual deploy script and no second repo — commit and `git push`, and the live site updates a minute or two later. One-time setup: in the repo's Settings → Pages, set *Source* to "GitHub Actions" (see `GETTING-STARTED.md` → Step 6 / `operations.md`).
+**Deploying:** a GitHub Actions workflow (`.github/workflows/deploy.yml`) publishes the contents of `site/` to GitHub Pages on every push to `main`. There is no manual deploy script and no second repo — commit and `git push`, and the live site updates a minute or two later. One-time setup: in the repo's Settings → Pages, set *Source* to "GitHub Actions" (see `operations.md`).
 
 **Normal update flow:** edit a data file (or run a feature's `build.py` after hand-editing it), review the regenerated page locally, commit, push. See `way-of-working.md` → *Git*.
 
 ## Scripts
 
-Every script lives in a feature's `scripts/` folder (e.g. `example/scripts/`), is plain Python 3 with no dependencies, and should support `-h`/`--help`. Grouped by role, using the example feature as the model:
+Every script lives in a feature's `scripts/` folder, is plain Python 3 with no dependencies, and should support `-h`/`--help`.
 
-**Data entry** — the normal path for changing data. Each writes to a feature's data file, then calls `build.py`. Should also commit/push to the private repo and deploy `site/` to the public repo by default (pass `--no-push` to opt out).
-
-| Script | Purpose |
-|--------|---------|
 **Data entry** — there is no add/set script pair. The sole editor (you) hand-edits a feature's JSON data file directly, then reruns its `build.py`. See each feature's data file structure in `requirements/public.md`.
 
 **Build** — regenerate HTML from data. Run after hand-editing a data file or changing a page template.
