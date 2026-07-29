@@ -1,0 +1,46 @@
+[
+  {
+    "person_id": 1,
+    "room": "Main House — Primary Suite"
+  },
+  {
+    "person_id": 2,
+    "room": "Main House — Primary Suite"
+  },
+  {
+    "person_id": 3,
+    "arrival": { "date": "2026-08-02", "block": "12-18", "mode": "plane", "detail": "AC 619 into YQM, 3:10pm" },
+    "departure": { "date": "2026-08-09", "block": "06-12", "mode": "car", "detail": "Driving back with Tom" },
+    "room": "Guest Cottage — Room A"
+  },
+  {
+    "person_id": 4,
+    "arrival": { "date": "2026-08-02", "block": "12-18", "mode": "plane", "detail": "AC 619 into YQM, 3:10pm" },
+    "departure": { "date": "2026-08-09", "block": "06-12", "mode": "car", "detail": "Driving back with Susan" },
+    "room": "Guest Cottage — Room A"
+  },
+  {
+    "person_id": 5,
+    "arrival": { "date": "2026-08-03", "block": "06-12", "mode": "car", "detail": "Driving up from Halifax" },
+    "departure": { "date": "2026-08-12", "block": "18-24", "mode": "train", "detail": "VIA Rail out of Moncton" },
+    "room": "Main House — Room 2"
+  },
+  {
+    "person_id": 6,
+    "arrival": { "date": "2026-08-03", "block": "06-12", "mode": "car", "detail": "Driving up from Halifax" },
+    "departure": { "date": "2026-08-12", "block": "18-24", "mode": "train", "detail": "VIA Rail out of Moncton" },
+    "room": "Main House — Room 2"
+  },
+  {
+    "person_id": 7,
+    "arrival": { "date": "2026-08-02", "block": "12-18", "mode": "plane", "detail": "AC 619 into YQM, 3:10pm" },
+    "departure": { "date": "2026-08-09", "block": "06-12", "mode": "car", "detail": "Driving back with Susan & Tom" },
+    "room": "Guest Cottage — Room A"
+  },
+  {
+    "person_id": 8,
+    "arrival": { "date": "2026-08-03", "block": "06-12", "mode": "car", "detail": "Driving up from Halifax" },
+    "departure": { "date": "2026-08-12", "block": "18-24", "mode": "train", "detail": "VIA Rail out of Moncton" },
+    "room": "Main House — Room 2"
+  }
+]

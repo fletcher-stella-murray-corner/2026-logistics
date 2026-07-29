@@ -1,0 +1,40 @@
+/* Shared site-wide chrome — inlined into every page at build time (see
+   technical.md -> Where CSS and JS changes go). Nav bar, color variables,
+   and base typography, per brand-guidelines.md -> Visual Identity. */
+:root {
+  --primary: #1b4965;   /* deep tide blue */
+  --secondary: #5fa8a0; /* sea glass */
+  --accent: #e8d9b5;    /* driftwood sand */
+  --bg: #faf8f4;
+  --text: #23282b;
+  --border: #ddd6c4;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0 1.25rem 3rem;
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
+}
+.site-nav {
+  display: flex;
+  gap: 1.25rem;
+  padding: 1rem 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.site-nav a, .site-nav strong {
+  text-decoration: none;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+.site-nav strong.active { color: var(--secondary); }
+h1, h2, h3 { color: var(--primary); }
+a { color: var(--secondary); }

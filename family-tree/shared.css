@@ -1,0 +1,32 @@
+/* Family-tree feature — inlined into site/family-tree/index.html at build
+   time. Generation-grouped layout: couples paired, children nested below. */
+.tree-title { margin-bottom: 0.25rem; }
+.tree-subtitle { color: var(--secondary); margin-top: 0; margin-bottom: 2rem; }
+
+.generation { margin-bottom: 1.5rem; }
+.generation-label {
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--secondary);
+  font-weight: 600;
+  margin-bottom: 0.6rem;
+}
+.family-unit { margin-bottom: 1rem; }
+.couple { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.person {
+  display: inline-block;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+}
+.couple-joiner { color: var(--secondary); }
+.children {
+  margin: 0.5rem 0 0 1.5rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

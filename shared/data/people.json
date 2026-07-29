@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "name": "Jean (sample)",
+    "generation": 1,
+    "parent_ids": [],
+    "partner_id": 2
+  },
+  {
+    "id": 2,
+    "name": "Joe (sample)",
+    "generation": 1,
+    "parent_ids": [],
+    "partner_id": 1
+  },
+  {
+    "id": 3,
+    "name": "Susan (sample)",
+    "generation": 2,
+    "parent_ids": [1, 2],
+    "partner_id": 4
+  },
+  {
+    "id": 4,
+    "name": "Tom (sample)",
+    "generation": 2,
+    "parent_ids": [],
+    "partner_id": 3
+  },
+  {
+    "id": 5,
+    "name": "David (sample)",
+    "generation": 2,
+    "parent_ids": [1, 2],
+    "partner_id": 6
+  },
+  {
+    "id": 6,
+    "name": "Sarah (sample)",
+    "generation": 2,
+    "parent_ids": [],
+    "partner_id": 5
+  },
+  {
+    "id": 7,
+    "name": "Emma (sample)",
+    "generation": 3,
+    "parent_ids": [3, 4],
+    "partner_id": null
+  },
+  {
+    "id": 8,
+    "name": "Jack (sample)",
+    "generation": 3,
+    "parent_ids": [5, 6],
+    "partner_id": null
+  }
+]
