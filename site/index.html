@@ -91,11 +91,14 @@ html.timeline-page {
   border-bottom: none;
 }
 
-/* Intro/trip-done are cover-style screens: centered. Each day quarter
-   canvas instead pins its content to the top-left, per
-   requirements/public.md -> What each day quarter shows. */
+/* Intro/trip-done are cover-style screens: centered, so they keep the
+   large top padding above (it's what clears the sticky bars for
+   vertically-centered content). Each day quarter canvas instead pins its
+   content to the top-left, per requirements/public.md -> What each day
+   quarter shows — scroll-margin-top already clears the sticky bars when
+   snapped, so it only needs a small top gap, not the full bar height. */
 .intro-screen, .trip-done-screen { justify-content: center; }
-.quarter-canvas { justify-content: flex-start; }
+.quarter-canvas { justify-content: flex-start; padding-top: 1.5rem; }
 
 .jump-bar {
   position: sticky;
