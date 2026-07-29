@@ -16,8 +16,14 @@ html.timeline-page {
 :root { --jump-bar-height: 2.75rem; }
 
 .intro-screen, .quarter-canvas, .trip-done-screen {
+  /* svh (not dvh) deliberately: dvh recalculates live as the mobile
+     browser's address bar collapses mid-scroll, which reflows box heights
+     and makes scroll-snap re-target a second time once it settles — felt
+     as a "double snap". svh stays fixed at the toolbar-expanded size, so
+     there's nothing to recalculate mid-scroll (small tradeoff: a sliver of
+     extra space at the bottom once the toolbar auto-hides). */
   min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 100svh;
   scroll-snap-align: start;
   scroll-snap-stop: always;
   scroll-margin-top: calc(var(--nav-height) + var(--jump-bar-height));
