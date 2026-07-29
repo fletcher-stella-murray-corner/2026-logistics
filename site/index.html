@@ -67,8 +67,10 @@ a { color: var(--secondary); }
    Each quarter screen has two parts, per requirements/public.md ->
    Terminology: the "day quarter canvas padding" (a blank spacer reserved
    for the single sticky nav bar) and the "day quarter canvas" itself (the
-   actual date/label/rows content). The padding is explicitly NOT part of
-   the canvas — they're separate elements, not one padded box. */
+   actual arrivals/departures/sleeping/meal rows — no date/time label,
+   since the nav bar's live label already shows that). The padding is
+   explicitly NOT part of the canvas — they're separate elements, not one
+   padded box. */
 /* Snap must live on html, not body: html (documentElement) is the actual
    scrolling element for the page, so scroll-snap-type on body has no
    effect on real page scrolling — a common CSS scroll-snap gotcha.
@@ -218,16 +220,6 @@ html.timeline-page {
 
 .trip-done-screen { font-size: 1.2rem; }
 
-.quarter-date {
-  font-size: 0.95rem;
-  color: var(--secondary);
-  font-weight: 600;
-}
-.quarter-label {
-  font-size: 2.25rem;
-  margin: 0.25rem 0 1.5rem;
-}
-
 .quarter-row { margin: 0.6rem 0; font-size: 1.05rem; }
 .quarter-row-label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 0.2rem; }
 .person-line { display: block; margin-left: 0.1rem; }
@@ -256,480 +248,360 @@ html.timeline-page {
 <section class="quarter-screen" id="qc-2026-08-01-00-06" data-quarter-label="Sat, Aug 1 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Saturday, August 1</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-01-06-12" data-quarter-label="Sat, Aug 1 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Saturday, August 1</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-01-12-18" data-quarter-label="Sat, Aug 1 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Saturday, August 1</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-01-18-24" data-quarter-label="Sat, Aug 1 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Saturday, August 1</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-02-00-06" data-quarter-label="Sun, Aug 2 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Sunday, August 2</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-02-06-12" data-quarter-label="Sun, Aug 2 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Sunday, August 2</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-02-12-18" data-quarter-label="Sun, Aug 2 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Sunday, August 2</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-02-18-24" data-quarter-label="Sun, Aug 2 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Sunday, August 2</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-03-00-06" data-quarter-label="Mon, Aug 3 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Monday, August 3</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-03-06-12" data-quarter-label="Mon, Aug 3 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Monday, August 3</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-03-12-18" data-quarter-label="Mon, Aug 3 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Monday, August 3</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-03-18-24" data-quarter-label="Mon, Aug 3 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Monday, August 3</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-04-00-06" data-quarter-label="Tue, Aug 4 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Tuesday, August 4</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-04-06-12" data-quarter-label="Tue, Aug 4 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Tuesday, August 4</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-04-12-18" data-quarter-label="Tue, Aug 4 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Tuesday, August 4</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-04-18-24" data-quarter-label="Tue, Aug 4 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Tuesday, August 4</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-05-00-06" data-quarter-label="Wed, Aug 5 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Wednesday, August 5</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-05-06-12" data-quarter-label="Wed, Aug 5 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Wednesday, August 5</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-05-12-18" data-quarter-label="Wed, Aug 5 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Wednesday, August 5</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-05-18-24" data-quarter-label="Wed, Aug 5 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Wednesday, August 5</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-06-00-06" data-quarter-label="Thu, Aug 6 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Thursday, August 6</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-06-06-12" data-quarter-label="Thu, Aug 6 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Thursday, August 6</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-06-12-18" data-quarter-label="Thu, Aug 6 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Thursday, August 6</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-06-18-24" data-quarter-label="Thu, Aug 6 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Thursday, August 6</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-07-00-06" data-quarter-label="Fri, Aug 7 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Friday, August 7</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-07-06-12" data-quarter-label="Fri, Aug 7 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Friday, August 7</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-07-12-18" data-quarter-label="Fri, Aug 7 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Friday, August 7</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-07-18-24" data-quarter-label="Fri, Aug 7 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Friday, August 7</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-08-00-06" data-quarter-label="Sat, Aug 8 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Saturday, August 8</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-08-06-12" data-quarter-label="Sat, Aug 8 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Saturday, August 8</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-08-12-18" data-quarter-label="Sat, Aug 8 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Saturday, August 8</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-08-18-24" data-quarter-label="Sat, Aug 8 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Saturday, August 8</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-09-00-06" data-quarter-label="Sun, Aug 9 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Sunday, August 9</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-09-06-12" data-quarter-label="Sun, Aug 9 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Sunday, August 9</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-09-12-18" data-quarter-label="Sun, Aug 9 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Sunday, August 9</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-09-18-24" data-quarter-label="Sun, Aug 9 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Sunday, August 9</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-10-00-06" data-quarter-label="Mon, Aug 10 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Monday, August 10</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-10-06-12" data-quarter-label="Mon, Aug 10 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Monday, August 10</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-10-12-18" data-quarter-label="Mon, Aug 10 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Monday, August 10</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-10-18-24" data-quarter-label="Mon, Aug 10 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Monday, August 10</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-11-00-06" data-quarter-label="Tue, Aug 11 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Tuesday, August 11</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-11-06-12" data-quarter-label="Tue, Aug 11 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Tuesday, August 11</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-11-12-18" data-quarter-label="Tue, Aug 11 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Tuesday, August 11</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-11-18-24" data-quarter-label="Tue, Aug 11 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Tuesday, August 11</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-12-00-06" data-quarter-label="Wed, Aug 12 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Wednesday, August 12</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-12-06-12" data-quarter-label="Wed, Aug 12 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Wednesday, August 12</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-12-12-18" data-quarter-label="Wed, Aug 12 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Wednesday, August 12</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-12-18-24" data-quarter-label="Wed, Aug 12 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Wednesday, August 12</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-13-00-06" data-quarter-label="Thu, Aug 13 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Thursday, August 13</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-13-06-12" data-quarter-label="Thu, Aug 13 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Thursday, August 13</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-13-12-18" data-quarter-label="Thu, Aug 13 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Thursday, August 13</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-13-18-24" data-quarter-label="Thu, Aug 13 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Thursday, August 13</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-14-00-06" data-quarter-label="Fri, Aug 14 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Friday, August 14</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-14-06-12" data-quarter-label="Fri, Aug 14 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Friday, August 14</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-14-12-18" data-quarter-label="Fri, Aug 14 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Friday, August 14</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-14-18-24" data-quarter-label="Fri, Aug 14 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Friday, August 14</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-15-00-06" data-quarter-label="Sat, Aug 15 · Night · 12am–6am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Saturday, August 15</div>
-<h2 class="quarter-label">Night · 12am–6am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-15-06-12" data-quarter-label="Sat, Aug 15 · Morning · 6am–12pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Saturday, August 15</div>
-<h2 class="quarter-label">Morning · 6am–12pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-15-12-18" data-quarter-label="Sat, Aug 15 · Afternoon · 12pm–6pm">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Saturday, August 15</div>
-<h2 class="quarter-label">Afternoon · 12pm–6pm</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-15-18-24" data-quarter-label="Sat, Aug 15 · Evening · 6pm–12am">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">Saturday, August 15</div>
-<h2 class="quarter-label">Evening · 6pm–12am</h2>
 <div class="quarter-empty-hint">Nothing scheduled</div>
 </div>
 </section>

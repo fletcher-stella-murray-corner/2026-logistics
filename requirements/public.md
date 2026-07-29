@@ -50,7 +50,7 @@ The build always starts rendering from `max(today, August 1)` through August 15 
 
 ### What each day quarter canvas shows
 
-Content is pinned to the **top-left** of the canvas (not centered) — date/quarter label first, then the four rows below, in this order, each showing nothing if it has no content for that day quarter:
+Content is pinned to the **top-left** of the canvas (not centered) — just the four rows below, in this order, each showing nothing if it has no content for that day quarter. No date or quarter-time label here — that's already shown live in the nav bar (see *Layout* above), so repeating it on the canvas would be redundant.
 
 1. **Arrivals** — people whose arrival falls in this exact day+quarter: name, mode (✈️ plane / 🚆 train / 🚗 car), free-text detail (flight/train number, who's driving, etc).
 2. **Departures** — same shape, for people leaving in this day+quarter.

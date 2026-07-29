@@ -17,8 +17,9 @@ the right.
 Each quarter screen has two parts, per requirements/public.md ->
 Terminology: a "day quarter canvas padding" spacer (blank space reserved
 so the sticky nav bar doesn't cover real content), and the "day quarter
-canvas" itself (the actual date/label/rows content) — the padding is
-explicitly NOT part of the canvas.
+canvas" itself (the actual arrivals/departures/sleeping/meal rows — no
+date or time label, since the nav bar's live label already shows that).
+The padding is explicitly NOT part of the canvas.
 
 Run after hand-editing any of the three data files above, or use
 scripts/build_site.py to rebuild every feature at once.
@@ -144,15 +145,12 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals):
         rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Meal:</span> {esc(meal)}</div>')
 
     body = "".join(rows) if rows else '<div class="quarter-empty-hint">Nothing scheduled</div>'
-    date_label = day.strftime("%A, %B ") + str(day.day)
     nav_label = day.strftime("%a, %b ") + str(day.day) + " · " + QUARTER_LABELS[quarter]
 
     return f"""<section class="quarter-screen" id="{quarter_screen_id(day.isoformat(), quarter)}" \
 data-quarter-label="{esc(nav_label)}">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-date">{date_label}</div>
-<h2 class="quarter-label">{QUARTER_LABELS[quarter]}</h2>
 {body}
 </div>
 </section>"""

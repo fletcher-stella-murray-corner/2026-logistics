@@ -7,8 +7,10 @@
    Each quarter screen has two parts, per requirements/public.md ->
    Terminology: the "day quarter canvas padding" (a blank spacer reserved
    for the single sticky nav bar) and the "day quarter canvas" itself (the
-   actual date/label/rows content). The padding is explicitly NOT part of
-   the canvas — they're separate elements, not one padded box. */
+   actual arrivals/departures/sleeping/meal rows — no date/time label,
+   since the nav bar's live label already shows that). The padding is
+   explicitly NOT part of the canvas — they're separate elements, not one
+   padded box. */
 /* Snap must live on html, not body: html (documentElement) is the actual
    scrolling element for the page, so scroll-snap-type on body has no
    effect on real page scrolling — a common CSS scroll-snap gotcha.
@@ -157,16 +159,6 @@ html.timeline-page {
 }
 
 .trip-done-screen { font-size: 1.2rem; }
-
-.quarter-date {
-  font-size: 0.95rem;
-  color: var(--secondary);
-  font-weight: 600;
-}
-.quarter-label {
-  font-size: 2.25rem;
-  margin: 0.25rem 0 1.5rem;
-}
 
 .quarter-row { margin: 0.6rem 0; font-size: 1.05rem; }
 .quarter-row-label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 0.2rem; }
