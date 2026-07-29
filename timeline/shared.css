@@ -63,8 +63,9 @@ html.timeline-page {
   height: var(--nav-height);
 }
 
-/* The day quarter canvas itself — the actual content: date, time label,
-   arrivals/departures/sleeping/meal rows. Pinned top-left, per
+/* The day quarter canvas itself — the actual content: the
+   arrivals/departures/sleeping/meal rows (no date/time label — that's
+   in the nav bar's live label instead). Pinned top-left, per
    requirements/public.md -> What each day quarter shows. The 1rem top
    padding is breathing room for the canvas's own content, not sticky-bar
    clearance — that's the padding spacer's job alone. */

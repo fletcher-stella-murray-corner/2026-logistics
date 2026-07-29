@@ -9,9 +9,21 @@ Two features: **Timeline** (the homepage) and **Family Tree**.
 Each day is split into four fixed six-hour segments, officially called **day quarters** (`00-06`, `06-12`, `12-18`, `18-24`). The full-viewport-height slide that shows one day quarter is officially called a **quarter screen**, made of two distinct parts:
 
 - **Day quarter canvas padding** — a blank spacer at the top of the quarter screen, sized to clear the sticky nav/jump bars. It holds no content and is a separate element from the canvas, not extra padding on it.
-- **Day quarter canvas** — the actual content: date, time label, and the four arrivals/departures/sleeping/meal rows. This is the only part that counts as "the canvas" — the padding is explicitly *not* part of it.
+- **Day quarter canvas** — the actual content: the four arrivals/departures/sleeping/meal rows. No date or time label here — that lives in the nav bar (see *Navigation*). This is the only part that counts as "the canvas" — the padding is explicitly *not* part of it.
 
 Use these terms consistently in code, comments, and docs — not "block"/"block screen", and not "the canvas" to mean the whole quarter screen including its padding.
+
+## Navigation
+
+**Timeline page** — nav bar is a single sticky row, always visible, three items left to right:
+
+1. **Current day quarter label** — live text showing which day quarter is currently in view (e.g. "Sat, Aug 1 · 12am–6am"), updated as you scroll (via `IntersectionObserver` in `timeline/shared.js`). Shows the site title before you've scrolled into any quarter, and is the only place this date/time information appears (see *Terminology* — it's deliberately not repeated on the canvas).
+2. **"Jump ▾"** — a dropdown disclosure listing every remaining day, each with its four day-quarter times as links. Clicking one does a smooth animated scroll to that quarter screen (`scrollIntoView({behavior: 'smooth'})` in `timeline/shared.js`, not the CSS `scroll-behavior` property — see that file for why) and closes the disclosure. This is the reliable way to reach any quarter screen; don't assume scroll/swipe alone is enough.
+3. **Tree** — currently disabled (plain muted text, not a link, `cursor: not-allowed`). Will become a working link to the Family Tree page once that page is ready to be reached this way.
+
+**Family Tree page** — nav bar is the plain two-item row (`Timeline` link, `Tree` active/current-page indicator). It does not have the live label or the jump menu — those are Timeline-only, since only the Timeline has quarter screens to label or jump between.
+
+Both navs are one sticky row, always visible, at the top of every page — you're never more than a tap away from the other page (once Tree is enabled) or, on the Timeline, from any quarter screen.
 
 ## Device support
 
@@ -21,17 +33,11 @@ Both features must work well on a computer and on a phone — this is critical, 
 
 ### Layout
 
-Nav bar is a single sticky row, always visible, three items left to right:
-
-1. **Current day quarter label** — live text showing which day quarter is currently in view (e.g. "Sat, Aug 1 · 12am–6am"), updated as you scroll (via `IntersectionObserver` in `timeline/shared.js`). Shows the site title before you've scrolled into any quarter.
-2. **"Jump ▾"** — a dropdown disclosure listing every remaining day, each with its four day-quarter times as links. Clicking one does a smooth animated scroll to that quarter screen (`scrollIntoView({behavior: 'smooth'})` in `timeline/shared.js`, not the CSS `scroll-behavior` property — see that file for why) and closes the disclosure. This is the reliable way to reach any quarter screen; don't assume scroll/swipe alone is enough.
-3. **Tree** — currently disabled (plain muted text, not a link, `cursor: not-allowed`). Will become a working link to the Family Tree page once it's ready.
-
-Below the nav, a full-screen, swipe/scroll-through experience: an intro screen with the trip title, then one **quarter screen** per day quarter, in order, using CSS scroll-snap on `html` (not `body` — `html`/`documentElement` is the actual scrolling element for the page, so scroll-snap-type must be set there or it silently does nothing) — scrolling or swiping down moves from one quarter screen straight to the next, each one filling the whole screen. `scroll-snap-stop: always` makes one scroll/swipe gesture advance exactly one quarter screen at a time — a fast fling never skips past several unnoticed. `scroll-behavior: smooth` is deliberately NOT used together with scroll-snap here — that combination is a known Safari/iOS bug that can break snapping entirely. This applies the same way on desktop (mouse wheel / trackpad) and mobile (swipe), since it's native browser scroll-snap, not a custom gesture handler. The homepage has no separate content of its own — the timeline IS the homepage, since that's the entire point of the site.
+Nav bar per *Navigation* above. Below it, a full-screen, swipe/scroll-through experience: an intro screen with the trip title, then one **quarter screen** per day quarter, in order, using CSS scroll-snap on `html` (not `body` — `html`/`documentElement` is the actual scrolling element for the page, so scroll-snap-type must be set there or it silently does nothing) — scrolling or swiping down moves from one quarter screen straight to the next, each one filling the whole screen. `scroll-snap-stop: always` makes one scroll/swipe gesture advance exactly one quarter screen at a time — a fast fling never skips past several unnoticed. `scroll-behavior: smooth` is deliberately NOT used together with scroll-snap here — that combination is a known Safari/iOS bug that can break snapping entirely. This applies the same way on desktop (mouse wheel / trackpad) and mobile (swipe), since it's native browser scroll-snap, not a custom gesture handler. The homepage has no separate content of its own — the timeline IS the homepage, since that's the entire point of the site.
 
 Each quarter screen is made of the **day quarter canvas padding** (blank spacer, clears the nav bar) followed by the **day quarter canvas** (the actual content) — see *Terminology* above; these are separate elements, not one padded box.
 
-The Family Tree page does *not* use this full-screen snap layout, the single-row nav's live label, or the jump menu — it keeps the plain two-item nav (`Timeline` link, `Tree` active) and is read top-to-bottom normally as a short reference page.
+The Family Tree page does *not* use this full-screen snap layout — see *Navigation* above for its nav, and *Family Tree* → *Layout* below for the rest of its page; it's read top-to-bottom normally as a short reference page.
 
 ### Trip window
 
@@ -50,7 +56,7 @@ The build always starts rendering from `max(today, August 1)` through August 15 
 
 ### What each day quarter canvas shows
 
-Content is pinned to the **top-left** of the canvas (not centered) — just the four rows below, in this order, each showing nothing if it has no content for that day quarter. No date or quarter-time label here — that's already shown live in the nav bar (see *Layout* above), so repeating it on the canvas would be redundant.
+Content is pinned to the **top-left** of the canvas (not centered) — just the four rows below, in this order, each showing nothing if it has no content for that day quarter. No date or quarter-time label here — that's already shown live in the nav bar (see *Navigation* above), so repeating it on the canvas would be redundant.
 
 1. **Arrivals** — people whose arrival falls in this exact day+quarter: name, mode (✈️ plane / 🚆 train / 🚗 car), free-text detail (flight/train number, who's driving, etc).
 2. **Departures** — same shape, for people leaving in this day+quarter.
@@ -122,7 +128,7 @@ If `travel.json` is empty and no meals are set, the timeline still renders every
 
 ### Layout
 
-Same nav bar (`Timeline` link, `Family Tree` active). Below it, people grouped by `generation` (from `shared/data/people.json`), lowest number first. Within a generation, partners (`partner_id`) are shown paired together; each person/couple's children (people whose `parent_ids` includes them) are shown nested/indented below.
+Nav bar per *Navigation* above. Below it, people grouped by `generation` (from `shared/data/people.json`), lowest number first. Within a generation, partners (`partner_id`) are shown paired together; each person/couple's children (people whose `parent_ids` includes them) are shown nested/indented below.
 
 ### Purpose
 

@@ -1,8 +1,12 @@
-"""Shared nav-bar rendering — the component used by both the timeline
-feature (which doubles as the homepage) and the family-tree feature.
+"""Shared nav helpers, imported by both features' build.py.
 Not a script: no CLI, imported like a plain module.
 
-Covers one shape only: a flat row of links with one active/current item.
+esc() is used by both features for HTML-escaping. render_row() — a flat
+nav row of links with one active/current item — is used only by
+family-tree/scripts/build.py; the timeline feature builds its own richer
+nav (live label, jump menu, disabled Tree item) directly in
+timeline/scripts/build.py's render_nav(), since render_row()'s flat
+link-row shape doesn't fit it.
 """
 
 

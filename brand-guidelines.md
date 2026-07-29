@@ -46,7 +46,7 @@ A page torn from a simple paper travel itinerary someone left on the kitchen tab
 
 ## Materials / Design Language
 
-Flat, plain HTML shapes: one full-screen canvas per day quarter, thin rules between days, no gradients, no drop shadows, no illustration. If it wouldn't look at home printed on a single sheet of paper, it doesn't belong.
+Flat, plain HTML shapes: one full-screen quarter screen per day quarter, thin rules between days, no gradients, no drop shadows, no illustration. If it wouldn't look at home printed on a single sheet of paper, it doesn't belong.
 
 ## Craftsmanship
 

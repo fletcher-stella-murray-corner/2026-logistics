@@ -4,14 +4,6 @@
 .tree-subtitle { color: var(--secondary); margin-top: 0; margin-bottom: 2rem; }
 
 .generation { margin-bottom: 1.5rem; }
-.generation-label {
-  font-size: 0.8rem;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--secondary);
-  font-weight: 600;
-  margin-bottom: 0.6rem;
-}
 .family-unit { margin-bottom: 1rem; }
 .couple { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 .person {

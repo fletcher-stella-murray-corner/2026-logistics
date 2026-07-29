@@ -25,7 +25,7 @@ A feature's own requirements (what it does, page by page) live in `requirements/
 | # | Doc | Responsibility |
 |---|-----|----------------|
 | 8 | [shared/data/people.json](shared/data/people.json) | The family roster — shared by both features. Not deployed directly; each feature's `build.py` reads it and embeds/renders from it at build time. |
-| 9 | [shared/nav.py](shared/nav.py) | Shared nav-bar rendering (no CLI) — used by both features' `build.py` so the nav has exactly one implementation. |
+| 9 | [shared/nav.py](shared/nav.py) | `esc()` used by both features' `build.py`; the flat-link-row `render_row()` used only by `family-tree`'s — timeline builds its own richer nav directly (see `requirements/public.md` → *Navigation*). |
 | 10 | [shared/base.css](shared/base.css) | Site-wide chrome shared by both features: nav bar, color variables, base typography. |
 | 11 | [timeline/scripts/build.py](timeline/scripts/build.py) | Regenerates `site/index.html` (the homepage) from `shared/data/people.json` and `timeline/data/travel.json`/`meals.json`. |
 | 12 | [timeline/data/travel.json](timeline/data/travel.json) | Each person's arrival/departure (date, day quarter, mode, detail) and room assignment. Hand-edited directly — no data-entry script. |

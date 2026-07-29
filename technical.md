@@ -30,7 +30,7 @@ Every script lives in a feature's `scripts/` folder, is plain Python 3 with no d
 | `scripts/build_site.py` | Root orchestrator — calls every feature's `build.py` in one go. The everyday command: run this after any data or template edit. |
 | `timeline/scripts/build.py` | Regenerates `site/index.html` (the homepage, and the whole timeline feature) from `shared/data/people.json` and `timeline/data/travel.json`/`meals.json`. |
 | `family-tree/scripts/build.py` | Regenerates `site/family-tree/index.html` from `shared/data/people.json`. |
-| `shared/nav.py` | Not a script — shared nav-bar rendering, imported by both features' `build.py`, since the timeline page doubles as the homepage and both pages need the same nav. |
+| `shared/nav.py` | Not a script — `esc()` is used by both features' `build.py` for HTML-escaping; `render_row()` (a flat nav-link row) is used only by `family-tree/scripts/build.py`. The timeline feature builds its own richer nav (live label, jump menu, disabled Tree item) directly, since `render_row()`'s shape doesn't fit it — see `requirements/public.md` → *Navigation*. |
 
 ## Where CSS and JS changes go
 
