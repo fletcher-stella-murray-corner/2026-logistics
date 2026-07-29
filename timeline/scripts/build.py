@@ -45,10 +45,10 @@ TRIP_END = date(2026, 8, 15)
 QUARTERS = ["00-06", "06-12", "12-18", "18-24"]
 QUARTER_INDEX = {q: i for i, q in enumerate(QUARTERS)}
 QUARTER_LABELS = {
-    "00-06": "12am–6am",
-    "06-12": "6am–12pm",
-    "12-18": "12pm–6pm",
-    "18-24": "6pm–12am",
+    "00-06": "Night · 12am–6am",
+    "06-12": "Morning · 6am–12pm",
+    "12-18": "Afternoon · 12pm–6pm",
+    "18-24": "Evening · 6pm–12am",
 }
 MODE_TAGS = {
     "plane": "✈️ Plane",
@@ -191,7 +191,7 @@ def render_nav(jump_menu):
     return f"""<nav class="site-nav">
 <span class="current-quarter-label" id="current-quarter-label">{esc(PAGE_TITLE)}</span>
 {jump_menu}
-<a href="family-tree/index.html">Family Tree</a>
+<span class="nav-disabled" aria-disabled="true">Tree</span>
 </nav>"""
 
 

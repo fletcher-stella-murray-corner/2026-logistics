@@ -26,7 +26,7 @@ TREE_SUBTITLE = "Where everyone fits"
 
 NAV_ITEMS = [
     ("Timeline", "index.html", False),
-    ("Family Tree", None, True),
+    ("Tree", None, True),
 ]
 
 
