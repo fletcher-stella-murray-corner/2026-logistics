@@ -52,19 +52,23 @@ html.timeline-page {
 }
 
 /* The reserved clearance spacer — NOT the canvas, see file header. Fixed
-   height, no content, so the sticky nav bar has somewhere to sit without
+   height matching the sticky nav bar exactly (no extra buffer — that
+   would just be dead space the debug outline exposes as bigger than the
+   nav it's meant to clear), so the nav has somewhere to sit without
    covering the canvas below it. */
 .quarter-canvas-padding {
   flex-shrink: 0;
-  height: calc(var(--nav-height) + 1rem);
+  height: var(--nav-height);
 }
 
 /* The day quarter canvas itself — the actual content: date, time label,
    arrivals/departures/sleeping/meal rows. Pinned top-left, per
-   requirements/public.md -> What each day quarter shows. */
+   requirements/public.md -> What each day quarter shows. The 1rem top
+   padding is breathing room for the canvas's own content, not sticky-bar
+   clearance — that's the padding spacer's job alone. */
 .quarter-canvas {
   flex: 1;
-  padding-bottom: 2rem;
+  padding: 1rem 0 2rem;
 }
 
 /* DEBUG — outline the exact bounds of the padding spacer (blue) and the
