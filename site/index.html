@@ -59,12 +59,14 @@ a { color: var(--secondary); }
    requirements/public.md -> Device support). */
 body.timeline-page {
   scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
 }
 
 .intro-screen, .block-screen, .trip-done-screen {
   min-height: 100vh;
   min-height: 100dvh;
   scroll-snap-align: start;
+  scroll-snap-stop: always;
   scroll-margin-top: var(--nav-height);
   display: flex;
   flex-direction: column;
