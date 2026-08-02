@@ -7,8 +7,8 @@
    Each quarter screen has two parts, per requirements/public.md ->
    Terminology: the "day quarter canvas padding" (a blank spacer reserved
    for the single sticky nav bar) and the "day quarter canvas" itself (the
-   actual arrivals/departures/sleeping/meal rows — no date/time label,
-   since the nav bar's live label already shows that). The padding is
+   actual arrivals/departures/sleeping/meal/activities rows — no
+   date/time label, since the nav bar's live label already shows that). The padding is
    explicitly NOT part of the canvas — they're separate elements, not one
    padded box. */
 /* Snap must live on html, not body: html (documentElement) is the actual
@@ -64,8 +64,8 @@ html.timeline-page {
 }
 
 /* The day quarter canvas itself — the actual content: the
-   arrivals/departures/sleeping/meal rows (no date/time label — that's
-   in the nav bar's live label instead). Pinned top-left, per
+   arrivals/departures/sleeping/meal/activities rows (no date/time label
+   — that's in the nav bar's live label instead). Pinned top-left, per
    requirements/public.md -> What each day quarter shows. The 1rem top
    padding is breathing room for the canvas's own content, not sticky-bar
    clearance — that's the padding spacer's job alone. */

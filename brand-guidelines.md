@@ -114,7 +114,7 @@ Named plainly after the place and the year — the point is clarity, not clevern
 
 * If it wouldn't fit on one printed page, it's too much decoration.
 * Today's day quarter canvas is always one scroll away from the top — never buried under finished days.
-* Every day quarter canvas shows the same four things, top-left, in the same order, filled in or not.
+* Every day quarter canvas shows the same five things, top-left, in the same order, filled in or not.
 * Legible on a phone, one-handed, in bad light, on bad wifi, beats anything visually clever.
 * No login, no interactivity beyond scrolling and links — a page anyone in the family can open cold.
 * Never show a day that's already over.

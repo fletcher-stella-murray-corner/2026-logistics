@@ -9,7 +9,7 @@ Two features: **Timeline** (the homepage) and **Family Tree**.
 Each day is split into four fixed six-hour segments, officially called **day quarters** (`00-06`, `06-12`, `12-18`, `18-24`). The full-viewport-height slide that shows one day quarter is officially called a **quarter screen**, made of two distinct parts:
 
 - **Day quarter canvas padding** — a blank spacer at the top of the quarter screen, sized to clear the sticky nav/jump bars. It holds no content and is a separate element from the canvas, not extra padding on it.
-- **Day quarter canvas** — the actual content: the four arrivals/departures/sleeping/meal rows. No date or time label here — that lives in the nav bar (see *Navigation*). This is the only part that counts as "the canvas" — the padding is explicitly *not* part of it.
+- **Day quarter canvas** — the actual content: the five arrivals/departures/sleeping/meal/activities rows. No date or time label here — that lives in the nav bar (see *Navigation*). This is the only part that counts as "the canvas" — the padding is explicitly *not* part of it.
 
 Use these terms consistently in code, comments, and docs — not "block"/"block screen", and not "the canvas" to mean the whole quarter screen including its padding.
 
@@ -50,7 +50,7 @@ The site tracks a fixed list of named physical locations relevant to the trip �
 
 - `id` — stable slug, never reused or renumbered.
 - `name` — canonical display name; must be referenced exactly by other data (see below).
-- `category` — `"accommodation"` (referenced by `travel.json`'s `room` field, grouped in the Timeline's Sleeping row) or `"transit"` (referenced by `travel.json`'s `hub` field — see *Homepage = Timeline* → *Data* below).
+- `category` — `"accommodation"` (referenced by `travel.json`'s `room`/`room_by_date` fields, grouped in the Timeline's Sleeping row) or `"transit"` (referenced by `travel.json`'s `hub` field — see *Homepage = Timeline* → *Data* below).
 
 **Accommodation — single vs. multi-instance:** Cottage, Red Shed, and Sheogue Inn are used as-is. Camper Van and Tent cover multiple actual instances (different families bring their own) — write the specific instance as `"<structure name> — detail"`, e.g. `"Camper Van — Smiths"` or `"Tent — Sarah & Jon"`. A `room` value is valid if it exactly matches an accommodation structure's `name`, or starts with `"<name> — "`. The same `"<name> — detail"` shape also covers specific named rooms within a structure, e.g. `"Cottage — Green Room"`, `"Cottage — Blue Room"`, `"Cottage — Master Suite"`, `"Red Shed — Futon"` — these aren't separate structures.json entries, just free text after the structure name.
 
@@ -101,11 +101,11 @@ The build always starts rendering from `max(today, August 1)` through August 15 
 
 ### What each day quarter canvas shows
 
-Content is pinned to the **top-left** of the canvas (not centered) — just the four rows below, in this order, each showing nothing if it has no content for that day quarter. No date or quarter-time label here — that's already shown live in the nav bar (see *Navigation* above), so repeating it on the canvas would be redundant.
+Content is pinned to the **top-left** of the canvas (not centered) — just the five rows below, in this order, each showing nothing if it has no content for that day quarter. No date or quarter-time label here — that's already shown live in the nav bar (see *Navigation* above), so repeating it on the canvas would be redundant.
 
 1. **Arrivals** — people whose arrival falls in this exact day+quarter: name, mode (✈️ plane / 🚆 train / 🚗 car), hub (which airport/station, if set — see *Structures* above), vehicle (if set — see *Vehicles* above), free-text detail (flight/train number, who's driving, etc).
 2. **Departures** — same shape, for people leaving in this day+quarter.
-3. **Sleeping** — everyone present at the cottage during this quarter (arrived by this quarter, not yet departed), grouped by room/house. Computed from each person's arrival/departure, not entered separately — updating someone's travel dates automatically updates every day quarter canvas's sleeping list. A person's room can change night to night (see `room_by_date` in *Data* below) — someone moving from the Cottage to the Red Shed partway through shows under the correct room on each affected night.
+3. **Sleeping** — everyone present on the trip during this quarter (arrived by this quarter, not yet departed), grouped by room/structure (see *Structures* above — not everyone is at the Cottage itself). Computed from each person's arrival/departure, not entered separately — updating someone's travel dates automatically updates every day quarter canvas's sleeping list. A person's room can change night to night (see `room_by_date` in *Data* below) — someone moving from the Cottage to the Red Shed partway through shows under the correct room on each affected night.
 4. **Meal** — a free-text note for this quarter, if one exists (e.g. "Lobster boil — Dave grilling"). Not every quarter has one; most likely only `06-12` (breakfast), `12-18` (lunch), and `18-24` (dinner) will ever be filled in, but all four quarters support it.
 5. **Activities** — a free-text note for this quarter, if one exists (e.g. "Beach volleyball", "Bonfire at Red Shed"). Same shape as Meal — not every quarter has one, all four quarters support it.
 
@@ -153,7 +153,7 @@ Several data files, all hand-edited directly (no data-entry scripts):
 ```
 
 - `person_id` — must match an id in `people.json`.
-- `arrival` / `departure` — both optional. Omit `arrival` if the person is already at the cottage before August 1 (they'll show as present from day one, with no arrival row ever rendered). Omit `departure` if they're staying past August 15.
+- `arrival` / `departure` — both optional. Omit `arrival` if the person is already at their accommodation before August 1 (they'll show as present from day one, with no arrival row ever rendered). Omit `departure` if they're staying past August 15.
 - `quarter` — one of the day quarter keys above (`00-06`, `06-12`, `12-18`, `18-24`).
 - `mode` — one of `"plane"`, `"train"`, `"car"`.
 - `hub` — optional; must exactly match a transit structure's `name` in `shared/data/structures.json` (see *Structures* above). Omit for car travel or when no specific hub applies.
