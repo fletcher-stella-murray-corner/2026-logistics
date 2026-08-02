@@ -85,7 +85,7 @@ None. No icons beyond a small text/emoji tag for travel mode (✈️ / 🚆 / �
 
 # Signature visual conventions
 
-- Every day quarter canvas, whether or not it has content, always shows the same four-part shape (arrivals, departures, sleeping, meal), content pinned top-left, so the eye learns one layout and can skip straight to what's filled in.
+- Every day quarter canvas, whether or not it has content, always shows the same five-part shape (arrivals, departures, sleeping, meal, activities), content pinned top-left, so the eye learns one layout and can skip straight to what's filled in.
 - Days that have already passed are never shown — the page always starts at today (or August 1st, whichever is later). This isn't an archival record; it's a live "what's next" view.
 
 ---

@@ -2,8 +2,10 @@
 """Rebuild every feature's public page(s) in one call.
 
 Run this after hand-editing any data file (shared/data/people.json,
-timeline/data/travel.json, timeline/data/meals.json) or any page template.
-See technical.md -> Scripts.
+shared/data/structures.json, shared/data/vehicles.json,
+timeline/data/travel.json, timeline/data/meals.json,
+timeline/data/activities.json) or any page template. See technical.md ->
+Scripts.
 """
 import subprocess
 import sys

@@ -25,17 +25,20 @@ A feature's own requirements (what it does, page by page) live in `requirements/
 | # | Doc | Responsibility |
 |---|-----|----------------|
 | 8 | [shared/data/people.json](shared/data/people.json) | The family roster — shared by both features. Not deployed directly; each feature's `build.py` reads it and embeds/renders from it at build time. |
-| 9 | [shared/nav.py](shared/nav.py) | `esc()` used by both features' `build.py`; the flat-link-row `render_row()` used only by `family-tree`'s — timeline builds its own richer nav directly (see `requirements/public.md` → *Navigation*). |
-| 10 | [shared/base.css](shared/base.css) | Site-wide chrome shared by both features: nav bar, color variables, base typography. |
-| 11 | [timeline/scripts/build.py](timeline/scripts/build.py) | Regenerates `site/index.html` (the homepage) from `shared/data/people.json` and `timeline/data/travel.json`/`meals.json`. |
-| 12 | [timeline/data/travel.json](timeline/data/travel.json) | Each person's arrival/departure (date, day quarter, mode, detail) and room assignment. Hand-edited directly — no data-entry script. |
-| 13 | [timeline/data/meals.json](timeline/data/meals.json) | The meal plan, keyed by date then day quarter. Hand-edited directly. |
-| 14 | [timeline/shared.css](timeline/shared.css) | CSS specific to the timeline's day quarter canvas layout (see `requirements/public.md` → *Terminology*). |
-| 15 | [timeline/shared.js](timeline/shared.js) | Closes the "Jump" disclosure once a link inside it is clicked. |
-| 16 | [family-tree/scripts/build.py](family-tree/scripts/build.py) | Regenerates `site/family-tree/index.html` from `shared/data/people.json`. |
-| 17 | [family-tree/shared.css](family-tree/shared.css) | CSS specific to the family-tree page's generation/couple/children layout. |
-| 18 | [scripts/build_site.py](scripts/build_site.py) | Root orchestrator — rebuilds both features in one call. Run this after any data or template edit. |
-| 19 | [.github/workflows/deploy.yml](.github/workflows/deploy.yml) | GitHub Actions workflow that publishes `site/` to GitHub Pages on every push to `main`. |
+| 9 | [shared/data/structures.json](shared/data/structures.json) | The fixed list of named accommodation/transit locations (cottage, red shed, airports, etc). Validated against — not just referenced by — `timeline/data/travel.json`'s `room`/`room_by_date`/`hub` fields at build time (see `requirements/public.md` → *Structures*). |
+| 10 | [shared/data/vehicles.json](shared/data/vehicles.json) | The fixed list of named vehicles used for car travel. Validated against `timeline/data/travel.json`'s `vehicle` field at build time (see `requirements/public.md` → *Vehicles*). |
+| 11 | [shared/nav.py](shared/nav.py) | `esc()` used by both features' `build.py`; the flat-link-row `render_row()` used only by `family-tree`'s — timeline builds its own richer nav directly (see `requirements/public.md` → *Navigation*). |
+| 12 | [shared/base.css](shared/base.css) | Site-wide chrome shared by both features: nav bar, color variables, base typography. |
+| 13 | [timeline/scripts/build.py](timeline/scripts/build.py) | Regenerates `site/index.html` (the homepage) from `shared/data/people.json`, `shared/data/structures.json`, `shared/data/vehicles.json`, and `timeline/data/travel.json`/`meals.json`/`activities.json`. |
+| 14 | [timeline/data/travel.json](timeline/data/travel.json) | Each person's arrival/departure (date, day quarter, mode, hub, vehicle, detail), default room, and optional per-date room overrides. Hand-edited directly — no data-entry script. |
+| 15 | [timeline/data/meals.json](timeline/data/meals.json) | The meal plan, keyed by date then day quarter. Hand-edited directly. |
+| 16 | [timeline/data/activities.json](timeline/data/activities.json) | The activities plan, same shape as `meals.json` (keyed by date then day quarter). Hand-edited directly. |
+| 17 | [timeline/shared.css](timeline/shared.css) | CSS specific to the timeline's day quarter canvas layout (see `requirements/public.md` → *Terminology*). |
+| 18 | [timeline/shared.js](timeline/shared.js) | Closes the "Jump" disclosure once a link inside it is clicked. |
+| 19 | [family-tree/scripts/build.py](family-tree/scripts/build.py) | Regenerates `site/family-tree/index.html` from `shared/data/people.json`. |
+| 20 | [family-tree/shared.css](family-tree/shared.css) | CSS specific to the family-tree page's generation/couple/children layout. |
+| 21 | [scripts/build_site.py](scripts/build_site.py) | Root orchestrator — rebuilds both features in one call. Run this after any data or template edit. |
+| 22 | [.github/workflows/deploy.yml](.github/workflows/deploy.yml) | GitHub Actions workflow that publishes `site/` to GitHub Pages on every push to `main`. |
 
 ## Site (deployed)
 
@@ -48,4 +51,4 @@ Everything under `site/` is what goes online. GitHub Pages (via the Actions work
 
 ## Editing data
 
-There is no admin site and no data-entry scripts for this project — the sole editor hand-edits `shared/data/people.json`, `timeline/data/travel.json`, or `timeline/data/meals.json` directly, then runs `scripts/build_site.py` (see `way-of-working.md` → *Git* for the commit-before-editing rule).
+There is no admin site and no data-entry scripts for this project — the sole editor hand-edits `shared/data/people.json`, `shared/data/structures.json`, `shared/data/vehicles.json`, `timeline/data/travel.json`, `timeline/data/meals.json`, or `timeline/data/activities.json` directly, then runs `scripts/build_site.py` (see `way-of-working.md` → *Git* for the commit-before-editing rule).
