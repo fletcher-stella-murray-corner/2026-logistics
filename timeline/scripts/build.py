@@ -10,10 +10,15 @@ day, one full-viewport-height "quarter screen" per quarter, always
 starting from max(today, Aug 1) so past days quietly drop off the site
 on every rebuild.
 
-Every `room`/`room_by_date`/`hub` value in travel.json is validated
-against shared/data/structures.json, and every `vehicle` value against
+Validated at build time, all as hard errors rather than silent typos:
+every `room`/`room_by_date`/`hub` value in travel.json against
+shared/data/structures.json; every `vehicle` value against
 shared/data/vehicles.json (see requirements/public.md -> Structures /
-Vehicles) — an unknown name is a build error, not a silent typo.
+Vehicles); every `person_id` in travel.json against people.json; every
+`date`/`quarter` value everywhere (travel.json, meals.json,
+activities.json) for valid ISO-date/quarter-key shape; a travel entry's
+departure isn't before its arrival; and ids are unique within
+people.json/structures.json/vehicles.json.
 
 The nav bar is one single row: a live "current day quarter" label on the
 left (updated by shared.js via IntersectionObserver as you scroll), the
@@ -69,14 +74,57 @@ def esc(s):
 
 
 def load_json(path):
-    return json.loads(path.read_text())
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Malformed JSON in {path}: {e}") from e
 
 
 def structure_names(structures, category):
     return {s["name"] for s in structures if s["category"] == category}
 
 
-def validate_room(room, accommodation_names, person_name):
+def validate_unique_ids(records, label):
+    seen = set()
+    for r in records:
+        if r["id"] in seen:
+            raise ValueError(f"Duplicate id {r['id']!r} in {label} — ids must be unique.")
+        seen.add(r["id"])
+
+
+def validate_structures_file(structures):
+    validate_unique_ids(structures, "shared/data/structures.json")
+    for s in structures:
+        if s["category"] not in ("accommodation", "transit"):
+            raise ValueError(
+                f"Invalid category {s['category']!r} for structure {s['name']!r} in "
+                f"shared/data/structures.json — must be 'accommodation' or 'transit'."
+            )
+
+
+def validate_vehicles_file(vehicles):
+    validate_unique_ids(vehicles, "shared/data/vehicles.json")
+
+
+def validate_people_file(people):
+    validate_unique_ids(people, "shared/data/people.json")
+
+
+def validate_date_str(value, context):
+    try:
+        date.fromisoformat(value)
+    except (ValueError, TypeError):
+        raise ValueError(f"Invalid date {value!r} in {context} — must be an ISO date (YYYY-MM-DD).")
+
+
+def validate_quarter_value(value, context):
+    if value not in QUARTER_INDEX:
+        raise ValueError(
+            f"Invalid quarter {value!r} in {context} — must be one of {', '.join(QUARTERS)}."
+        )
+
+
+def validate_room(room, accommodation_names, context):
     if not room:
         return
     if room in accommodation_names:
@@ -85,7 +133,7 @@ def validate_room(room, accommodation_names, person_name):
         if room.startswith(f"{name} — "):
             return
     raise ValueError(
-        f"Unknown structure {room!r} in room for {person_name!r} — must exactly match an "
+        f"Unknown structure {room!r} in room for {context} — must exactly match an "
         f"accommodation name in shared/data/structures.json, or start with '<name> — '."
     )
 
@@ -110,26 +158,55 @@ def validate_vehicle(vehicle, vehicle_names, person_name, field):
         )
 
 
+def validate_leg(leg, person_name, field, transit_names, vehicle_names):
+    if "date" not in leg or "quarter" not in leg:
+        raise ValueError(f"Missing 'date' or 'quarter' in {field} for {person_name!r}.")
+    validate_date_str(leg["date"], f"{field} for {person_name!r}")
+    validate_quarter_value(leg["quarter"], f"{field} for {person_name!r}")
+    validate_hub(leg.get("hub"), transit_names, person_name, field)
+    validate_vehicle(leg.get("vehicle"), vehicle_names, person_name, field)
+
+
 def validate_travel(travel, people_by_id, structures, vehicles):
     accommodation_names = structure_names(structures, "accommodation")
     transit_names = structure_names(structures, "transit")
     vehicle_names = {v["name"] for v in vehicles}
 
     for entry in travel:
-        person = people_by_id.get(entry["person_id"])
-        person_name = person["name"] if person else f"person_id {entry['person_id']}"
+        person_id = entry["person_id"]
+        person = people_by_id.get(person_id)
+        if person is None:
+            raise ValueError(
+                f"travel.json references person_id {person_id!r}, which doesn't exist in "
+                f"shared/data/people.json."
+            )
+        person_name = person["name"]
 
         arrival = entry.get("arrival")
         departure = entry.get("departure")
         if arrival:
-            validate_hub(arrival.get("hub"), transit_names, person_name, "arrival")
-            validate_vehicle(arrival.get("vehicle"), vehicle_names, person_name, "arrival")
+            validate_leg(arrival, person_name, "arrival", transit_names, vehicle_names)
         if departure:
-            validate_hub(departure.get("hub"), transit_names, person_name, "departure")
-            validate_vehicle(departure.get("vehicle"), vehicle_names, person_name, "departure")
+            validate_leg(departure, person_name, "departure", transit_names, vehicle_names)
+        if arrival and departure:
+            arrival_key = quarter_key(arrival["date"], arrival["quarter"])
+            departure_key = quarter_key(departure["date"], departure["quarter"])
+            if departure_key < arrival_key:
+                raise ValueError(
+                    f"Departure ({departure['date']} {departure['quarter']}) is before arrival "
+                    f"({arrival['date']} {arrival['quarter']}) for {person_name!r}."
+                )
         validate_room(entry.get("room", ""), accommodation_names, person_name)
         for room_date, room in entry.get("room_by_date", {}).items():
-            validate_room(room, accommodation_names, f"{person_name} on {room_date}")
+            validate_date_str(room_date, f"room_by_date for {person_name!r}")
+            validate_room(room, accommodation_names, f"{person_name!r} on {room_date}")
+
+
+def validate_day_quarter_notes(data, label):
+    for day, quarters in data.items():
+        validate_date_str(day, label)
+        for q in quarters:
+            validate_quarter_value(q, f"{label} on {day}")
 
 
 def quarter_key(iso_date, quarter):
@@ -335,8 +412,14 @@ def main():
     shared_css = (ROOT / "shared.css").read_text()
     shared_js = (ROOT / "shared.js").read_text()
 
+    validate_people_file(people)
+    validate_structures_file(structures)
+    validate_vehicles_file(vehicles)
+
     people_by_id = {p["id"]: p for p in people}
     validate_travel(travel, people_by_id, structures, vehicles)
+    validate_day_quarter_notes(meals, "timeline/data/meals.json")
+    validate_day_quarter_notes(activities, "timeline/data/activities.json")
 
     html = build_page_html(people, travel, meals, activities, shared_base_css, shared_css, shared_js)
     out_path = PROJECT_ROOT / "site" / "index.html"

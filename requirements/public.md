@@ -48,9 +48,9 @@ The site tracks a fixed list of named physical locations relevant to the trip �
 ]
 ```
 
-- `id` — stable slug, never reused or renumbered.
+- `id` — stable slug, never reused or renumbered. A duplicate is a build error.
 - `name` — canonical display name; must be referenced exactly by other data (see below).
-- `category` — `"accommodation"` (referenced by `travel.json`'s `room`/`room_by_date` fields, grouped in the Timeline's Sleeping row) or `"transit"` (referenced by `travel.json`'s `hub` field — see *Homepage = Timeline* → *Data* below).
+- `category` — `"accommodation"` (referenced by `travel.json`'s `room`/`room_by_date` fields, grouped in the Timeline's Sleeping row) or `"transit"` (referenced by `travel.json`'s `hub` field — see *Homepage = Timeline* → *Data* below). Any other value is a build error.
 
 **Accommodation — single vs. multi-instance:** Cottage, Red Shed, and Sheogue Inn are used as-is. Camper Van and Tent cover multiple actual instances (different families bring their own) — write the specific instance as `"<structure name> — detail"`, e.g. `"Camper Van — Smiths"` or `"Tent — Sarah & Jon"`. A `room` value is valid if it exactly matches an accommodation structure's `name`, or starts with `"<name> — "`. The same `"<name> — detail"` shape also covers specific named rooms within a structure, e.g. `"Cottage — Green Room"`, `"Cottage — Blue Room"`, `"Cottage — Master Suite"`, `"Red Shed — Futon"` — these aren't separate structures.json entries, just free text after the structure name.
 
@@ -69,7 +69,7 @@ The site also tracks a fixed list of named vehicles used for car travel, for the
 ]
 ```
 
-- `id` — stable slug, never reused or renumbered.
+- `id` — stable slug, never reused or renumbered. A duplicate is a build error.
 - `name` — canonical display name, must be referenced exactly.
 
 `arrival`/`departure` each get an optional `vehicle` field that must exactly match a vehicle's `name` (see *Homepage = Timeline* → *Data* below) — typically used with `"mode": "car"`. Free text (who's driving, route, etc) stays in the existing `detail` field.
@@ -129,11 +129,11 @@ Several data files, all hand-edited directly (no data-entry scripts):
 ]
 ```
 
-- `id` — integer, unique, stable. Never reuse or renumber an existing id.
+- `id` — integer, unique, stable. Never reuse or renumber an existing id. Validated at build time: a duplicate id is a build error.
 - `name` — display name.
 - `generation` — integer, 1 = the eldest generation appearing in the tree, increasing by 1 per generation down. Used only by the Family Tree page.
-- `parent_ids` — list of 0–2 ids, this person's parent(s). Used only by the Family Tree page.
-- `partner_id` — id of this person's spouse/partner, or `null`. Used only by the Family Tree page.
+- `parent_ids` — list of 0–2 ids, this person's parent(s). Used only by the Family Tree page. Validated at build time: every id must reference a real person, and nobody can be their own parent.
+- `partner_id` — id of this person's spouse/partner, or `null`. Used only by the Family Tree page. Validated at build time: if set, must reference a real person, and nobody can be their own partner.
 
 **`timeline/data/travel.json`** — one entry per person who has travel and/or a room assignment:
 
@@ -152,9 +152,10 @@ Several data files, all hand-edited directly (no data-entry scripts):
 ]
 ```
 
-- `person_id` — must match an id in `people.json`.
-- `arrival` / `departure` — both optional. Omit `arrival` if the person is already at their accommodation before August 1 (they'll show as present from day one, with no arrival row ever rendered). Omit `departure` if they're staying past August 15.
-- `quarter` — one of the day quarter keys above (`00-06`, `06-12`, `12-18`, `18-24`).
+- `person_id` — must match an id in `people.json`. Validated at build time: an unknown id is a build error, not a silently-dropped entry.
+- `arrival` / `departure` — both optional. Omit `arrival` if the person is already at their accommodation before August 1 (they'll show as present from day one, with no arrival row ever rendered). Omit `departure` if they're staying past August 15. If both are set, departure can't be before arrival — validated at build time.
+- `date` — an ISO date (`YYYY-MM-DD`), validated at build time; applies to `arrival`/`departure`/`room_by_date` keys everywhere in this file.
+- `quarter` — one of the day quarter keys above (`00-06`, `06-12`, `12-18`, `18-24`), validated at build time.
 - `mode` — one of `"plane"`, `"train"`, `"car"`.
 - `hub` — optional; must exactly match a transit structure's `name` in `shared/data/structures.json` (see *Structures* above). Omit for car travel or when no specific hub applies.
 - `vehicle` — optional; must exactly match a vehicle's `name` in `shared/data/vehicles.json` (see *Vehicles* above). Typically used with `"mode": "car"`.

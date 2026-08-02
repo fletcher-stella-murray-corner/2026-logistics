@@ -5,6 +5,11 @@ Reads shared/data/people.json and renders a nested tree: each couple (or
 single person) with no rendered parent yet at the top, their children
 nested below them, recursively (see requirements/public.md -> Family Tree).
 
+Validated at build time, as hard errors rather than silent typos: ids
+are unique; every parent_ids/partner_id reference points at an id that
+actually exists in people.json; nobody lists themselves as their own
+parent or partner.
+
 Run after hand-editing shared/data/people.json, or use
 scripts/build_site.py to rebuild every feature at once.
 
@@ -35,7 +40,38 @@ def esc(s):
 
 
 def load_people():
-    return json.loads((PROJECT_ROOT / "shared" / "data" / "people.json").read_text())
+    path = PROJECT_ROOT / "shared" / "data" / "people.json"
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Malformed JSON in {path}: {e}") from e
+
+
+def validate_people(people):
+    people_by_id = {}
+    for p in people:
+        if p["id"] in people_by_id:
+            raise ValueError(f"Duplicate id {p['id']!r} in shared/data/people.json — ids must be unique.")
+        people_by_id[p["id"]] = p
+
+    for p in people:
+        if p["id"] in (p.get("parent_ids") or []):
+            raise ValueError(f"{p['name']!r} lists themselves in their own parent_ids.")
+        for parent_id in p.get("parent_ids") or []:
+            if parent_id not in people_by_id:
+                raise ValueError(
+                    f"{p['name']!r}'s parent_ids references id {parent_id!r}, which doesn't "
+                    f"exist in shared/data/people.json."
+                )
+        partner_id = p.get("partner_id")
+        if partner_id is not None:
+            if partner_id == p["id"]:
+                raise ValueError(f"{p['name']!r} lists themselves as their own partner_id.")
+            if partner_id not in people_by_id:
+                raise ValueError(
+                    f"{p['name']!r}'s partner_id references id {partner_id!r}, which doesn't "
+                    f"exist in shared/data/people.json."
+                )
 
 
 def build_children_map(people):
@@ -127,6 +163,7 @@ def main():
         sys.exit(0)
 
     people = load_people()
+    validate_people(people)
     shared_base_css = (PROJECT_ROOT / "shared" / "base.css").read_text()
     shared_css = (ROOT / "shared.css").read_text()
 
