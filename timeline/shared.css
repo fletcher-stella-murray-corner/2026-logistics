@@ -183,20 +183,21 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
   color: var(--nav-text);
   font-size: 1.05rem;
 }
-/* .nav-caret (the shared "this expands" caret) and the shared
-   underline-on-hover rule for disclosure triggers both moved to
-   shared/base.css — see that file — now that the Family Tree page's own
-   "Folks ▾" needs them too, not just the two disclosures here. */
+/* .nav-caret (the shared "this expands" caret) and the shared permanent-
+   underline rule for disclosure triggers both moved to shared/base.css —
+   see that file — now that the Family Tree page's own "Folks ▾" needs
+   them too, not just the two disclosures here. */
 
 /* "Now" — jumps to the visitor's own real-world current quarter (see
    timeline/shared.js), computed client-side rather than baked into a
    static href, so it's a <button>, not an <a> — styled to read as a
-   plain nav link all the same, same weight/color/no-decoration as every
-   other text item in the row (shared/base.css -> .site-nav a). Hover is
-   an underline like every other text item (see the shared-hover-rule
-   comment above) rather than a color swap — a color chosen for good
-   contrast against the current --quarter-bg has no guarantee of also
-   looking good as a "highlight" shade against that same background, and
+   plain nav link all the same, same weight/color/underline as every
+   other text item in the row (shared/base.css -> .site-nav a).
+   Permanently underlined like every other text item (see the shared-
+   underline-rule comment above) rather than a color swap — a color
+   chosen for good contrast against the current --quarter-bg has no
+   guarantee of also looking good as a "highlight" shade against that
+   same background, and
    underline sidesteps needing one at all. */
 .jump-now-toggle {
   flex-shrink: 0;
@@ -208,8 +209,8 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
   font-size: 1.05rem;
   color: var(--nav-text);
   cursor: pointer;
+  text-decoration: underline;
 }
-.jump-now-toggle:hover { text-decoration: underline; }
 
 /* Play/pause auto-advance toggle — icon-only (no text label, see
    requirements/public.md -> Navigation), same weight/color look as

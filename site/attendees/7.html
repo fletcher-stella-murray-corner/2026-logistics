@@ -82,18 +82,26 @@ body {
   z-index: 10;
 }
 .site-nav a, .site-nav strong {
-  text-decoration: none;
   color: var(--nav-text);
   font-weight: 600;
   font-size: 1.05rem;
 }
-/* Every interactive nav item across every page underlines on hover — the
-   one shared, site-wide feedback rule (see timeline/shared.css for the
-   Timeline-only items — the "Now"/play-pause buttons — that need their
-   own copy of this rule since a <button> isn't matched by "a"; the
-   disclosure-trigger version of this same rule, .jump-menu > summary:hover,
-   is just below, since a <summary> isn't matched by "a" either). */
-.site-nav a:hover { text-decoration: underline; }
+/* Every interactive nav item across every page is permanently underlined
+   — not just on hover — the one shared, site-wide "this is tappable" cue
+   (see timeline/shared.css for the Timeline-only items — the "Now"
+   button — that need their own copy of this rule since a <button> isn't
+   matched by "a"; the disclosure-trigger version of this same rule,
+   .jump-menu > summary, is just below, since a <summary> isn't matched by
+   "a" either). Deliberately not hover-only: hover doesn't exist on a
+   touch device, and most family will be checking this from a phone (see
+   brand-guidelines.md -> Audience) — a hover-only cue would leave every
+   nav link on every page looking identical to plain bold text until
+   someone happened to tap it. .site-nav strong (the active/current-page
+   indicator, e.g. "Tree" on the Family Tree page itself) stays
+   undecorated — it isn't a link, so underlining it would falsely promise
+   it's tappable. */
+.site-nav a { text-decoration: underline; }
+.site-nav strong { text-decoration: none; }
 /* The one deliberate exception: the site's brand/home link ("Murray
    Corner 2026"), always the nav's first item on every page — bolder
    than everything else, but the SAME --nav-text color (not a separate
@@ -121,9 +129,9 @@ body {
   color: var(--nav-text);
   font-weight: 600;
   list-style: none;
+  text-decoration: underline;
 }
 .jump-menu > summary::-webkit-details-marker { display: none; }
-.jump-menu > summary:hover { text-decoration: underline; }
 /* Positioned against .site-nav (position: sticky above, which also
    establishes a containing block for absolute descendants), not against
    .jump-menu itself — anchoring to the trigger's own position let the
