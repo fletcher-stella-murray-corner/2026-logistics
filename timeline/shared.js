@@ -133,13 +133,28 @@ document.addEventListener('DOMContentLoaded', function () {
   // weekday plus bare quarter name (.cq-day, bold/prominent, e.g.
   // "Monday Morning") shown second, as two separate spans rather than
   // one flat string so CSS can style them differently (see
-  // timeline/shared.css) — cq-day's own leading " - " is part of its
+  // timeline/shared.css) — cq-day's own leading " · " is part of its
   // text content, not static markup, so nothing floats on its own before
-  // either span has actually been filled in. Also sets data-quarter on
-  // the nav bar itself to match, so its time-of-day background
-  // (timeline/shared.css -> .site-nav[data-quarter]) tracks the same
-  // quarter as the label and the canvas beneath it, all off the one
-  // observer.
+  // either span has actually been filled in. The middot (not a hyphen)
+  // matches the separator used everywhere else two related pieces of
+  // info sit together on this site (QUARTER_LABELS' own "Morning ·
+  // 6am–12pm", the Attendees page's "Aug 1 · 6pm") — see
+  // requirements/public.md -> Navigation.
+  //
+  // data-quarter-name is EMPTY for 00-06 (see QUARTER_NAMES in
+  // shared/trip.py and render_quarter_screen() in
+  // timeline/scripts/build.py) — that quarter has no name of its own on
+  // this site: night reads as the tail end of the day before it, not the
+  // start of the one after, so scrolling into a new day's first quarter
+  // shows just the weekday alone ("Tuesday"), never an invented "Tuesday
+  // Night" — see requirements/public.md -> Terminology. The conditional
+  // below drops the joining space along with the name so this collapses
+  // to "· Tuesday", not "· Tuesday " with a trailing space.
+  //
+  // Also sets data-quarter on the nav bar itself to match, so its
+  // time-of-day background (timeline/shared.css -> .site-nav[data-quarter])
+  // tracks the same quarter as the label and the canvas beneath it, all
+  // off the one observer.
   var dayEl = document.getElementById('cq-day');
   var dateEl = document.getElementById('cq-date');
   var navEl = document.querySelector('.site-nav');
@@ -149,7 +164,8 @@ document.addEventListener('DOMContentLoaded', function () {
       entries.forEach(function (entry) {
         if (entry.isIntersecting) {
           dateEl.textContent = entry.target.getAttribute('data-date');
-          dayEl.textContent = ' - ' + entry.target.getAttribute('data-day-name') + ' ' + entry.target.getAttribute('data-quarter-name');
+          var quarterName = entry.target.getAttribute('data-quarter-name');
+          dayEl.textContent = ' · ' + entry.target.getAttribute('data-day-name') + (quarterName ? ' ' + quarterName : '');
           if (navEl) {
             navEl.setAttribute('data-quarter', entry.target.getAttribute('data-quarter'));
           }
@@ -161,31 +177,24 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Keeps the nav bar's own background in exact visual agreement with
-  // whatever's directly behind/below it, rather than a discrete swap at
-  // a fixed scroll threshold (data-quarter above) — that swap alone
-  // looked right most of the time, but for the ~20% of each quarter
-  // screen's height where its own background is still blending in from
-  // the PREVIOUS quarter's color (timeline/shared.css ->
-  // .quarter-screen[data-quarter], the smooth-transition gradient), the
-  // nav would already show the new quarter's fully-resolved flat color
-  // while the canvas just below it was still mid-blend — a visible seam
-  // right at the nav's bottom edge. Recomputed continuously on scroll
-  // (rAF-throttled, not on every scroll event) since the nav is one
-  // fixed, non-scrolling element with no natural "position within a
-  // gradient" of its own the way each quarter screen has via its own box
-  // height — reads --quarter-bg/--prev-quarter-bg straight off whichever
-  // screen currently sits at the nav's bottom edge (already fully
-  // resolved to concrete rgb() values by getComputedStyle, since nested
-  // var() references inside a custom property resolve at computed-value
-  // time), so the two colors this blends between can't drift from the
-  // CSS's own values. Sets --quarter-bg as an inline style, which wins
-  // over the plain attribute-driven rule above regardless of source
-  // order (inline beats any stylesheet selector) — data-quarter above is
-  // still what the Night-only text-contrast rules
-  // (.site-nav[data-quarter="00-06"] ...) key off, untouched by this.
-  var navBlendScreens = document.querySelectorAll('.quarter-screen[data-quarter]');
-  if (navEl && navBlendScreens.length) {
+  // Time-of-day background blend — see requirements/public.md -> Time-of-
+  // day background and timeline/shared.css -> .quarter-screen[data-quarter]
+  // for the rule this exists to satisfy: a quarter screen at rest is
+  // ALWAYS one flat color, never a gradient. The blend into the previous
+  // quarter's color is purely a function of live scroll position, applied
+  // to exactly ONE screen at a time — whichever one is currently sliding
+  // into place — and it resolves fully to that screen's own flat color
+  // (--quarter-bg, untouched) the instant it finishes settling. The same
+  // one computed value also paints the nav bar, so the two can never
+  // visibly disagree.
+  //
+  // Colors are read ONCE per screen at setup, not on every scroll frame —
+  // reading a screen's --quarter-bg via getComputedStyle AFTER this code
+  // has already set an inline override on it would read back its own
+  // previous output instead of the CSS's real value, corrupting every
+  // later frame's math. Caching upfront sidesteps that entirely.
+  var blendScreens = document.querySelectorAll('.quarter-screen[data-quarter]');
+  if (navEl && blendScreens.length) {
     function parseRgb(str) {
       str = (str || '').trim();
       var m = str.match(/^#([0-9a-f]{6})$/i);
@@ -205,40 +214,62 @@ document.addEventListener('DOMContentLoaded', function () {
         Math.round(a[1] + (b[1] - a[1]) * t) + ', ' +
         Math.round(a[2] + (b[2] - a[2]) * t) + ')';
     }
-    var navBlendRafId = null;
-    function updateNavBlend() {
-      navBlendRafId = null;
-      var current = null;
-      var rect = null;
-      for (var i = 0; i < navBlendScreens.length; i++) {
-        var r = navBlendScreens[i].getBoundingClientRect();
-        if (r.top <= NAV_HEIGHT_PX && r.bottom > NAV_HEIGHT_PX) {
-          current = navBlendScreens[i];
-          rect = r;
-          break;
+    var blendData = [];
+    blendScreens.forEach(function (el) {
+      var cs = getComputedStyle(el);
+      blendData.push({
+        el: el,
+        own: parseRgb(cs.getPropertyValue('--quarter-bg')),
+        prev: parseRgb(cs.getPropertyValue('--prev-quarter-bg'))
+      });
+    });
+    // How much of a screen's own height the live blend plays out over,
+    // right as its top edge approaches the viewport top — the one knob to
+    // retune (a taller fraction = a longer, more gradual cross-fade during
+    // the scroll gesture; 0 would make it a hard cut). Mirrors the 20%
+    // stop the old static gradient used, just applied live now instead of
+    // baked in.
+    var BLEND_FRACTION = 0.20;
+    var blendRafId = null;
+    var lastOverridden = null;
+    function updateQuarterBlend() {
+      blendRafId = null;
+      // The entering/current screen: among every quarter screen whose top
+      // hasn't yet scrolled past the viewport top, the one closest to it.
+      // At rest this is exactly the settled screen (its own top sits at
+      // 0) — every other screen is either far below (not yet arrived) or
+      // already fully scrolled past (excluded by the >= 0 check), so this
+      // never needs a separate "which screen is settled" lookup.
+      var best = null;
+      for (var i = 0; i < blendData.length; i++) {
+        var rect = blendData[i].el.getBoundingClientRect();
+        if (rect.top >= 0 && (!best || rect.top < best.rect.top)) {
+          best = { data: blendData[i], rect: rect };
         }
       }
-      if (!current) {
-        navEl.style.removeProperty('--quarter-bg');
-        return;
+      if (!best) {
+        // Every screen's top has scrolled past — resting on/past the very
+        // last one (or a sub-pixel overscroll bounce). Use it directly.
+        var last = blendData[blendData.length - 1];
+        best = { data: last, rect: last.el.getBoundingClientRect() };
       }
-      var cs = getComputedStyle(current);
-      var ownColor = parseRgb(cs.getPropertyValue('--quarter-bg'));
-      var prevColor = parseRgb(cs.getPropertyValue('--prev-quarter-bg'));
-      if (!ownColor || !prevColor) return;
-      // Same 20%-of-height blend-in stop the CSS gradient itself uses —
-      // keep these in sync if that stop ever changes.
-      var fraction = (NAV_HEIGHT_PX - rect.top) / rect.height;
-      var t = Math.max(0, Math.min(fraction / 0.20, 1));
-      navEl.style.setProperty('--quarter-bg', mixRgb(prevColor, ownColor, t));
+      if (lastOverridden && lastOverridden !== best.data.el) {
+        lastOverridden.style.removeProperty('--quarter-bg');
+      }
+      if (!best.data.own || !best.data.prev) return;
+      var t = Math.max(0, Math.min(1, 1 - best.rect.top / (best.rect.height * BLEND_FRACTION)));
+      var color = mixRgb(best.data.prev, best.data.own, t);
+      best.data.el.style.setProperty('--quarter-bg', color);
+      lastOverridden = best.data.el;
+      navEl.style.setProperty('--quarter-bg', color);
     }
-    function scheduleNavBlendUpdate() {
-      if (navBlendRafId === null) {
-        navBlendRafId = requestAnimationFrame(updateNavBlend);
+    function scheduleQuarterBlendUpdate() {
+      if (blendRafId === null) {
+        blendRafId = requestAnimationFrame(updateQuarterBlend);
       }
     }
-    window.addEventListener('scroll', scheduleNavBlendUpdate, { passive: true });
-    updateNavBlend();
+    window.addEventListener('scroll', scheduleQuarterBlendUpdate, { passive: true });
+    updateQuarterBlend();
   }
 
   // Play/pause auto-advance — steps through every screen one at a time:

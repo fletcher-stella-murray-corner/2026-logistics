@@ -87,6 +87,13 @@ body {
   font-weight: 600;
   font-size: 1.05rem;
 }
+/* Every interactive nav item across every page underlines on hover — the
+   one shared, site-wide feedback rule (see timeline/shared.css for the
+   Timeline-only items — the "Now"/play-pause buttons — that need their
+   own copy of this rule since a <button> isn't matched by "a"; the
+   disclosure-trigger version of this same rule, .jump-menu > summary:hover,
+   is just below, since a <summary> isn't matched by "a" either). */
+.site-nav a:hover { text-decoration: underline; }
 /* The one deliberate exception: the site's brand/home link ("Murray
    Corner 2026"), always the nav's first item on every page — bolder
    than everything else, but the SAME --nav-text color (not a separate
@@ -95,6 +102,106 @@ body {
 .site-nav > a:first-child {
   font-weight: 700;
 }
+
+/* The disclosure-dropdown system: a <details class="jump-menu"> trigger
+   plus its <div class="jump-panel">, used by the Timeline's jump-to-time
+   and "Folks ▾" (timeline/shared.js/timeline/scripts/build.py) and the
+   Family Tree's own "Folks ▾" (family-tree/scripts/build.py ->
+   render_folks_menu()) — genuinely shared across two features now, not
+   Timeline-only, so it lives here rather than being duplicated into both
+   features' own shared.css. Each feature still supplies its OWN panel
+   *content* markup (the Timeline's day-grouped time links in
+   timeline/shared.css are one example) — what's here is only the
+   generic trigger/panel/person-pill shell every disclosure reuses as-is. */
+.jump-menu {
+  flex-shrink: 0;
+}
+.jump-menu > summary {
+  cursor: pointer;
+  color: var(--nav-text);
+  font-weight: 600;
+  list-style: none;
+}
+.jump-menu > summary::-webkit-details-marker { display: none; }
+.jump-menu > summary:hover { text-decoration: underline; }
+/* Positioned against .site-nav (position: sticky above, which also
+   establishes a containing block for absolute descendants), not against
+   .jump-menu itself — anchoring to the trigger's own position let the
+   panel overflow off-screen on narrow widths, since the trigger sits in
+   the middle of the nav row, not at an edge. Spanning the full nav width
+   instead always stays on-screen regardless of where the trigger falls. */
+.jump-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.jump-links { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+/* A person entry within a jump-panel — a name plus one or more labeled
+   segments (links and/or plain status text), combined into one bordered
+   pill so the whole thing reads as one unit, each segment split by a
+   thin divider. The Timeline's "Folks ▾" uses name + two links
+   ("Timeline"/"Detail" — see timeline/scripts/build.py); the Family
+   Tree's own "Folks ▾" uses name + an optional plain-text status segment
+   (.jump-person-status, "Collecting facts" — see
+   family-tree/scripts/build.py -> render_folks_menu()) + one "Detail"
+   link, omitting the status segment entirely for the default/common
+   case (facts already collected), same "no extra treatment for the
+   expected case" convention as everywhere else on this site (see
+   requirements/public.md -> Family Tree -> Layout). */
+.jump-person {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.jump-person-name {
+  padding: 0.25rem 0.5rem;
+  font-weight: 600;
+}
+.jump-person a {
+  border: none;
+  border-radius: 0;
+  border-left: 1px solid var(--border);
+  padding: 0.25rem 0.5rem;
+}
+.jump-person a.jump-person-details {
+  color: var(--secondary);
+}
+.jump-person-status {
+  padding: 0.25rem 0.5rem;
+  border-left: 1px solid var(--border);
+  color: var(--secondary);
+  font-size: 0.85rem;
+  font-style: italic;
+  align-self: center;
+  white-space: nowrap;
+}
+/* The one caret component for "this is a disclosure trigger, tapping it
+   expands a panel in place" — used by every .jump-menu summary (the
+   Timeline's current-quarter-label and "Folks ▾", the Family Tree's own
+   "Folks ▾"), always as this exact span, never as a literal "▾" typed
+   into a summary's own text. Two different-looking carets for the same
+   meaning was the actual bug a past design pass left behind — see
+   requirements/public.md -> Navigation for the one-system rule this
+   exists to satisfy. Deliberately smaller (0.85rem) and set off with its
+   own margin rather than sized to match the label text next to it — a
+   quieter, secondary mark, not competing with the word it's attached to. */
+.nav-caret {
+  color: var(--nav-text);
+  font-size: 0.85rem;
+  margin-left: 0.2rem;
+}
+
 h1, h2, h3 { color: var(--primary); }
 a { color: var(--secondary); }
 

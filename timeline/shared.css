@@ -86,38 +86,14 @@ html.timeline-page.auto-scrolling {
 }
 
 /* Jump menu lives directly in the single-row nav (shared/base.css ->
-   .site-nav) as a dropdown, not a second sticky bar. */
-.jump-menu {
-  flex-shrink: 0;
-}
-.jump-menu > summary {
-  cursor: pointer;
-  color: var(--nav-text);
-  font-weight: 600;
-  list-style: none;
-}
-.jump-menu > summary::-webkit-details-marker { display: none; }
-/* Positioned against .site-nav (shared/base.css -> position: sticky,
-   which also establishes a containing block for absolute descendants),
-   not against .jump-menu itself — anchoring to the trigger's own position
-   let the panel overflow off-screen on narrow widths, since the trigger
-   sits in the middle of the nav row, not at an edge. Spanning the full
-   nav width instead always stays on-screen regardless of where the
-   trigger falls. */
-.jump-panel {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin-top: 0.5rem;
-  max-height: 60vh;
-  overflow-y: auto;
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
+   .site-nav) as a dropdown, not a second sticky bar. The generic
+   disclosure machinery (.jump-menu/.jump-panel/.jump-links/.jump-person*/
+   .nav-caret, plus the shared hover rule) now lives in shared/base.css,
+   not here — the Family Tree page grew its own "Folks ▾" dropdown (see
+   family-tree/scripts/build.py -> render_folks_menu()) that reuses all of
+   it, so it stopped being Timeline-only. What's left here is genuinely
+   Timeline-specific: the day/time jump panel's own day-grouping markup
+   and its plain-link styling (a bare <a>, not a .jump-person pill). */
 .jump-day-group { margin-bottom: 0.6rem; }
 .jump-day-label {
   display: block;
@@ -126,7 +102,6 @@ html.timeline-page.auto-scrolling {
   font-size: 0.85rem;
   margin-bottom: 0.3rem;
 }
-.jump-links { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .jump-links a {
   font-size: 0.85rem;
   padding: 0.25rem 0.5rem;
@@ -134,32 +109,6 @@ html.timeline-page.auto-scrolling {
   border-radius: 4px;
   text-decoration: none;
   color: var(--text);
-}
-/* "Folks ▾" (render_folks_menu() in timeline/scripts/build.py) — each
-   person is a name plus two labeled links, not a single link: "Timeline"
-   jumps to their arrival's quarter screen, "Detail" goes to their own
-   Attendees page instead. Combined into one bordered pill (overriding
-   the plain single-link .jump-links a styling above) so the three read
-   as one unit, each segment split by a thin divider. */
-.jump-person {
-  display: inline-flex;
-  align-items: stretch;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.jump-person-name {
-  padding: 0.25rem 0.5rem;
-  font-weight: 600;
-}
-.jump-person a {
-  border: none;
-  border-radius: 0;
-  border-left: 1px solid var(--border);
-  padding: 0.25rem 0.5rem;
-}
-.jump-person a.jump-person-details {
-  color: var(--secondary);
 }
 
 /* "Murray Corner 2026" — permanent, unchanging nav item (see
@@ -234,18 +183,18 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
   color: var(--nav-text);
   font-size: 1.05rem;
 }
-.cq-caret {
-  color: var(--nav-text);
-  font-size: 0.85rem;
-  margin-left: 0.2rem;
-}
+/* .nav-caret (the shared "this expands" caret) and the shared
+   underline-on-hover rule for disclosure triggers both moved to
+   shared/base.css — see that file — now that the Family Tree page's own
+   "Folks ▾" needs them too, not just the two disclosures here. */
 
 /* "Now" — jumps to the visitor's own real-world current quarter (see
    timeline/shared.js), computed client-side rather than baked into a
    static href, so it's a <button>, not an <a> — styled to read as a
-   plain nav link all the same, same weight/color/no-decoration as the
-   jump-to-time/"Folks ▾" triggers (shared/base.css -> .site-nav a).
-   Hover is an underline, not a color swap — a color chosen for good
+   plain nav link all the same, same weight/color/no-decoration as every
+   other text item in the row (shared/base.css -> .site-nav a). Hover is
+   an underline like every other text item (see the shared-hover-rule
+   comment above) rather than a color swap — a color chosen for good
    contrast against the current --quarter-bg has no guarantee of also
    looking good as a "highlight" shade against that same background, and
    underline sidesteps needing one at all. */
@@ -263,10 +212,13 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 .jump-now-toggle:hover { text-decoration: underline; }
 
 /* Play/pause auto-advance toggle — icon-only (no text label, see
-   requirements/public.md -> Navigation), same weight/color/no-decoration
-   look as the jump-to-time/"Folks ▾" disclosure triggers (shared/base.css ->
-   .site-nav a), not a boxed/decorated button, per brand-guidelines.md's
-   flat visual language. */
+   requirements/public.md -> Navigation), same weight/color look as
+   every other item (shared/base.css -> .site-nav a), not a boxed/
+   decorated button, per brand-guidelines.md's flat visual language. The
+   one deliberate exception to the shared underline-on-hover rule above:
+   it dims instead, since a line under a lone glyph reads as a stray
+   mark, not as the same "this is clickable text" cue underline gives
+   everywhere else. */
 .run-toggle {
   flex-shrink: 0;
   border: none;
@@ -378,42 +330,53 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
    cards below keep their own always-white/paper background regardless of
    quarter — only the surrounding canvas signals time of day.
 
-   Each quarter blends in FROM the previous quarter's color at its own
-   top edge (--prev-quarter-bg), rather than cutting hard at the section
-   boundary — the quarters cycle in a fixed, always-the-same order
-   (00-06 -> 06-12 -> 12-18 -> 18-24 -> 00-06...), so "the previous
-   quarter's color" is static, known ahead of time, and needs no JS or
-   per-day build-time logic, just one extra custom property per quarter.
-   Deliberately one-directional (blend in at the top only, hold flat for
-   the rest, no blend-out at the bottom) rather than also blending toward
-   the NEXT quarter at the bottom: that would need each section to blend
-   toward a color chosen by its successor, and the two directions can't
-   agree on a color exactly at the shared edge without fighting each
-   other. One direction per section, chained across sections, always
-   agrees at the seam (section N's bottom is flat at its own color;
-   section N+1's top starts blending FROM that exact color) — the very
-   first quarter screen of the trip (Aug 1, 00-06) blends in "from"
-   Evening/peach same as any other Night screen would, even though
-   there's no literal previous evening — harmless, since the sticky nav
-   already covers most of that blend zone there regardless.
+   A quarter screen at rest is ALWAYS this one flat --quarter-bg color —
+   no gradient here at all. The blend into the *previous* quarter's color
+   (--prev-quarter-bg) is a live, scroll-position-driven effect owned
+   entirely by timeline/shared.js, which overrides --quarter-bg with an
+   inline style on whichever single screen is currently sliding into
+   place, continuously recomputed as you scroll and cleared once that
+   screen has fully settled. A static CSS gradient baked into the top of
+   every screen was the first version of this: it looked identical
+   whether you were mid-scroll or sitting still reading, since each
+   screen is exactly one viewport tall and its own top lands exactly at
+   the viewport top once snapped — so the "blend zone" was permanently
+   on screen, every single time, not just while actually scrolling. See
+   requirements/public.md -> Time-of-day background for the resulting
+   rule: at rest, always one flat color, full stop.
 
-   One pair of colors per quarter, held in custom properties rather than
-   repeated per-rule, since the gradient is painted twice: once as the
-   section's own background (covering the centered content column) and
-   once via the ::before below (a full-bleed layer breaking out to the
-   actual viewport edges, per the standard "left:50%; width:100vw;
+   The quarters cycle in a fixed, always-the-same order (00-06 -> 06-12
+   -> 12-18 -> 18-24 -> 00-06...), so "the previous quarter's color" for
+   any given screen is static and known ahead of time — one extra custom
+   property per quarter, no per-day build-time logic. The very first
+   quarter screen of the trip (Aug 1, 00-06) is the one exception: its
+   real previous screen is the Grove intro, not an Evening that never
+   happened, so build.py tags it with .first-quarter-screen to override
+   --prev-quarter-bg accordingly (see below) — this only actually matters
+   now that the blend is a real, visible effect during that specific
+   scroll, not mostly hidden under the nav the way the old static version
+   was.
+
+   background/::before are both plain `var(--quarter-bg)` — no gradient
+   math here at all now, that's entirely shared.js's job via the inline
+   override. Painted twice, same as before: once as the section's own
+   background (covering the centered content column) and once via the
+   ::before below (a full-bleed layer breaking out to the actual
+   viewport edges, per the standard "left:50%; width:100vw;
    margin-left:-50vw" technique — body/main are centered with a
    max-width, per technical.md -> Shape of the system, so the plain
    section background alone would only ever color that narrow column,
-   leaving the flanking gutters and the sticky nav bar — see below —
-   looking untouched). */
+   leaving the flanking gutters and the sticky nav bar looking
+   untouched). Both read the same custom property, so shared.js's single
+   inline override on the section element repaints both at once. */
 .quarter-screen[data-quarter="00-06"] { --quarter-bg: #16232e; --prev-quarter-bg: #f0c9a8; }
 .quarter-screen[data-quarter="06-12"] { --quarter-bg: #e4f1f8; --prev-quarter-bg: #16232e; }
 .quarter-screen[data-quarter="12-18"] { --quarter-bg: var(--accent); --prev-quarter-bg: #e4f1f8; }
 .quarter-screen[data-quarter="18-24"] { --quarter-bg: #f0c9a8; --prev-quarter-bg: var(--accent); }
+.quarter-screen.first-quarter-screen { --prev-quarter-bg: var(--grove); }
 .quarter-screen[data-quarter] {
   position: relative;
-  background: linear-gradient(to bottom, var(--prev-quarter-bg) 0%, var(--quarter-bg) 20%, var(--quarter-bg) 100%);
+  background: var(--quarter-bg);
 }
 .quarter-screen[data-quarter]::before {
   content: "";
@@ -424,7 +387,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
   width: 100vw;
   margin-left: -50vw;
   z-index: -1;
-  background: linear-gradient(to bottom, var(--prev-quarter-bg) 0%, var(--quarter-bg) 20%, var(--quarter-bg) 100%);
+  background: var(--quarter-bg);
 }
 
 /* Night's background is dark enough that the default charcoal body text
@@ -453,18 +416,18 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
    (the .site-nav[data-quarter="X"] rules below are exactly that: a
    fallback/default, and what actually drives the Night-only text-
    contrast rules further down). What the nav VISUALLY shows is
-   overridden continuously by timeline/shared.js on every scroll frame,
-   reading --quarter-bg/--prev-quarter-bg straight off whichever quarter
-   screen currently sits at the nav's own bottom edge and blending
-   between them at the exact same point the CSS gradient below has
-   reached — this is what keeps the nav from ever visibly disagreeing
-   with the canvas immediately below it, which a fixed-threshold swap
-   alone could not do (see that file for the full rationale). Same
-   full-bleed ::before as the quarter screens, since .site-nav is also a
-   child of the centered, max-width body (shared/base.css already gives
-   .site-nav its base background: var(--quarter-bg, var(--bg)), falling
-   back to the plain, unchanging --bg on every page but this one, and on
-   this one before scrolling into any quarter). */
+   overridden continuously by timeline/shared.js's one blend function —
+   the exact same function, same computed value, that also drives
+   whichever quarter screen is currently entering the viewport (see
+   .quarter-screen[data-quarter] above) — so the nav can never visibly
+   disagree with the canvas immediately below it, at rest or mid-scroll,
+   without needing its own separate calculation (see that file for the
+   full rationale). Same full-bleed ::before as the quarter screens,
+   since .site-nav is also a child of the centered, max-width body
+   (shared/base.css already gives .site-nav its base background:
+   var(--quarter-bg, var(--bg)), falling back to the plain, unchanging
+   --bg on every page but this one, and on this one before scrolling
+   into any quarter). */
 /* No position:relative needed here — shared/base.css's .site-nav is
    already position:sticky, which (like relative) establishes a
    containing block for an absolutely-positioned descendant on its own.

@@ -87,6 +87,13 @@ body {
   font-weight: 600;
   font-size: 1.05rem;
 }
+/* Every interactive nav item across every page underlines on hover — the
+   one shared, site-wide feedback rule (see timeline/shared.css for the
+   Timeline-only items — the "Now"/play-pause buttons — that need their
+   own copy of this rule since a <button> isn't matched by "a"; the
+   disclosure-trigger version of this same rule, .jump-menu > summary:hover,
+   is just below, since a <summary> isn't matched by "a" either). */
+.site-nav a:hover { text-decoration: underline; }
 /* The one deliberate exception: the site's brand/home link ("Murray
    Corner 2026"), always the nav's first item on every page — bolder
    than everything else, but the SAME --nav-text color (not a separate
@@ -95,6 +102,106 @@ body {
 .site-nav > a:first-child {
   font-weight: 700;
 }
+
+/* The disclosure-dropdown system: a <details class="jump-menu"> trigger
+   plus its <div class="jump-panel">, used by the Timeline's jump-to-time
+   and "Folks ▾" (timeline/shared.js/timeline/scripts/build.py) and the
+   Family Tree's own "Folks ▾" (family-tree/scripts/build.py ->
+   render_folks_menu()) — genuinely shared across two features now, not
+   Timeline-only, so it lives here rather than being duplicated into both
+   features' own shared.css. Each feature still supplies its OWN panel
+   *content* markup (the Timeline's day-grouped time links in
+   timeline/shared.css are one example) — what's here is only the
+   generic trigger/panel/person-pill shell every disclosure reuses as-is. */
+.jump-menu {
+  flex-shrink: 0;
+}
+.jump-menu > summary {
+  cursor: pointer;
+  color: var(--nav-text);
+  font-weight: 600;
+  list-style: none;
+}
+.jump-menu > summary::-webkit-details-marker { display: none; }
+.jump-menu > summary:hover { text-decoration: underline; }
+/* Positioned against .site-nav (position: sticky above, which also
+   establishes a containing block for absolute descendants), not against
+   .jump-menu itself — anchoring to the trigger's own position let the
+   panel overflow off-screen on narrow widths, since the trigger sits in
+   the middle of the nav row, not at an edge. Spanning the full nav width
+   instead always stays on-screen regardless of where the trigger falls. */
+.jump-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.jump-links { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+/* A person entry within a jump-panel — a name plus one or more labeled
+   segments (links and/or plain status text), combined into one bordered
+   pill so the whole thing reads as one unit, each segment split by a
+   thin divider. The Timeline's "Folks ▾" uses name + two links
+   ("Timeline"/"Detail" — see timeline/scripts/build.py); the Family
+   Tree's own "Folks ▾" uses name + an optional plain-text status segment
+   (.jump-person-status, "Collecting facts" — see
+   family-tree/scripts/build.py -> render_folks_menu()) + one "Detail"
+   link, omitting the status segment entirely for the default/common
+   case (facts already collected), same "no extra treatment for the
+   expected case" convention as everywhere else on this site (see
+   requirements/public.md -> Family Tree -> Layout). */
+.jump-person {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.jump-person-name {
+  padding: 0.25rem 0.5rem;
+  font-weight: 600;
+}
+.jump-person a {
+  border: none;
+  border-radius: 0;
+  border-left: 1px solid var(--border);
+  padding: 0.25rem 0.5rem;
+}
+.jump-person a.jump-person-details {
+  color: var(--secondary);
+}
+.jump-person-status {
+  padding: 0.25rem 0.5rem;
+  border-left: 1px solid var(--border);
+  color: var(--secondary);
+  font-size: 0.85rem;
+  font-style: italic;
+  align-self: center;
+  white-space: nowrap;
+}
+/* The one caret component for "this is a disclosure trigger, tapping it
+   expands a panel in place" — used by every .jump-menu summary (the
+   Timeline's current-quarter-label and "Folks ▾", the Family Tree's own
+   "Folks ▾"), always as this exact span, never as a literal "▾" typed
+   into a summary's own text. Two different-looking carets for the same
+   meaning was the actual bug a past design pass left behind — see
+   requirements/public.md -> Navigation for the one-system rule this
+   exists to satisfy. Deliberately smaller (0.85rem) and set off with its
+   own margin rather than sized to match the label text next to it — a
+   quieter, secondary mark, not competing with the word it's attached to. */
+.nav-caret {
+  color: var(--nav-text);
+  font-size: 0.85rem;
+  margin-left: 0.2rem;
+}
+
 h1, h2, h3 { color: var(--primary); }
 a { color: var(--secondary); }
 
@@ -186,38 +293,14 @@ html.timeline-page.auto-scrolling {
 }
 
 /* Jump menu lives directly in the single-row nav (shared/base.css ->
-   .site-nav) as a dropdown, not a second sticky bar. */
-.jump-menu {
-  flex-shrink: 0;
-}
-.jump-menu > summary {
-  cursor: pointer;
-  color: var(--nav-text);
-  font-weight: 600;
-  list-style: none;
-}
-.jump-menu > summary::-webkit-details-marker { display: none; }
-/* Positioned against .site-nav (shared/base.css -> position: sticky,
-   which also establishes a containing block for absolute descendants),
-   not against .jump-menu itself — anchoring to the trigger's own position
-   let the panel overflow off-screen on narrow widths, since the trigger
-   sits in the middle of the nav row, not at an edge. Spanning the full
-   nav width instead always stays on-screen regardless of where the
-   trigger falls. */
-.jump-panel {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin-top: 0.5rem;
-  max-height: 60vh;
-  overflow-y: auto;
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
+   .site-nav) as a dropdown, not a second sticky bar. The generic
+   disclosure machinery (.jump-menu/.jump-panel/.jump-links/.jump-person*/
+   .nav-caret, plus the shared hover rule) now lives in shared/base.css,
+   not here — the Family Tree page grew its own "Folks ▾" dropdown (see
+   family-tree/scripts/build.py -> render_folks_menu()) that reuses all of
+   it, so it stopped being Timeline-only. What's left here is genuinely
+   Timeline-specific: the day/time jump panel's own day-grouping markup
+   and its plain-link styling (a bare <a>, not a .jump-person pill). */
 .jump-day-group { margin-bottom: 0.6rem; }
 .jump-day-label {
   display: block;
@@ -226,7 +309,6 @@ html.timeline-page.auto-scrolling {
   font-size: 0.85rem;
   margin-bottom: 0.3rem;
 }
-.jump-links { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .jump-links a {
   font-size: 0.85rem;
   padding: 0.25rem 0.5rem;
@@ -234,32 +316,6 @@ html.timeline-page.auto-scrolling {
   border-radius: 4px;
   text-decoration: none;
   color: var(--text);
-}
-/* "Folks ▾" (render_folks_menu() in timeline/scripts/build.py) — each
-   person is a name plus two labeled links, not a single link: "Timeline"
-   jumps to their arrival's quarter screen, "Detail" goes to their own
-   Attendees page instead. Combined into one bordered pill (overriding
-   the plain single-link .jump-links a styling above) so the three read
-   as one unit, each segment split by a thin divider. */
-.jump-person {
-  display: inline-flex;
-  align-items: stretch;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.jump-person-name {
-  padding: 0.25rem 0.5rem;
-  font-weight: 600;
-}
-.jump-person a {
-  border: none;
-  border-radius: 0;
-  border-left: 1px solid var(--border);
-  padding: 0.25rem 0.5rem;
-}
-.jump-person a.jump-person-details {
-  color: var(--secondary);
 }
 
 /* "Murray Corner 2026" — permanent, unchanging nav item (see
@@ -334,18 +390,18 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
   color: var(--nav-text);
   font-size: 1.05rem;
 }
-.cq-caret {
-  color: var(--nav-text);
-  font-size: 0.85rem;
-  margin-left: 0.2rem;
-}
+/* .nav-caret (the shared "this expands" caret) and the shared
+   underline-on-hover rule for disclosure triggers both moved to
+   shared/base.css — see that file — now that the Family Tree page's own
+   "Folks ▾" needs them too, not just the two disclosures here. */
 
 /* "Now" — jumps to the visitor's own real-world current quarter (see
    timeline/shared.js), computed client-side rather than baked into a
    static href, so it's a <button>, not an <a> — styled to read as a
-   plain nav link all the same, same weight/color/no-decoration as the
-   jump-to-time/"Folks ▾" triggers (shared/base.css -> .site-nav a).
-   Hover is an underline, not a color swap — a color chosen for good
+   plain nav link all the same, same weight/color/no-decoration as every
+   other text item in the row (shared/base.css -> .site-nav a). Hover is
+   an underline like every other text item (see the shared-hover-rule
+   comment above) rather than a color swap — a color chosen for good
    contrast against the current --quarter-bg has no guarantee of also
    looking good as a "highlight" shade against that same background, and
    underline sidesteps needing one at all. */
@@ -363,10 +419,13 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 .jump-now-toggle:hover { text-decoration: underline; }
 
 /* Play/pause auto-advance toggle — icon-only (no text label, see
-   requirements/public.md -> Navigation), same weight/color/no-decoration
-   look as the jump-to-time/"Folks ▾" disclosure triggers (shared/base.css ->
-   .site-nav a), not a boxed/decorated button, per brand-guidelines.md's
-   flat visual language. */
+   requirements/public.md -> Navigation), same weight/color look as
+   every other item (shared/base.css -> .site-nav a), not a boxed/
+   decorated button, per brand-guidelines.md's flat visual language. The
+   one deliberate exception to the shared underline-on-hover rule above:
+   it dims instead, since a line under a lone glyph reads as a stray
+   mark, not as the same "this is clickable text" cue underline gives
+   everywhere else. */
 .run-toggle {
   flex-shrink: 0;
   border: none;
@@ -478,42 +537,53 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
    cards below keep their own always-white/paper background regardless of
    quarter — only the surrounding canvas signals time of day.
 
-   Each quarter blends in FROM the previous quarter's color at its own
-   top edge (--prev-quarter-bg), rather than cutting hard at the section
-   boundary — the quarters cycle in a fixed, always-the-same order
-   (00-06 -> 06-12 -> 12-18 -> 18-24 -> 00-06...), so "the previous
-   quarter's color" is static, known ahead of time, and needs no JS or
-   per-day build-time logic, just one extra custom property per quarter.
-   Deliberately one-directional (blend in at the top only, hold flat for
-   the rest, no blend-out at the bottom) rather than also blending toward
-   the NEXT quarter at the bottom: that would need each section to blend
-   toward a color chosen by its successor, and the two directions can't
-   agree on a color exactly at the shared edge without fighting each
-   other. One direction per section, chained across sections, always
-   agrees at the seam (section N's bottom is flat at its own color;
-   section N+1's top starts blending FROM that exact color) — the very
-   first quarter screen of the trip (Aug 1, 00-06) blends in "from"
-   Evening/peach same as any other Night screen would, even though
-   there's no literal previous evening — harmless, since the sticky nav
-   already covers most of that blend zone there regardless.
+   A quarter screen at rest is ALWAYS this one flat --quarter-bg color —
+   no gradient here at all. The blend into the *previous* quarter's color
+   (--prev-quarter-bg) is a live, scroll-position-driven effect owned
+   entirely by timeline/shared.js, which overrides --quarter-bg with an
+   inline style on whichever single screen is currently sliding into
+   place, continuously recomputed as you scroll and cleared once that
+   screen has fully settled. A static CSS gradient baked into the top of
+   every screen was the first version of this: it looked identical
+   whether you were mid-scroll or sitting still reading, since each
+   screen is exactly one viewport tall and its own top lands exactly at
+   the viewport top once snapped — so the "blend zone" was permanently
+   on screen, every single time, not just while actually scrolling. See
+   requirements/public.md -> Time-of-day background for the resulting
+   rule: at rest, always one flat color, full stop.
 
-   One pair of colors per quarter, held in custom properties rather than
-   repeated per-rule, since the gradient is painted twice: once as the
-   section's own background (covering the centered content column) and
-   once via the ::before below (a full-bleed layer breaking out to the
-   actual viewport edges, per the standard "left:50%; width:100vw;
+   The quarters cycle in a fixed, always-the-same order (00-06 -> 06-12
+   -> 12-18 -> 18-24 -> 00-06...), so "the previous quarter's color" for
+   any given screen is static and known ahead of time — one extra custom
+   property per quarter, no per-day build-time logic. The very first
+   quarter screen of the trip (Aug 1, 00-06) is the one exception: its
+   real previous screen is the Grove intro, not an Evening that never
+   happened, so build.py tags it with .first-quarter-screen to override
+   --prev-quarter-bg accordingly (see below) — this only actually matters
+   now that the blend is a real, visible effect during that specific
+   scroll, not mostly hidden under the nav the way the old static version
+   was.
+
+   background/::before are both plain `var(--quarter-bg)` — no gradient
+   math here at all now, that's entirely shared.js's job via the inline
+   override. Painted twice, same as before: once as the section's own
+   background (covering the centered content column) and once via the
+   ::before below (a full-bleed layer breaking out to the actual
+   viewport edges, per the standard "left:50%; width:100vw;
    margin-left:-50vw" technique — body/main are centered with a
    max-width, per technical.md -> Shape of the system, so the plain
    section background alone would only ever color that narrow column,
-   leaving the flanking gutters and the sticky nav bar — see below —
-   looking untouched). */
+   leaving the flanking gutters and the sticky nav bar looking
+   untouched). Both read the same custom property, so shared.js's single
+   inline override on the section element repaints both at once. */
 .quarter-screen[data-quarter="00-06"] { --quarter-bg: #16232e; --prev-quarter-bg: #f0c9a8; }
 .quarter-screen[data-quarter="06-12"] { --quarter-bg: #e4f1f8; --prev-quarter-bg: #16232e; }
 .quarter-screen[data-quarter="12-18"] { --quarter-bg: var(--accent); --prev-quarter-bg: #e4f1f8; }
 .quarter-screen[data-quarter="18-24"] { --quarter-bg: #f0c9a8; --prev-quarter-bg: var(--accent); }
+.quarter-screen.first-quarter-screen { --prev-quarter-bg: var(--grove); }
 .quarter-screen[data-quarter] {
   position: relative;
-  background: linear-gradient(to bottom, var(--prev-quarter-bg) 0%, var(--quarter-bg) 20%, var(--quarter-bg) 100%);
+  background: var(--quarter-bg);
 }
 .quarter-screen[data-quarter]::before {
   content: "";
@@ -524,7 +594,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
   width: 100vw;
   margin-left: -50vw;
   z-index: -1;
-  background: linear-gradient(to bottom, var(--prev-quarter-bg) 0%, var(--quarter-bg) 20%, var(--quarter-bg) 100%);
+  background: var(--quarter-bg);
 }
 
 /* Night's background is dark enough that the default charcoal body text
@@ -553,18 +623,18 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
    (the .site-nav[data-quarter="X"] rules below are exactly that: a
    fallback/default, and what actually drives the Night-only text-
    contrast rules further down). What the nav VISUALLY shows is
-   overridden continuously by timeline/shared.js on every scroll frame,
-   reading --quarter-bg/--prev-quarter-bg straight off whichever quarter
-   screen currently sits at the nav's own bottom edge and blending
-   between them at the exact same point the CSS gradient below has
-   reached — this is what keeps the nav from ever visibly disagreeing
-   with the canvas immediately below it, which a fixed-threshold swap
-   alone could not do (see that file for the full rationale). Same
-   full-bleed ::before as the quarter screens, since .site-nav is also a
-   child of the centered, max-width body (shared/base.css already gives
-   .site-nav its base background: var(--quarter-bg, var(--bg)), falling
-   back to the plain, unchanging --bg on every page but this one, and on
-   this one before scrolling into any quarter). */
+   overridden continuously by timeline/shared.js's one blend function —
+   the exact same function, same computed value, that also drives
+   whichever quarter screen is currently entering the viewport (see
+   .quarter-screen[data-quarter] above) — so the nav can never visibly
+   disagree with the canvas immediately below it, at rest or mid-scroll,
+   without needing its own separate calculation (see that file for the
+   full rationale). Same full-bleed ::before as the quarter screens,
+   since .site-nav is also a child of the centered, max-width body
+   (shared/base.css already gives .site-nav its base background:
+   var(--quarter-bg, var(--bg)), falling back to the plain, unchanging
+   --bg on every page but this one, and on this one before scrolling
+   into any quarter). */
 /* No position:relative needed here — shared/base.css's .site-nav is
    already position:sticky, which (like relative) establishes a
    containing block for an absolutely-positioned descendant on its own.
@@ -595,12 +665,12 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <body>
 <nav class="site-nav">
 <a href="#trip-top" class="site-title">Murray Corner 2026</a>
-<details class="jump-menu current-quarter-menu"><summary class="current-quarter-label" id="current-quarter-label"><span class="cq-date" id="cq-date"></span><span class="cq-day" id="cq-day"></span><span class="cq-caret">▾</span></summary><div class="jump-panel"><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 1</span><div class="jump-links"><a href="#qc-2026-08-01-00-06">Night · 12am–6am</a><a href="#qc-2026-08-01-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-01-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-01-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 2</span><div class="jump-links"><a href="#qc-2026-08-02-00-06">Night · 12am–6am</a><a href="#qc-2026-08-02-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-02-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-02-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 3</span><div class="jump-links"><a href="#qc-2026-08-03-00-06">Night · 12am–6am</a><a href="#qc-2026-08-03-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-03-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-03-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 4</span><div class="jump-links"><a href="#qc-2026-08-04-00-06">Night · 12am–6am</a><a href="#qc-2026-08-04-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-04-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-04-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 5</span><div class="jump-links"><a href="#qc-2026-08-05-00-06">Night · 12am–6am</a><a href="#qc-2026-08-05-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-05-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-05-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 6</span><div class="jump-links"><a href="#qc-2026-08-06-00-06">Night · 12am–6am</a><a href="#qc-2026-08-06-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-06-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-06-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 7</span><div class="jump-links"><a href="#qc-2026-08-07-00-06">Night · 12am–6am</a><a href="#qc-2026-08-07-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-07-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-07-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 8</span><div class="jump-links"><a href="#qc-2026-08-08-00-06">Night · 12am–6am</a><a href="#qc-2026-08-08-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-08-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-08-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 9</span><div class="jump-links"><a href="#qc-2026-08-09-00-06">Night · 12am–6am</a><a href="#qc-2026-08-09-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-09-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-09-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 10</span><div class="jump-links"><a href="#qc-2026-08-10-00-06">Night · 12am–6am</a><a href="#qc-2026-08-10-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-10-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-10-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 11</span><div class="jump-links"><a href="#qc-2026-08-11-00-06">Night · 12am–6am</a><a href="#qc-2026-08-11-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-11-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-11-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 12</span><div class="jump-links"><a href="#qc-2026-08-12-00-06">Night · 12am–6am</a><a href="#qc-2026-08-12-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-12-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-12-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 13</span><div class="jump-links"><a href="#qc-2026-08-13-00-06">Night · 12am–6am</a><a href="#qc-2026-08-13-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-13-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-13-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 14</span><div class="jump-links"><a href="#qc-2026-08-14-00-06">Night · 12am–6am</a><a href="#qc-2026-08-14-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-14-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-14-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 15</span><div class="jump-links"><a href="#qc-2026-08-15-00-06">Night · 12am–6am</a><a href="#qc-2026-08-15-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-15-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-15-18-24">Evening · 6pm–12am</a></div></div></div></details>
+<details class="jump-menu current-quarter-menu"><summary class="current-quarter-label" id="current-quarter-label"><span class="cq-date" id="cq-date"></span><span class="cq-day" id="cq-day"></span><span class="nav-caret">▾</span></summary><div class="jump-panel"><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 1</span><div class="jump-links"><a href="#qc-2026-08-01-00-06">12am–6am</a><a href="#qc-2026-08-01-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-01-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-01-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 2</span><div class="jump-links"><a href="#qc-2026-08-02-00-06">12am–6am</a><a href="#qc-2026-08-02-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-02-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-02-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 3</span><div class="jump-links"><a href="#qc-2026-08-03-00-06">12am–6am</a><a href="#qc-2026-08-03-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-03-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-03-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 4</span><div class="jump-links"><a href="#qc-2026-08-04-00-06">12am–6am</a><a href="#qc-2026-08-04-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-04-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-04-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 5</span><div class="jump-links"><a href="#qc-2026-08-05-00-06">12am–6am</a><a href="#qc-2026-08-05-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-05-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-05-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 6</span><div class="jump-links"><a href="#qc-2026-08-06-00-06">12am–6am</a><a href="#qc-2026-08-06-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-06-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-06-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 7</span><div class="jump-links"><a href="#qc-2026-08-07-00-06">12am–6am</a><a href="#qc-2026-08-07-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-07-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-07-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 8</span><div class="jump-links"><a href="#qc-2026-08-08-00-06">12am–6am</a><a href="#qc-2026-08-08-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-08-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-08-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 9</span><div class="jump-links"><a href="#qc-2026-08-09-00-06">12am–6am</a><a href="#qc-2026-08-09-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-09-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-09-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 10</span><div class="jump-links"><a href="#qc-2026-08-10-00-06">12am–6am</a><a href="#qc-2026-08-10-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-10-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-10-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 11</span><div class="jump-links"><a href="#qc-2026-08-11-00-06">12am–6am</a><a href="#qc-2026-08-11-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-11-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-11-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 12</span><div class="jump-links"><a href="#qc-2026-08-12-00-06">12am–6am</a><a href="#qc-2026-08-12-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-12-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-12-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 13</span><div class="jump-links"><a href="#qc-2026-08-13-00-06">12am–6am</a><a href="#qc-2026-08-13-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-13-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-13-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 14</span><div class="jump-links"><a href="#qc-2026-08-14-00-06">12am–6am</a><a href="#qc-2026-08-14-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-14-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-14-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 15</span><div class="jump-links"><a href="#qc-2026-08-15-00-06">12am–6am</a><a href="#qc-2026-08-15-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-15-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-15-18-24">Evening · 6pm–12am</a></div></div></div></details>
 <button type="button" id="jump-now-toggle" class="jump-now-toggle">Now</button>
 <button type="button" id="run-toggle" class="run-toggle" aria-label="Play">▶</button>
 <a href="family-tree/index.html">Tree</a>
 <details class="jump-menu">
-<summary>Folks ▾</summary>
+<summary>Folks<span class="nav-caret">▾</span></summary>
 <div class="jump-panel"><div class="jump-links"><span class="jump-person"><span class="jump-person-name">David S</span><a href="#qc-2026-08-01-18-24">Timeline</a><a href="attendees/7.html" class="jump-person-details">Detail</a></span><span class="jump-person"><span class="jump-person-name">Rachel</span><a href="#qc-2026-08-01-18-24">Timeline</a><a href="attendees/8.html" class="jump-person-details">Detail</a></span></div></div>
 </details>
 </nav>
@@ -610,7 +680,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <p class="trip-subtitle">Murray Corner, New Brunswick · August 1–15, 2026</p>
 <p class="scroll-hint">Scroll or swipe down to start ↓</p>
 </section>
-<section class="quarter-screen" id="qc-2026-08-01-00-06" data-day-name="Saturday" data-date="Aug 1" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen first-quarter-screen" id="qc-2026-08-01-00-06" data-day-name="Saturday" data-date="Aug 1" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
@@ -634,7 +704,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>David S — 6pm · White Toyota Camry</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Rachel — 6pm · White Toyota Camry</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-02-00-06" data-day-name="Sunday" data-date="Aug 2" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-02-00-06" data-day-name="Sunday" data-date="Aug 2" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
@@ -658,7 +728,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-03-00-06" data-day-name="Monday" data-date="Aug 3" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-03-00-06" data-day-name="Monday" data-date="Aug 3" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
@@ -682,7 +752,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-04-00-06" data-day-name="Tuesday" data-date="Aug 4" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-04-00-06" data-day-name="Tuesday" data-date="Aug 4" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
@@ -706,7 +776,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-05-00-06" data-day-name="Wednesday" data-date="Aug 5" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-05-00-06" data-day-name="Wednesday" data-date="Aug 5" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
@@ -730,7 +800,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-06-00-06" data-day-name="Thursday" data-date="Aug 6" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-06-00-06" data-day-name="Thursday" data-date="Aug 6" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
@@ -754,7 +824,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-07-00-06" data-day-name="Friday" data-date="Aug 7" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-07-00-06" data-day-name="Friday" data-date="Aug 7" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
@@ -778,7 +848,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-08-00-06" data-day-name="Saturday" data-date="Aug 8" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-08-00-06" data-day-name="Saturday" data-date="Aug 8" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
@@ -802,7 +872,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-09-00-06" data-day-name="Sunday" data-date="Aug 9" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-09-00-06" data-day-name="Sunday" data-date="Aug 9" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">✈️ Plane</span>Rachel — Moncton Airport · 6am flight · Departing Cottage at 3am · David S driving</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
@@ -826,7 +896,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-10-00-06" data-day-name="Monday" data-date="Aug 10" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-10-00-06" data-day-name="Monday" data-date="Aug 10" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
@@ -850,7 +920,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-11-00-06" data-day-name="Tuesday" data-date="Aug 11" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-11-00-06" data-day-name="Tuesday" data-date="Aug 11" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
@@ -874,7 +944,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-12-00-06" data-day-name="Wednesday" data-date="Aug 12" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-12-00-06" data-day-name="Wednesday" data-date="Aug 12" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
@@ -898,7 +968,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-13-00-06" data-day-name="Thursday" data-date="Aug 13" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-13-00-06" data-day-name="Thursday" data-date="Aug 13" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
@@ -922,7 +992,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-14-00-06" data-day-name="Friday" data-date="Aug 14" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-14-00-06" data-day-name="Friday" data-date="Aug 14" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
@@ -946,7 +1016,7 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-15-00-06" data-day-name="Saturday" data-date="Aug 15" data-quarter-name="Night" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-15-00-06" data-day-name="Saturday" data-date="Aug 15" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
@@ -1108,13 +1178,28 @@ document.addEventListener('DOMContentLoaded', function () {
   // weekday plus bare quarter name (.cq-day, bold/prominent, e.g.
   // "Monday Morning") shown second, as two separate spans rather than
   // one flat string so CSS can style them differently (see
-  // timeline/shared.css) — cq-day's own leading " - " is part of its
+  // timeline/shared.css) — cq-day's own leading " · " is part of its
   // text content, not static markup, so nothing floats on its own before
-  // either span has actually been filled in. Also sets data-quarter on
-  // the nav bar itself to match, so its time-of-day background
-  // (timeline/shared.css -> .site-nav[data-quarter]) tracks the same
-  // quarter as the label and the canvas beneath it, all off the one
-  // observer.
+  // either span has actually been filled in. The middot (not a hyphen)
+  // matches the separator used everywhere else two related pieces of
+  // info sit together on this site (QUARTER_LABELS' own "Morning ·
+  // 6am–12pm", the Attendees page's "Aug 1 · 6pm") — see
+  // requirements/public.md -> Navigation.
+  //
+  // data-quarter-name is EMPTY for 00-06 (see QUARTER_NAMES in
+  // shared/trip.py and render_quarter_screen() in
+  // timeline/scripts/build.py) — that quarter has no name of its own on
+  // this site: night reads as the tail end of the day before it, not the
+  // start of the one after, so scrolling into a new day's first quarter
+  // shows just the weekday alone ("Tuesday"), never an invented "Tuesday
+  // Night" — see requirements/public.md -> Terminology. The conditional
+  // below drops the joining space along with the name so this collapses
+  // to "· Tuesday", not "· Tuesday " with a trailing space.
+  //
+  // Also sets data-quarter on the nav bar itself to match, so its
+  // time-of-day background (timeline/shared.css -> .site-nav[data-quarter])
+  // tracks the same quarter as the label and the canvas beneath it, all
+  // off the one observer.
   var dayEl = document.getElementById('cq-day');
   var dateEl = document.getElementById('cq-date');
   var navEl = document.querySelector('.site-nav');
@@ -1124,7 +1209,8 @@ document.addEventListener('DOMContentLoaded', function () {
       entries.forEach(function (entry) {
         if (entry.isIntersecting) {
           dateEl.textContent = entry.target.getAttribute('data-date');
-          dayEl.textContent = ' - ' + entry.target.getAttribute('data-day-name') + ' ' + entry.target.getAttribute('data-quarter-name');
+          var quarterName = entry.target.getAttribute('data-quarter-name');
+          dayEl.textContent = ' · ' + entry.target.getAttribute('data-day-name') + (quarterName ? ' ' + quarterName : '');
           if (navEl) {
             navEl.setAttribute('data-quarter', entry.target.getAttribute('data-quarter'));
           }
@@ -1136,31 +1222,24 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Keeps the nav bar's own background in exact visual agreement with
-  // whatever's directly behind/below it, rather than a discrete swap at
-  // a fixed scroll threshold (data-quarter above) — that swap alone
-  // looked right most of the time, but for the ~20% of each quarter
-  // screen's height where its own background is still blending in from
-  // the PREVIOUS quarter's color (timeline/shared.css ->
-  // .quarter-screen[data-quarter], the smooth-transition gradient), the
-  // nav would already show the new quarter's fully-resolved flat color
-  // while the canvas just below it was still mid-blend — a visible seam
-  // right at the nav's bottom edge. Recomputed continuously on scroll
-  // (rAF-throttled, not on every scroll event) since the nav is one
-  // fixed, non-scrolling element with no natural "position within a
-  // gradient" of its own the way each quarter screen has via its own box
-  // height — reads --quarter-bg/--prev-quarter-bg straight off whichever
-  // screen currently sits at the nav's bottom edge (already fully
-  // resolved to concrete rgb() values by getComputedStyle, since nested
-  // var() references inside a custom property resolve at computed-value
-  // time), so the two colors this blends between can't drift from the
-  // CSS's own values. Sets --quarter-bg as an inline style, which wins
-  // over the plain attribute-driven rule above regardless of source
-  // order (inline beats any stylesheet selector) — data-quarter above is
-  // still what the Night-only text-contrast rules
-  // (.site-nav[data-quarter="00-06"] ...) key off, untouched by this.
-  var navBlendScreens = document.querySelectorAll('.quarter-screen[data-quarter]');
-  if (navEl && navBlendScreens.length) {
+  // Time-of-day background blend — see requirements/public.md -> Time-of-
+  // day background and timeline/shared.css -> .quarter-screen[data-quarter]
+  // for the rule this exists to satisfy: a quarter screen at rest is
+  // ALWAYS one flat color, never a gradient. The blend into the previous
+  // quarter's color is purely a function of live scroll position, applied
+  // to exactly ONE screen at a time — whichever one is currently sliding
+  // into place — and it resolves fully to that screen's own flat color
+  // (--quarter-bg, untouched) the instant it finishes settling. The same
+  // one computed value also paints the nav bar, so the two can never
+  // visibly disagree.
+  //
+  // Colors are read ONCE per screen at setup, not on every scroll frame —
+  // reading a screen's --quarter-bg via getComputedStyle AFTER this code
+  // has already set an inline override on it would read back its own
+  // previous output instead of the CSS's real value, corrupting every
+  // later frame's math. Caching upfront sidesteps that entirely.
+  var blendScreens = document.querySelectorAll('.quarter-screen[data-quarter]');
+  if (navEl && blendScreens.length) {
     function parseRgb(str) {
       str = (str || '').trim();
       var m = str.match(/^#([0-9a-f]{6})$/i);
@@ -1180,40 +1259,62 @@ document.addEventListener('DOMContentLoaded', function () {
         Math.round(a[1] + (b[1] - a[1]) * t) + ', ' +
         Math.round(a[2] + (b[2] - a[2]) * t) + ')';
     }
-    var navBlendRafId = null;
-    function updateNavBlend() {
-      navBlendRafId = null;
-      var current = null;
-      var rect = null;
-      for (var i = 0; i < navBlendScreens.length; i++) {
-        var r = navBlendScreens[i].getBoundingClientRect();
-        if (r.top <= NAV_HEIGHT_PX && r.bottom > NAV_HEIGHT_PX) {
-          current = navBlendScreens[i];
-          rect = r;
-          break;
+    var blendData = [];
+    blendScreens.forEach(function (el) {
+      var cs = getComputedStyle(el);
+      blendData.push({
+        el: el,
+        own: parseRgb(cs.getPropertyValue('--quarter-bg')),
+        prev: parseRgb(cs.getPropertyValue('--prev-quarter-bg'))
+      });
+    });
+    // How much of a screen's own height the live blend plays out over,
+    // right as its top edge approaches the viewport top — the one knob to
+    // retune (a taller fraction = a longer, more gradual cross-fade during
+    // the scroll gesture; 0 would make it a hard cut). Mirrors the 20%
+    // stop the old static gradient used, just applied live now instead of
+    // baked in.
+    var BLEND_FRACTION = 0.20;
+    var blendRafId = null;
+    var lastOverridden = null;
+    function updateQuarterBlend() {
+      blendRafId = null;
+      // The entering/current screen: among every quarter screen whose top
+      // hasn't yet scrolled past the viewport top, the one closest to it.
+      // At rest this is exactly the settled screen (its own top sits at
+      // 0) — every other screen is either far below (not yet arrived) or
+      // already fully scrolled past (excluded by the >= 0 check), so this
+      // never needs a separate "which screen is settled" lookup.
+      var best = null;
+      for (var i = 0; i < blendData.length; i++) {
+        var rect = blendData[i].el.getBoundingClientRect();
+        if (rect.top >= 0 && (!best || rect.top < best.rect.top)) {
+          best = { data: blendData[i], rect: rect };
         }
       }
-      if (!current) {
-        navEl.style.removeProperty('--quarter-bg');
-        return;
+      if (!best) {
+        // Every screen's top has scrolled past — resting on/past the very
+        // last one (or a sub-pixel overscroll bounce). Use it directly.
+        var last = blendData[blendData.length - 1];
+        best = { data: last, rect: last.el.getBoundingClientRect() };
       }
-      var cs = getComputedStyle(current);
-      var ownColor = parseRgb(cs.getPropertyValue('--quarter-bg'));
-      var prevColor = parseRgb(cs.getPropertyValue('--prev-quarter-bg'));
-      if (!ownColor || !prevColor) return;
-      // Same 20%-of-height blend-in stop the CSS gradient itself uses —
-      // keep these in sync if that stop ever changes.
-      var fraction = (NAV_HEIGHT_PX - rect.top) / rect.height;
-      var t = Math.max(0, Math.min(fraction / 0.20, 1));
-      navEl.style.setProperty('--quarter-bg', mixRgb(prevColor, ownColor, t));
+      if (lastOverridden && lastOverridden !== best.data.el) {
+        lastOverridden.style.removeProperty('--quarter-bg');
+      }
+      if (!best.data.own || !best.data.prev) return;
+      var t = Math.max(0, Math.min(1, 1 - best.rect.top / (best.rect.height * BLEND_FRACTION)));
+      var color = mixRgb(best.data.prev, best.data.own, t);
+      best.data.el.style.setProperty('--quarter-bg', color);
+      lastOverridden = best.data.el;
+      navEl.style.setProperty('--quarter-bg', color);
     }
-    function scheduleNavBlendUpdate() {
-      if (navBlendRafId === null) {
-        navBlendRafId = requestAnimationFrame(updateNavBlend);
+    function scheduleQuarterBlendUpdate() {
+      if (blendRafId === null) {
+        blendRafId = requestAnimationFrame(updateQuarterBlend);
       }
     }
-    window.addEventListener('scroll', scheduleNavBlendUpdate, { passive: true });
-    updateNavBlend();
+    window.addEventListener('scroll', scheduleQuarterBlendUpdate, { passive: true });
+    updateQuarterBlend();
   }
 
   // Play/pause auto-advance — steps through every screen one at a time:

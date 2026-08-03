@@ -30,28 +30,19 @@ a.person:hover, a.person:focus-visible {
   border-color: var(--secondary);
 }
 .person-name { display: block; }
-/* Small caption under the name, only shown for a non-default state (see
-   requirements/public.md -> Family Tree -> Layout) — the everyday case
-   (attending, facts collected) is the plain box above with no caption,
-   so a caption always means "look here," not decoration. */
-.person-status {
-  display: block;
-  margin-top: 0.15rem;
-  font-size: 0.72rem;
-  font-style: italic;
-  color: var(--secondary);
-}
 /* Married in (joined by marriage/partnership, not a blood descendant) —
-   dashed AND colored border, plus the "Married in" caption above, so it
-   reads clearly even for someone who can't recall what a dashed border
-   means on its own. */
+   dashed AND colored border, no caption any more (see
+   family-tree/scripts/build.py -> render_person()) — the words moved to
+   the nav's own "Folks ▾" dropdown (render_folks_menu()); on the tree
+   itself this is a purely visual signal now. */
 .person.married-in {
   border-style: dashed;
   border-color: var(--secondary);
 }
 /* Attending, but no travel.json entry yet — sand tint (brand-guidelines.md's
    documented use for accent: "day-card background tint") flags it as
-   still-open without introducing a new color or an icon. */
+   still-open without introducing a new color or an icon; no caption any
+   more, same reasoning as .married-in above. */
 .person.status-needed {
   background: var(--accent);
 }

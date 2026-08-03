@@ -6,12 +6,15 @@ single person) with no rendered parent yet at the top, their children
 nested below them, recursively (see requirements/public.md -> Family Tree).
 Also reads timeline/data/travel.json (read-only, same as the Attendees
 feature) purely to compute each attending person's facts-collected/
-collecting-facts status for the box's visual treatment — see
-render_person() below and requirements/public.md -> Family Tree -> Layout.
-This is also the sole entry point to the Attendees feature: an attending
-person's box is a link straight to their site/attendees/<id>.html page
-(the Attendees feature has no index page or nav link of its own — see
-attendees/scripts/build.py); a not-attending person's box stays plain
+collecting-facts status — shown on the box itself as a visual-only signal
+(border style, background tint, opacity — see render_person() and
+family-tree/shared.css), and spelled out in words in the nav's own
+"Folks ▾" dropdown instead (see render_folks_menu() below) — see
+requirements/public.md -> Family Tree -> Layout. This is also the sole
+entry point to the Attendees feature: an attending person's box (and
+their "Folks ▾" entry) is a link straight to their site/attendees/<id>.html
+page (the Attendees feature has no index page or nav link of its own —
+see attendees/scripts/build.py); a not-attending person's box stays plain
 text, since they have no such page to link to.
 
 Validated at build time, as hard errors rather than silent typos: every
@@ -46,11 +49,6 @@ import nav  # noqa: E402
 
 PAGE_TITLE = "Family Tree — Murray Corner 2026"
 TREE_SUBTITLE = "Where everyone fits"
-
-NAV_ITEMS = [
-    ("Murray Corner 2026", "../index.html", False),
-    ("Tree", None, True),
-]
 
 
 def esc(s):
@@ -182,20 +180,23 @@ def person_status(person, collected_ids):
 
 
 def render_person(person, collected_ids):
+    # Visual-only signal, no text caption — border style/color, a
+    # background tint, and opacity are still how married-in/collecting-
+    # facts/not-attending read on the tree itself (see
+    # family-tree/shared.css -> .married-in/.status-needed/
+    # .status-not-attending); the words themselves ("Married in",
+    # "Collecting facts", "Not attending") moved to the "Folks ▾"
+    # dropdown instead (see render_folks_menu() below) — see
+    # requirements/public.md -> Family Tree -> Layout for why.
     status = person_status(person, collected_ids)
     classes = ["person"]
-    captions = []
     if person.get("married_in"):
         classes.append("married-in")
-        captions.append("Married in")
     if status == "needed":
         classes.append("status-needed")
-        captions.append("Collecting facts")
     elif status == "not-attending":
         classes.append("status-not-attending")
-        captions.append("Not attending")
-    caption_html = f'<span class="person-status">{esc(" · ".join(captions))}</span>' if captions else ""
-    inner = f'<span class="person-name">{esc(person["name"])}</span>{caption_html}'
+    inner = f'<span class="person-name">{esc(person["name"])}</span>'
 
     # Attending people link straight to their own Attendees page — the
     # sole entry point to that feature (see module docstring). Not
@@ -267,8 +268,75 @@ def build_tree_html(people, collected_ids):
     return f'<div class="generation">{units_html}</div>'
 
 
+def render_folks_menu(people, collected_ids):
+    """Jump-to-person, labeled "Folks" — replaces the per-box "Collecting
+    facts"/"Not attending"/"Married in" captions this page used to show
+    directly on the tree (see render_person() above and
+    requirements/public.md -> Family Tree -> Layout): one dropdown listing
+    every ATTENDING person, alphabetically by name, each linking straight
+    to their own Attendees page — the same "Detail" link the Timeline's
+    own "Folks ▾" uses (site/attendees/<id>.html). Not-attending people
+    are left out entirely, same as the Attendees feature itself (see
+    requirements/public.md -> Attendees -> Purpose) — there's no page to
+    link to and no facts left to collect from them.
+
+    Unlike the Timeline's "Folks ▾" (built from travel.json entries, so a
+    person with no entry yet wouldn't even appear), this one is built
+    from people.json directly — the whole point is to also show people
+    who are STILL "collecting facts", who by definition have no
+    travel.json entry yet. Each entry gets an extra "Collecting facts"
+    segment for exactly that status (person_status() == "needed");
+    the default/common case (facts already collected) shows no extra
+    segment at all, same "no extra treatment for the expected case"
+    convention used everywhere else on this page."""
+    attending = [p for p in people if p.get("attending")]
+    if not attending:
+        return ""
+
+    attending = sorted(attending, key=lambda p: p["name"])
+    entries = []
+    for person in attending:
+        status_html = ""
+        if person_status(person, collected_ids) == "needed":
+            status_html = '<span class="jump-person-status">Collecting facts</span>'
+        entries.append(
+            f'<span class="jump-person">'
+            f'<span class="jump-person-name">{esc(person["name"])}</span>'
+            f"{status_html}"
+            f'<a class="jump-person-details" href="../attendees/{person["id"]}.html">Detail</a>'
+            f"</span>"
+        )
+
+    return "".join(entries)
+
+
+def render_nav(folks_menu):
+    """Custom nav, not shared/nav.py's render_row() — that helper only
+    renders a flat row of links, but this page's own "Folks ▾" (see
+    render_folks_menu() above) needs a <details> disclosure, the same
+    shape the Timeline's own nav items build directly in
+    timeline/scripts/build.py for the same reason (see shared/nav.py's
+    own module docstring). "Tree" stays the plain, non-linking active/
+    current-page indicator it always was — see requirements/public.md ->
+    Navigation."""
+    folks_html = (
+        '<details class="jump-menu">'
+        '<summary>Folks<span class="nav-caret">▾</span></summary>'
+        f'<div class="jump-panel"><div class="jump-links">{folks_menu}</div></div>'
+        "</details>"
+        if folks_menu
+        else ""
+    )
+    return f"""<nav class="site-nav">
+<a href="../index.html">Murray Corner 2026</a>
+<strong class="active">Tree</strong>
+{folks_html}
+</nav>"""
+
+
 def build_page_html(people, collected_ids, shared_base_css, shared_css):
-    nav_row = nav.render_row(NAV_ITEMS)
+    folks_menu = render_folks_menu(people, collected_ids)
+    nav_row = render_nav(folks_menu)
     tree_html = build_tree_html(people, collected_ids)
     return f"""<!DOCTYPE html>
 <html lang="en">

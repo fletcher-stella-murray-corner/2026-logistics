@@ -16,11 +16,32 @@ from datetime import date
 TRIP_START = date(2026, 8, 1)
 TRIP_END = date(2026, 8, 15)
 
+# 00-06 deliberately has no name of its own — see requirements/public.md
+# -> Terminology for why: night reads as the tail end of the day before
+# it, not the start of the one after, so the nav's live label identifies
+# that quarter by the new day itself ("Tuesday") rather than a invented
+# "Tuesday Night" — and everywhere else a quarter needs a display label
+# (the jump-to-time panel, the Attendees page's fallback quarter label)
+# follows the same rule: 00-06 shows only its bare time range, no name.
+# QUARTER_NAMES is the single source of truth for that — empty string for
+# 00-06, never "Night" — and QUARTER_LABELS (composed below) collapses
+# cleanly to just the time range rather than leaving an orphaned "· " where
+# a name would otherwise go.
+QUARTER_NAMES = {
+    "00-06": "",
+    "06-12": "Morning",
+    "12-18": "Afternoon",
+    "18-24": "Evening",
+}
+QUARTER_TIMES = {
+    "00-06": "12am–6am",
+    "06-12": "6am–12pm",
+    "12-18": "12pm–6pm",
+    "18-24": "6pm–12am",
+}
 QUARTER_LABELS = {
-    "00-06": "Night · 12am–6am",
-    "06-12": "Morning · 6am–12pm",
-    "12-18": "Afternoon · 12pm–6pm",
-    "18-24": "Evening · 6pm–12am",
+    q: (f"{QUARTER_NAMES[q]} · {QUARTER_TIMES[q]}" if QUARTER_NAMES[q] else QUARTER_TIMES[q])
+    for q in QUARTER_NAMES
 }
 MODE_TAGS = {
     "plane": "✈️ Plane",

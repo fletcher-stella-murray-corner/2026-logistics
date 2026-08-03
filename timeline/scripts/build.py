@@ -118,7 +118,7 @@ PROJECT_ROOT = ROOT.parent  # repo root — site/ and shared/ live here
 
 sys.path.insert(0, str(PROJECT_ROOT / "shared"))
 import nav  # noqa: E402
-from trip import TRIP_START, TRIP_END, QUARTER_LABELS, MODE_TAGS, WORK_QUARTERS, format_time_range  # noqa: E402
+from trip import TRIP_START, TRIP_END, QUARTER_LABELS, QUARTER_NAMES, MODE_TAGS, WORK_QUARTERS, format_time_range  # noqa: E402
 
 PAGE_TITLE = "Murray Corner 2026"
 TRIP_SUBTITLE = "Murray Corner, New Brunswick · August 1–15, 2026"
@@ -665,7 +665,7 @@ def render_structures_row(present, working, accommodation_structures, day_iso):
     )
 
 
-def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities, accommodation_structures):
+def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities, accommodation_structures, is_first=False):
     key = quarter_key(day.isoformat(), quarter)
 
     arrivals = []
@@ -738,11 +738,24 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
     # what you actually scan for while scrolling — no time-range suffix
     # here, unlike QUARTER_LABELS' own full value ("Morning · 6am–12pm"),
     # which stays as-is for the jump-to-time dropdown's own link text.
+    # quarter_name comes from QUARTER_NAMES, not QUARTER_LABELS — 00-06 is
+    # "" there (see shared/trip.py), so this quarter screen's own
+    # data-quarter-name attribute is empty and shared.js's live label
+    # renders just the weekday alone ("Monday"), never "Monday Night" —
+    # see requirements/public.md -> Terminology for why.
     day_name = day.strftime("%A")
     date_label = day.strftime("%b ") + str(day.day)
-    quarter_name = QUARTER_LABELS[quarter].split(" · ")[0]
+    quarter_name = QUARTER_NAMES[quarter]
 
-    return f"""<section class="quarter-screen" id="{quarter_screen_id(day.isoformat(), quarter)}" \
+    # first-quarter-screen (see timeline/shared.css) overrides --prev-quarter-bg
+    # to Grove instead of the cyclical Evening value every other 00-06 screen
+    # uses: the live scroll-linked blend (timeline/shared.js) actually needs a
+    # correct "coming from" color now that it's a real, visible effect rather
+    # than a static band mostly hidden under the nav — this is the one screen
+    # whose true previous screen is the Grove intro, not an Evening that never
+    # happened.
+    first_quarter_class = " first-quarter-screen" if is_first else ""
+    return f"""<section class="quarter-screen{first_quarter_class}" id="{quarter_screen_id(day.isoformat(), quarter)}" \
 data-day-name="{esc(day_name)}" data-date="{esc(date_label)}" data-quarter-name="{esc(quarter_name)}" data-quarter="{quarter}">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
@@ -765,7 +778,11 @@ def render_jump_panel():
     behind, not a separate "Jump ▾" control, see render_nav() below.
     Always the full August 1-15 range — every quarter screen always
     exists in the page (see build_timeline_html() below), so unlike the
-    old cutoff-based version there's no day/quarter this could ever omit."""
+    old cutoff-based version there's no day/quarter this could ever omit.
+    Each day's four links use QUARTER_LABELS as-is (shared/trip.py) —
+    00-06's link reads just its bare time range ("12am–6am"), no name,
+    same rule as the nav's live label; the day heading directly above
+    each group of four links already makes clear whose 12am–6am it is."""
     groups = []
     for d in daterange(TRIP_START, TRIP_END):
         day_label = d.strftime("%a, %b ") + str(d.day)
@@ -817,8 +834,12 @@ def render_folks_menu(travel, people_by_id):
         f'</span>'
         for name, pid, d, q in entries
     )
+    # The caret is .nav-caret, the exact same shared component render_nav()
+    # below uses for the current-quarter-label's own disclosure trigger —
+    # see requirements/public.md -> Navigation for why these two carets
+    # must never drift into two different-looking "expands" indicators.
     return f"""<details class="jump-menu">
-<summary>Folks ▾</summary>
+<summary>Folks<span class="nav-caret">▾</span></summary>
 <div class="jump-panel"><div class="jump-links">{links}</div></div>
 </details>"""
 
@@ -857,7 +878,7 @@ def render_nav(jump_panel, folks_menu):
             # timeline/shared.css so it correctly wins over
             # ".jump-menu { flex-shrink: 0 }" for this element specifically.
             '<details class="jump-menu current-quarter-menu">'
-            f'<summary class="current-quarter-label" id="current-quarter-label">{day_date_html}<span class="cq-caret">▾</span></summary>'
+            f'<summary class="current-quarter-label" id="current-quarter-label">{day_date_html}<span class="nav-caret">▾</span></summary>'
             f'<div class="jump-panel">{jump_panel}</div>'
             '</details>'
         )
@@ -877,9 +898,11 @@ def build_timeline_html(people, travel, meals, activities, accommodation_structu
     people_by_id = {p["id"]: p for p in people}
 
     screens = [render_intro_screen()]
+    is_first = True
     for d in daterange(TRIP_START, TRIP_END):
         for q in QUARTERS:
-            screens.append(render_quarter_screen(d, q, travel, people_by_id, meals, activities, accommodation_structures))
+            screens.append(render_quarter_screen(d, q, travel, people_by_id, meals, activities, accommodation_structures, is_first=is_first))
+            is_first = False
 
     return "\n".join(screens)
 
