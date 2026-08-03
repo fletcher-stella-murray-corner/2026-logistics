@@ -707,9 +707,20 @@ def render_structures_row(present, working, accommodation_structures, day_iso):
     )
 
 
-def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities, accommodation_structures, is_first=False):
-    key = quarter_key(day.isoformat(), quarter)
-
+def quarter_membership(key, day_iso, quarter, travel, people_by_id):
+    """Everyone arriving, departing, present, or working this exact day
+    quarter (`key`, from quarter_key(day_iso, quarter) — `day_iso` and
+    `quarter` are also taken separately since `key` alone doesn't carry
+    the quarter string person_working_here() needs) — the single
+    source of truth for "who's where, when" that render_quarter_screen()
+    below (the Timeline's own live Structures/Arriving/Departing rows) and
+    scripts/report.py (a read-only cross-person review aid — see
+    way-of-working.md -> Data entry) both call, so the two can never
+    silently disagree about what counts as present (arrived_by/
+    not_departed/away, including an excursion's away window) or working.
+    Returns (arrivals, departures, present, working), each a list of
+    (person, ...) tuples — present pairs a person with their resolved
+    room, working pairs a person with the structure they're working from."""
     arrivals = []
     departures = []
     present = []
@@ -745,10 +756,17 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
         not_departed = True if departure_key is None else key < departure_key
         away = any(d_key <= key < r_key for d_key, r_key in excursion_keys)
         if arrived_by and not_departed and not away:
-            present.append((person, room_for_date(entry, day.isoformat())))
+            present.append((person, room_for_date(entry, day_iso)))
 
-        for structure_name in person_working_here(entry, day.isoformat(), quarter):
+        for structure_name in person_working_here(entry, day_iso, quarter):
             working.append((person, structure_name))
+
+    return arrivals, departures, present, working
+
+
+def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities, accommodation_structures, is_first=False):
+    key = quarter_key(day.isoformat(), quarter)
+    arrivals, departures, present, working = quarter_membership(key, day.isoformat(), quarter, travel, people_by_id)
 
     rows = []
 

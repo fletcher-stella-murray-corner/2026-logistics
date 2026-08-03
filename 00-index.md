@@ -41,7 +41,8 @@ A feature's own requirements (what it does, page by page) live in `requirements/
 | 22 | [attendees/scripts/build.py](attendees/scripts/build.py) | Regenerates one `site/attendees/<id>.html` per attending person, from `shared/data/people.json`'s `attending` field and `timeline/data/travel.json` (see `requirements/public.md` → *Attendees*). No index page — reached via the Family Tree or the Timeline's "Folks ▾". |
 | 23 | [attendees/shared.css](attendees/shared.css) | CSS specific to the Attendees person-page layout. |
 | 24 | [scripts/build_site.py](scripts/build_site.py) | Root orchestrator — rebuilds every feature in one call. Run this after any data or template edit. |
-| 25 | [.github/workflows/deploy.yml](.github/workflows/deploy.yml) | GitHub Actions workflow that publishes `site/` to GitHub Pages on every push to `main` — gated by a `verify-build` job that reruns `scripts/build_site.py` and fails the deploy if the committed `site/` doesn't match (see `technical.md` → *Repo & deployment*). |
+| 25 | [scripts/report.py](scripts/report.py) | Read-only room/structure occupancy report across the whole trip — a cross-person consistency check `build_site.py`'s own validation can't do, since it only checks that each record is well-formed on its own, not whether it still agrees with everyone else's. Run after hand-editing `people.json`/`travel.json`, before committing — see `way-of-working.md` → *Data entry*. |
+| 26 | [.github/workflows/deploy.yml](.github/workflows/deploy.yml) | GitHub Actions workflow that publishes `site/` to GitHub Pages on every push to `main` — gated by a `verify-build` job that reruns `scripts/build_site.py` and fails the deploy if the committed `site/` doesn't match (see `technical.md` → *Repo & deployment*). |
 
 ## Site (deployed)
 
@@ -55,4 +56,4 @@ Everything under `site/` is what goes online. GitHub Pages (via the Actions work
 
 ## Editing data
 
-There is no admin site and no data-entry scripts for this project — the sole editor hand-edits `shared/data/people.json`, `shared/data/structures.json`, `shared/data/vehicles.json`, `timeline/data/travel.json`, `timeline/data/meals.json`, or `timeline/data/activities.json` directly, then runs `scripts/build_site.py` (see `way-of-working.md` → *Git* for the commit-before-editing rule).
+There is no admin site and no data-entry scripts for this project — the sole editor hand-edits `shared/data/people.json`, `shared/data/structures.json`, `shared/data/vehicles.json`, `timeline/data/travel.json`, `timeline/data/meals.json`, or `timeline/data/activities.json` directly, then runs `scripts/build_site.py` (see `way-of-working.md` → *Git* for the commit-before-editing rule). For `people.json`/`travel.json` specifically — where one person's entry can affect what another person's entry should say — follow the checklist in `way-of-working.md` → *Data entry*, which includes running `scripts/report.py` before committing.

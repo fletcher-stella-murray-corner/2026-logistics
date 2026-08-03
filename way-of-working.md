@@ -22,6 +22,19 @@ One requirements doc — see `00-index.md` for the full doc map:
 - When clicking an element in the browser preview tool, use a `ref` from `read_page` rather than a raw pixel coordinate read off a screenshot. The screenshot image can be downscaled from the actual viewport (e.g. an 800×455 screenshot of a 1280×720 page) — a coordinate that looks right on the screenshot then lands on the wrong element with no error, and nothing about the click's own result reveals the miss. Confirm via a state check (console log, DOM read) tied to the *specific* element you meant to hit, not just "the click didn't error."
 - `scrollIntoView({behavior: 'smooth'})` triggered inside the browser preview tool (via a mistargeted click, or via `javascript_tool` eval) may never visually complete — `scrollTop` can sit frozen indefinitely with no error, while the identical call with `behavior: 'instant'` or a correctly-`ref`-targeted real click works immediately. Don't conclude a smooth-scroll feature is broken from a frozen screenshot/`scrollTop` alone; verify the underlying logic (state transitions, event firing) via `console.log` or discrete DOM state instead, and cross-check against an already-shipped feature using the identical scroll pattern before treating it as a real bug.
 
+## Data entry
+
+Filling in real facts (`shared/data/people.json`, `timeline/data/travel.json`) is its own recurring loop, separate from *The loop* above — it doesn't change what the site does, only what's true. It's also where integrity is easiest to lose: `scripts/build_site.py`'s validation only checks that each record is internally well-formed (every reference points at something real) — it has no notion of whether a change still makes sense next to what everyone else's entry says. That's always a human judgment call, and it's easy to make it correctly for the person actively being edited while forgetting someone else's entry that the same change quietly affects (e.g. adding a new person into a room without also moving the people already in it — both entries stay independently valid, so nothing about the build would ever flag it).
+
+For any change to `people.json` or `travel.json`:
+
+1. **Name who else it touches** — not just the person being edited. Anyone sharing a room/structure on an overlapping date (`room`/`room_by_date`), anyone named in a `driver_id`, and any sibling/parent/partner relationship the change affects (a new person, a `birth_order` need).
+2. **Name the affected date range** — every day quarter the change spans (arrival through departure, or just the specific dates touched), not only the date of the literal edit.
+3. **Rebuild** (`scripts/build_site.py`) — a clean exit only proves the data is well-formed, not that it's *correct*.
+4. **Run `scripts/report.py`** and read the printed transitions — it prints only the day quarters where an arrival, a departure, or a room/structure assignment actually changes, so a forgotten update on someone else's entry usually shows up as a lopsided or missing name right at the transition point. See the script's own `-h`/docstring for exactly what it does and doesn't check.
+5. **Open the built pages for everyone named in step 1** — their own Attendees page, plus the Timeline quarter screens spanning the affected range — not just the page for the person you edited. This is also the only way to catch a rendering-level bug that's invisible in the raw JSON (e.g. sibling display order, or a milestone gap that silently didn't appear).
+6. Only then commit — see *Git* below.
+
 ## Git
 
 - Commit before editing a data file by hand. `build.py` writes directly to the HTML pages; a clean working tree is your only rollback if something goes wrong.
