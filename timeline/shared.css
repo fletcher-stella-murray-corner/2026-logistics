@@ -243,10 +243,11 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 .mode-tag { margin-right: 0.3rem; }
 .quarter-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
 
-/* Sleeping row — nested boxes (structure, then room/detail inside it),
-   same plain flat-box motif as the Family Tree page's person boxes (see
-   family-tree/shared.css -> .person), reused here for one visual language
-   site-wide. See requirements/public.md -> Sleeping -> Nested box display. */
+/* Structures row — nested boxes (structure, then room/detail or a
+   "Working" sub-box inside it), same plain flat-box motif as the Family
+   Tree page's person boxes (see family-tree/shared.css -> .person), reused
+   here for one visual language site-wide. See requirements/public.md ->
+   Structures -> Nested box display. */
 .structure-boxes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.3rem; }
 .structure-box {
   padding: 0.5rem 0.6rem;
@@ -277,3 +278,9 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
   margin-bottom: 0.15rem;
 }
 .room-people { font-size: 0.95rem; }
+/* Working sub-box — same room-box shape, but dashed (the site's existing
+   "different category" signal, also used for .unassigned-box and the
+   Family Tree's married-in boxes) so a name here reads as clearly
+   different from someone actually sleeping in this structure, without
+   introducing a new icon or color per brand-guidelines.md. */
+.room-box.working-box { border-style: dashed; }

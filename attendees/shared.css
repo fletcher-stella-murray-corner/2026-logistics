@@ -5,7 +5,33 @@
    the "Detail" link in the Timeline's "Folks ▾" disclosure. */
 .attendees-title { margin-bottom: 0.25rem; }
 
-.fact-row { margin: 0.6rem 0; font-size: 1.05rem; }
-.fact-label { font-weight: 600; color: var(--primary); margin-right: 0.4rem; }
-.fact-date-range { color: var(--secondary); font-size: 0.9rem; }
+/* Every row (Arrival, Sleeping, Working from, Departure, Driving — see
+   fact_row() in attendees/scripts/build.py) renders through the same
+   three-column shape, so the date always leads in the same position
+   instead of sometimes first and sometimes buried mid-string: a
+   fixed-width date column, a short label, then the detail filling the
+   rest. flex-wrap lets the date drop to its own line on a narrow phone
+   screen without losing its "always first" position. */
+.fact-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.7rem;
+  row-gap: 0.1rem;
+  margin: 0.6rem 0;
+  font-size: 1.05rem;
+}
+.fact-date {
+  font-weight: 700;
+  color: var(--primary);
+  flex: 0 0 auto;
+  min-width: 9rem;
+}
+.fact-label {
+  font-weight: 600;
+  color: var(--secondary);
+  flex: 0 0 auto;
+  min-width: 6.5rem;
+}
+.fact-detail { flex: 1 1 16rem; min-width: 0; }
 .attendee-pending { color: var(--secondary); font-style: italic; }

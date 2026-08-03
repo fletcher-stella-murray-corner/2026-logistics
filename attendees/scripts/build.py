@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Regenerate site/attendees/ — the Attendees feature: one page per
-attending person summarizing their own travel/room facts as a
-chronological milestone list (arrive, sleep here for a stretch, sleep
-there for a stretch, depart — not a night-by-night listing, see
-room_milestones() below). No index page and no nav link of its own — a
-person's page is reached by clicking them in the Family Tree (see
+attending person summarizing their own travel/room facts as a single
+chronological timeline — not a night-by-night listing, and not grouped by
+kind of fact either (see render_person_page() below): Arrival, Sleeping
+stretches, Working from stretches, Departure, and Driving obligations are
+all sorted together by date, a ranged fact (Sleeping/Working from) sorted
+by the FIRST date of its range. No index page and no nav link of its own
+— a person's page is reached by clicking them in the Family Tree (see
 family-tree/scripts/build.py's render_person(), which links an attending
 person's box straight to their site/attendees/<id>.html). People marked
 attending: false don't get a page here at all — see the Family Tree for
@@ -20,6 +22,21 @@ of sync (see requirements/public.md -> Attendees -> Data integrity). The
 facts-collected/collecting-facts distinction (whether a travel.json entry
 exists and isn't marked "pending": true) is computed and shown on the
 Family Tree page, not here — this script doesn't need it.
+
+Also renders one "Working from" row per `working_from` block on the page
+owner's own entry (see format_work_date() below and
+requirements/public.md -> Data -> travel.json -> working_from) — sourced
+straight from that entry, same single-source-of-truth guarantee as
+Arrival/Sleeping/Departure above, just another kind of fact on it, and
+merged into the same date-sorted timeline as everything else.
+
+Also renders a "Driving" row for every OTHER person's leg where this
+person is set as `driver_id` (see driving_assignments() below and
+requirements/public.md -> Data -> travel.json -> driver_id) — this is the
+one thing on this page NOT sourced from the page owner's own travel.json
+entry, since a driving obligation is a fact about the driver, not just
+about the traveler, and needs to show up on both pages from one piece of
+data rather than as prose only the traveler's page would ever show.
 
 Validated at build time: every person has an 'id' and 'name' (a friendly
 message naming the record, not a raw KeyError, when one's missing);
@@ -61,6 +78,7 @@ MODE_TAGS = {
     "train": "🚆 Train",
     "car": "🚗 Car",
 }
+WORK_QUARTERS = ("06-12", "12-18")
 
 
 def esc(s):
@@ -134,18 +152,35 @@ def format_time_range(time_range):
     return format_clock(start) if start == end else f"{format_clock(start)}–{format_clock(end)}"
 
 
-def format_leg(leg):
+def format_leg_date(leg):
+    """Just the date+time portion of a leg, formatted the same way every
+    other row's date column is (see fact_row() below) — kept separate from
+    format_leg_body() so every fact-row on this page can lead with a
+    consistently-positioned, consistently-formatted date, rather than the
+    old flat-string format where the date led on Arrival/Departure but was
+    buried mid-string or in parentheses on Sleeping/Working from/Driving."""
+    d = date.fromisoformat(leg["date"])
     quarter_label = QUARTER_LABELS.get(leg["quarter"], leg["quarter"])
     time_range = leg.get("time_range")
     time_display = format_time_range(time_range) if time_range else quarter_label
+    return f"{format_date_label(d)} · {time_display}"
+
+
+def format_leg_body(leg, people_by_id):
+    """The rest of a leg's facts — mode, hub, vehicle, detail, driver —
+    with no date/time (see format_leg_date() above). Pre-escaped and
+    joined, ready to drop straight into a fact_row()'s detail_html."""
     mode_label = MODE_TAGS.get(leg["mode"], leg["mode"])
-    parts = [f"{leg['date']} · {time_display}", mode_label]
+    parts = [mode_label]
     if leg.get("hub"):
         parts.append(leg["hub"])
     if leg.get("vehicle"):
         parts.append(leg["vehicle"])
     if leg.get("detail"):
         parts.append(leg["detail"])
+    driver = people_by_id.get(leg.get("driver_id"))
+    if driver:
+        parts.append(f"{driver['name']} driving")
     return " — ".join(esc(p) for p in parts)
 
 
@@ -159,6 +194,54 @@ def format_date_range(start, end):
     if start.month == end.month and start.year == end.year:
         return f"{start.strftime('%b ')}{start.day}–{end.day}"
     return f"{format_date_label(start)} – {format_date_label(end)}"
+
+
+def format_work_quarters(quarters):
+    labels = {"06-12": "mornings", "12-18": "afternoons"}
+    if set(quarters) == set(WORK_QUARTERS):
+        return "mornings & afternoons"
+    return " & ".join(labels[q] for q in WORK_QUARTERS if q in quarters)
+
+
+def format_work_date(block):
+    start = date.fromisoformat(block["start_date"])
+    end = date.fromisoformat(block["end_date"])
+    quarters = block.get("quarters", list(WORK_QUARTERS))
+    return f"{format_date_range(start, end)} · {format_work_quarters(quarters)}"
+
+
+def fact_row(date_text, label, detail_html):
+    """One row of the person's page timeline (see render_person_page()) —
+    every kind of fact (Arrival, Sleeping, Working from, Departure,
+    Driving) renders through this one function, so the date always leads
+    in the same position and the same format instead of sometimes first
+    and sometimes buried mid-string. `detail_html` is pre-escaped/joined
+    HTML (from format_leg_body() or a plain esc()'d string) — not escaped
+    again here."""
+    return (
+        '<div class="fact-row">'
+        f'<span class="fact-date">{esc(date_text)}</span>'
+        f'<span class="fact-label">{esc(label)}</span>'
+        f'<span class="fact-detail">{detail_html}</span>'
+        "</div>"
+    )
+
+
+def sleeping_end_date(departure):
+    """The last calendar date someone actually has a sleeping assignment —
+    mirrors the Timeline's own per-quarter presence check (`key <
+    departure_key` in timeline/scripts/build.py's render_quarter_screen()):
+    if the departure quarter is "00-06", the very first quarter of that
+    date, the person isn't present in any quarter of the departure date at
+    all, so the last sleeping date is the day before. Without this, the
+    milestone walk below would show a trailing one-day "sleeping" range on
+    a date the person was never actually there for."""
+    if departure is None:
+        return TRIP_END
+    d = date.fromisoformat(departure["date"])
+    if departure["quarter"] == "00-06":
+        return d - timedelta(days=1)
+    return d
 
 
 def room_milestones(entry, start_date, end_date):
@@ -185,39 +268,114 @@ def room_milestones(entry, start_date, end_date):
     return milestones
 
 
-def render_person_page(person, entry, shared_base_css, shared_css):
+def driving_assignments(person_id, travel, people_by_id):
+    """Every arrival/departure leg — across EVERYONE's travel.json entries,
+    not just this person's own — where this person is named as `driver_id`.
+    Surfaced as extra rows on the driver's own page below; otherwise a
+    driving obligation only ever shows up on the traveler's own page (as
+    part of their formatted leg, see format_leg_body() above), never on the
+    driver's, even though it's just as much the driver's fact to know as
+    the traveler's (see requirements/public.md -> Attendees -> Layout ->
+    Driving)."""
+    assignments = []
+    for entry in travel:
+        traveler = people_by_id.get(entry["person_id"])
+        if traveler is None:
+            continue
+        for field in ("arrival", "departure"):
+            leg = entry.get(field)
+            if leg and leg.get("driver_id") == person_id:
+                assignments.append((traveler, field, leg))
+    assignments.sort(key=lambda a: (a[2]["date"], a[2]["quarter"]))
+    return assignments
+
+
+def render_person_page(person, entry, travel, people_by_id, shared_base_css, shared_css):
     title = f"{person['name']}{TITLE_SUFFIX}"
     nav_row = nav.render_row(nav_items_for_person())
 
-    if entry is None:
+    # One flat list of (sort_date, html) across every kind of fact on this
+    # page — Arrival/Sleeping/Departure/Working from/Driving — sorted into
+    # a single true timeline instead of one block per kind (grouping them
+    # by kind put a same-week Driving or Working from entry after a much
+    # later Departure, reading out of order). sort_date is always the
+    # FIRST date of a range for a ranged fact (a Sleeping/Working from
+    # stretch) — see requirements/public.md -> Attendees -> Layout.
+    items = []
+
+    if entry is not None:
+        arrival = entry.get("arrival")
+        departure = entry.get("departure")
+
+        if arrival:
+            items.append((
+                arrival["date"],
+                fact_row(format_leg_date(arrival), "Arrival", format_leg_body(arrival, people_by_id)),
+            ))
+        else:
+            items.append((
+                TRIP_START.isoformat(),
+                fact_row(format_date_label(TRIP_START), "Arrival", "Already at the accommodation"),
+            ))
+
+        # Sleeping milestones — arrive, then one "Sleeping" row per
+        # contiguous same-room stretch in date order. See room_milestones()
+        # above.
+        start_date = date.fromisoformat(arrival["date"]) if arrival else TRIP_START
+        end_date = sleeping_end_date(departure)
+        for room, range_start, range_end in room_milestones(entry, start_date, end_date):
+            room_label = esc(room) if room else "Unassigned"
+            items.append((
+                range_start.isoformat(),
+                fact_row(format_date_range(range_start, range_end), "Sleeping", room_label),
+            ))
+
+        # One row per working_from block, keyed by its own start date — not
+        # merged or re-split like the Sleeping milestones above, since a
+        # block is already exactly the range the editor intended (see
+        # requirements/public.md -> Attendees -> Layout).
+        for block in entry.get("working_from", []):
+            items.append((
+                block["start_date"],
+                fact_row(format_work_date(block), "Working from", esc(block["structure"])),
+            ))
+
+        if departure:
+            items.append((
+                departure["date"],
+                fact_row(format_leg_date(departure), "Departure", format_leg_body(departure, people_by_id)),
+            ))
+        else:
+            items.append((
+                TRIP_END.isoformat(),
+                fact_row(format_date_label(TRIP_END), "Departure", "Staying past this date"),
+            ))
+
+    # Driving obligations for OTHER people's legs — shown regardless of
+    # whether this person has their own travel.json entry, since driving
+    # someone else doesn't depend on your own travel status. Keyed by the
+    # leg's own date, so it lands in the same timeline as everything else.
+    for traveler, field, leg in driving_assignments(person["id"], travel, people_by_id):
+        detail_html = f"{esc(traveler['name'])}’s {field} — {format_leg_body(leg, people_by_id)}"
+        items.append((leg["date"], fact_row(format_leg_date(leg), "Driving", detail_html)))
+
+    if entry is None and not items:
         body = (
             '<p class="attendee-pending">We don’t have your travel details yet '
             '— check back soon, or let the organizers know your plans.</p>'
         )
     else:
-        arrival = entry.get("arrival")
-        departure = entry.get("departure")
-
-        rows = []
-        arrival_value = format_leg(arrival) if arrival else "Already at the accommodation before August 1"
-        rows.append(f'<div class="fact-row"><span class="fact-label">Arrival:</span> {arrival_value}</div>')
-
-        # Chronological milestones, not a flat "Room" block — arrive, then
-        # one "Sleeping" row per contiguous same-room stretch in date order,
-        # then depart. See room_milestones() above.
-        start_date = date.fromisoformat(arrival["date"]) if arrival else TRIP_START
-        end_date = date.fromisoformat(departure["date"]) if departure else TRIP_END
-        for room, range_start, range_end in room_milestones(entry, start_date, end_date):
-            room_label = esc(room) if room else "Unassigned"
-            date_label = format_date_range(range_start, range_end)
-            rows.append(
-                '<div class="fact-row"><span class="fact-label">Sleeping:</span> '
-                f'{room_label} <span class="fact-date-range">({date_label})</span></div>'
-            )
-
-        departure_value = format_leg(departure) if departure else "Staying past August 15"
-        rows.append(f'<div class="fact-row"><span class="fact-label">Departure:</span> {departure_value}</div>')
-        body = "".join(rows)
+        # Stable sort: items built in a sensible default order above
+        # (Arrival, Sleeping, Working from, Departure, then Driving), so a
+        # same-date tie keeps that relative order rather than an arbitrary
+        # one.
+        items.sort(key=lambda item: item[0])
+        pending_note = (
+            '<p class="attendee-pending">We don’t have your travel details yet '
+            '— check back soon, or let the organizers know your plans.</p>'
+            if entry is None else ""
+        )
+        body = pending_note + "".join(html for _, html in items)
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -232,7 +390,7 @@ def render_person_page(person, entry, shared_base_css, shared_css):
 </head>
 <body>
 {nav_row}
-<h1 class="attendees-title">{esc(person['name'])}’s facts</h1>
+<h1 class="attendees-title">{esc(person['name'])}</h1>
 <main>
 {body}
 </main>
@@ -265,7 +423,7 @@ def main():
     attending_people = [p for p in people if p.get("attending")]
     for p in attending_people:
         entry = travel_by_person_id.get(p["id"])
-        html = render_person_page(p, entry, shared_base_css, shared_css)
+        html = render_person_page(p, entry, travel, people_by_id, shared_base_css, shared_css)
         (out_dir / f"{p['id']}.html").write_text(html)
 
     print(f"Updated site/attendees/ ({len(attending_people)} person page(s), no index — linked from the Family Tree)")

@@ -17,10 +17,28 @@ Validated at build time, all as hard errors rather than silent typos:
 every record in people.json/structures.json/vehicles.json/travel.json
 has its required fields (a friendly message naming the record and field,
 not a raw KeyError, when one's missing — likely during hand-editing);
-every `room`/`room_by_date`/`hub` value in travel.json against
+every arrival/departure's `mode` is present and one of plane/train/car;
+an arrival/departure's optional `driver_id` (someone else driving that
+leg — see requirements/public.md -> Data -> travel.json -> driver_id)
+references a real person and isn't the traveler's own id; no two people
+in people.json share the exact same `name` (the last-
+initial disambiguation convention would otherwise be silently forgettable
+during bulk entry, and a collision makes two people indistinguishable
+everywhere a bare name is shown); every `room`/`room_by_date`/`hub` value in travel.json against
 shared/data/structures.json — including, for a structure with a fixed
-`rooms` list (e.g. Cottage), that the room detail is one of the declared
-names, not arbitrary free text; every `vehicle` value against
+`rooms` list (e.g. Cottage) or a validated `instances` list (e.g. Tent),
+that the room detail is one of the declared names, not arbitrary free
+text (the two lists differ only in whether the structure always shows in
+the Structures row — see requirements/public.md -> Structures — and are
+mutually exclusive on a single structure); a structure's optional
+`always_shown` is a boolean when present (the same always-shown behavior
+`rooms` grants, for a structure with no fixed sub-rooms to declare, e.g.
+Red Shed); an entry's optional `working_from` blocks (someone working
+from a structure during the day, independent of where they're sleeping —
+see requirements/public.md -> Data -> travel.json -> working_from) each
+reference a real structure, have valid non-inverted ISO start/end dates,
+and only use `06-12`/`12-18` quarters (working from a structure isn't
+tracked overnight); every `vehicle` value against
 shared/data/vehicles.json (see requirements/public.md -> Structures /
 Vehicles); every `person_id` in travel.json against people.json, and
 that no person_id appears more than once in travel.json (a duplicate —
@@ -34,9 +52,10 @@ time_range) for valid shape and that both times fall within their
 quarter's window; a travel entry's
 departure isn't before its arrival; a travel entry's optional `pending`
 flag (see requirements/public.md -> Data -> travel.json -> pending) for
-being a boolean when present; a structure's `rooms` list (if any)
-is non-empty with no duplicates, and its `active_from`/`active_to` (if
-set) are valid ISO dates with `active_to` not before `active_from`; and
+being a boolean when present; a structure's `rooms`/`instances` list (if
+either is set — not both) is non-empty with no duplicates, and its
+`active_from`/`active_to` (if set) are valid ISO dates with `active_to`
+not before `active_from`; and
 ids are unique within people.json/structures.json/vehicles.json.
 
 The nav bar is one single row: a live "current day quarter" label on the
@@ -85,6 +104,10 @@ TRIP_END = date(2026, 8, 15)
 
 QUARTERS = ["00-06", "06-12", "12-18", "18-24"]
 QUARTER_INDEX = {q: i for i, q in enumerate(QUARTERS)}
+# The only quarters a `working_from` block may cover (see
+# requirements/public.md -> Data -> travel.json -> working_from) — working
+# from a structure isn't a concept this site tracks overnight.
+WORK_QUARTERS = ("06-12", "12-18")
 QUARTER_LABELS = {
     "00-06": "Night · 12am–6am",
     "06-12": "Morning · 6am–12pm",
@@ -108,6 +131,7 @@ MODE_TAGS = {
     "train": "🚆 Train",
     "car": "🚗 Car",
 }
+VALID_MODES = tuple(MODE_TAGS)
 
 def esc(s):
     return nav.esc(s)
@@ -148,6 +172,24 @@ def validate_unique_ids(records, label):
         seen.add(r["id"])
 
 
+def validate_unique_names(people, label):
+    """Two people with the exact same `name` string are indistinguishable
+    everywhere the site shows a bare name (Family Tree, "Folks ▾", the
+    Sleeping row's grouped-by-name lists) — see requirements/public.md ->
+    people.json for the last-initial disambiguation convention (e.g. "Jim
+    S", "Helen S") this is meant to catch a forgotten instance of."""
+    seen = {}
+    for r in people:
+        name = r["name"]
+        if name in seen:
+            raise ValueError(
+                f"Duplicate name {name!r} in {label} (ids {seen[name]!r} and {r['id']!r}) — "
+                f"two people can't share the exact same name; disambiguate by appending the "
+                f"first letter of their last name (e.g. 'Jim S', 'Helen S')."
+            )
+        seen[name] = r["id"]
+
+
 def validate_structures_file(structures):
     validate_required_fields(structures, ["id", "name", "category"], "shared/data/structures.json")
     validate_unique_ids(structures, "shared/data/structures.json")
@@ -158,12 +200,32 @@ def validate_structures_file(structures):
                 f"shared/data/structures.json — must be 'accommodation' or 'transit'."
             )
         rooms = s.get("rooms")
+        instances = s.get("instances")
+        if rooms is not None and instances is not None:
+            raise ValueError(
+                f"Structure {s['name']!r} in shared/data/structures.json has both 'rooms' and "
+                f"'instances' set — a structure can only be one or the other ('rooms' are fixed "
+                f"physical places that always show, even empty; 'instances' are a validated name "
+                f"list that only shows up when actually occupied)."
+            )
         if rooms is not None:
             if not rooms or len(set(rooms)) != len(rooms):
                 raise ValueError(
                     f"Structure {s['name']!r} in shared/data/structures.json has an invalid "
                     f"'rooms' list — must be non-empty with no duplicate room names."
                 )
+        if instances is not None:
+            if not instances or len(set(instances)) != len(instances):
+                raise ValueError(
+                    f"Structure {s['name']!r} in shared/data/structures.json has an invalid "
+                    f"'instances' list — must be non-empty with no duplicate instance names."
+                )
+        always_shown = s.get("always_shown")
+        if always_shown is not None and not isinstance(always_shown, bool):
+            raise ValueError(
+                f"Structure {s['name']!r} in shared/data/structures.json has a non-boolean "
+                f"'always_shown' — must be true or false."
+            )
         active_from = s.get("active_from")
         active_to = s.get("active_to")
         if active_from is not None:
@@ -191,6 +253,7 @@ def validate_vehicles_file(vehicles):
 def validate_people_file(people):
     validate_required_fields(people, ["id", "name"], "shared/data/people.json")
     validate_unique_ids(people, "shared/data/people.json")
+    validate_unique_names(people, "shared/data/people.json")
 
 
 def validate_date_str(value, context):
@@ -252,12 +315,19 @@ def validate_room(room, accommodation_structures, context):
             return
         prefix = f"{name} — "
         if room.startswith(prefix):
-            declared_rooms = s.get("rooms")
             detail = room[len(prefix):]
-            if declared_rooms and detail not in declared_rooms:
+            # `rooms` (fixed physical places, always shown) and `instances`
+            # (a validated name list, occupancy-shown only — see
+            # requirements/public.md -> Structures) are mutually exclusive
+            # per validate_structures_file(), so at most one of these is set.
+            declared_rooms = s.get("rooms")
+            declared_instances = s.get("instances")
+            declared = declared_rooms or declared_instances
+            if declared and detail not in declared:
+                kind = "rooms" if declared_rooms else "instances"
                 raise ValueError(
-                    f"Unknown room {detail!r} for structure {name!r} in room for {context} — "
-                    f"{name!r} has a fixed rooms list, must be one of {', '.join(declared_rooms)}."
+                    f"Unknown {kind[:-1]} {detail!r} for structure {name!r} in room for {context} — "
+                    f"{name!r} has a fixed {kind} list, must be one of {', '.join(declared)}."
                 )
             return
     raise ValueError(
@@ -286,20 +356,83 @@ def validate_vehicle(vehicle, vehicle_names, person_name, field):
         )
 
 
-def validate_leg(leg, person_name, field, transit_names, vehicle_names):
-    if "date" not in leg or "quarter" not in leg:
-        raise ValueError(f"Missing 'date' or 'quarter' in {field} for {person_name!r}.")
+def validate_driver(driver_id, person_id, people_by_id, person_name, field):
+    """driver_id — who's driving this leg, when it's someone other than the
+    traveler themselves (see requirements/public.md -> Data -> travel.json
+    -> driver_id). This is what lets "David drove Rachel to the airport"
+    show up on BOTH Rachel's page (as part of her leg) and David's own page
+    (as a "Driving" entry, see attendees/scripts/build.py) from one piece
+    of data, instead of a driving obligation only ever being visible on the
+    traveler's own page as unstructured prose the driver never sees."""
+    if driver_id is None:
+        return
+    if driver_id not in people_by_id:
+        raise ValueError(
+            f"Unknown driver_id {driver_id!r} in {field} for {person_name!r} — must reference "
+            f"a real person id in shared/data/people.json."
+        )
+    if driver_id == person_id:
+        raise ValueError(
+            f"driver_id in {field} for {person_name!r} references themselves — omit driver_id "
+            f"entirely when someone is driving themselves, it's only for naming someone else."
+        )
+
+
+def validate_working_from(blocks, person_name, all_structure_names):
+    """working_from — someone working from a structure during the day,
+    independent of where they're sleeping (see requirements/public.md ->
+    Data -> travel.json -> working_from). Optional list of {structure,
+    start_date, end_date, quarters} blocks."""
+    if blocks is None:
+        return
+    if not isinstance(blocks, list):
+        raise ValueError(f"working_from for {person_name!r} must be a list of blocks.")
+    for i, block in enumerate(blocks):
+        label = f"working_from[{i}] for {person_name!r}"
+        structure = nav.require(block, "structure", label)
+        if structure not in all_structure_names:
+            raise ValueError(
+                f"Unknown structure {structure!r} in {label} — must exactly match a name in "
+                f"shared/data/structures.json."
+            )
+        start = nav.require(block, "start_date", label)
+        end = nav.require(block, "end_date", label)
+        validate_date_str(start, f"start_date in {label}")
+        validate_date_str(end, f"end_date in {label}")
+        if end < start:
+            raise ValueError(f"end_date {end!r} is before start_date {start!r} in {label}.")
+        quarters = block.get("quarters", list(WORK_QUARTERS))
+        if not isinstance(quarters, list) or not quarters:
+            raise ValueError(f"quarters in {label} must be a non-empty list of quarter keys.")
+        for q in quarters:
+            if q not in WORK_QUARTERS:
+                raise ValueError(
+                    f"Invalid quarter {q!r} in {label} — working_from only supports "
+                    f"{' and '.join(WORK_QUARTERS)} (morning and afternoon)."
+                )
+
+
+def validate_leg(leg, person_id, person_name, field, transit_names, vehicle_names, people_by_id):
+    if "date" not in leg or "quarter" not in leg or "mode" not in leg:
+        raise ValueError(f"Missing 'date', 'quarter', or 'mode' in {field} for {person_name!r}.")
     validate_date_str(leg["date"], f"{field} for {person_name!r}")
     validate_quarter_value(leg["quarter"], f"{field} for {person_name!r}")
+    if leg["mode"] not in VALID_MODES:
+        raise ValueError(
+            f"Invalid mode {leg['mode']!r} in {field} for {person_name!r} — must be one of "
+            f"{', '.join(VALID_MODES)}."
+        )
     validate_hub(leg.get("hub"), transit_names, person_name, field)
     validate_vehicle(leg.get("vehicle"), vehicle_names, person_name, field)
     validate_time_range(leg.get("time_range"), leg["quarter"], f"{field} for {person_name!r}")
+    validate_driver(leg.get("driver_id"), person_id, people_by_id, person_name, field)
 
 
 def validate_travel(travel, people_by_id, structures, vehicles):
     accommodation_structures = [s for s in structures if s["category"] == "accommodation"]
     transit_names = structure_names(structures, "transit")
     vehicle_names = {v["name"] for v in vehicles}
+    all_structure_names = {s["name"] for s in structures}
 
     validate_required_fields(travel, ["person_id"], "timeline/data/travel.json")
     seen_person_ids = set()
@@ -330,9 +463,9 @@ def validate_travel(travel, people_by_id, structures, vehicles):
         arrival = entry.get("arrival")
         departure = entry.get("departure")
         if arrival:
-            validate_leg(arrival, person_name, "arrival", transit_names, vehicle_names)
+            validate_leg(arrival, person_id, person_name, "arrival", transit_names, vehicle_names, people_by_id)
         if departure:
-            validate_leg(departure, person_name, "departure", transit_names, vehicle_names)
+            validate_leg(departure, person_id, person_name, "departure", transit_names, vehicle_names, people_by_id)
         if arrival and departure:
             arrival_key = quarter_key(arrival["date"], arrival["quarter"])
             departure_key = quarter_key(departure["date"], departure["quarter"])
@@ -345,6 +478,7 @@ def validate_travel(travel, people_by_id, structures, vehicles):
         for room_date, room in entry.get("room_by_date", {}).items():
             validate_date_str(room_date, f"room_by_date for {person_name!r}")
             validate_room(room, accommodation_structures, f"{person_name!r} on {room_date}")
+        validate_working_from(entry.get("working_from"), person_name, all_structure_names)
 
 
 def validate_day_quarter_notes(data, label):
@@ -396,17 +530,20 @@ def format_time_range(time_range):
     return format_clock(start) if start == end else f"{format_clock(start)}–{format_clock(end)}"
 
 
-def travel_detail(entry):
+def travel_detail(leg, people_by_id):
     parts = []
-    time_range = entry.get("time_range")
+    time_range = leg.get("time_range")
     if time_range:
         parts.append(format_time_range(time_range))
-    label = entry.get("hub") or entry.get("vehicle")
+    label = leg.get("hub") or leg.get("vehicle")
     if label:
         parts.append(label)
-    detail = entry.get("detail")
+    detail = leg.get("detail")
     if detail:
         parts.append(detail)
+    driver = people_by_id.get(leg.get("driver_id"))
+    if driver:
+        parts.append(f"{driver['name']} driving")
     return " · ".join(parts)
 
 
@@ -417,7 +554,7 @@ def room_for_date(entry, iso_date):
 def parse_room(room, accommodation_structures):
     """Split a validated room string into (structure_name, detail) — detail
     is None for a bare structure name or an unset room (see
-    requirements/public.md -> Sleeping -> Nested box display)."""
+    requirements/public.md -> Structures -> Nested box display)."""
     if not room:
         return None, None
     for s in accommodation_structures:
@@ -430,38 +567,81 @@ def parse_room(room, accommodation_structures):
     return room, None
 
 
-def render_sleeping_row(present, accommodation_structures, day_iso):
+def person_working_here(entry, day_iso, quarter):
+    """Every structure this travel entry's `working_from` blocks put this
+    person at for this exact day+quarter (see requirements/public.md ->
+    Data -> travel.json -> working_from) — usually zero or one, since
+    working_from blocks aren't expected to overlap for the same person."""
+    hits = []
+    for block in entry.get("working_from", []):
+        if block["start_date"] <= day_iso <= block["end_date"] and quarter in block.get("quarters", WORK_QUARTERS):
+            hits.append(block["structure"])
+    return hits
+
+
+def render_structures_row(present, working, accommodation_structures, day_iso):
+    """Labeled "Structures", not "Sleeping" — deliberately reframed away
+    from an overnight-only concept to "who's associated with which
+    structure right now, and why" (see requirements/public.md -> Homepage
+    = Timeline -> Row-by-row rules -> Structures). Merges two independent
+    sources into the same outer per-structure box, but keeps them visually
+    distinct within it: `present` (people actually staying there this
+    quarter, via room/room_by_date) render as today — a flat name list or
+    named room boxes — while `working` (people working from there this
+    quarter, via working_from — see person_working_here() below) always
+    get their own labeled "Working" sub-box, never merged into the
+    sleeping-side list, so a name showing up because someone's working
+    from a structure for the day reads as clearly different from someone
+    actually staying there. The same person can land in two different
+    structure boxes on one quarter screen (their overnight structure, and
+    wherever they're working from) since those are two independent facts,
+    not one."""
     by_structure = {}
     for p, room in present:
         structure, detail = parse_room(room, accommodation_structures)
         by_structure.setdefault(structure, {}).setdefault(detail, []).append(p["name"])
 
-    # A structure with a fixed `rooms` list is a real, physical place that
-    # doesn't disappear just because nobody's currently assigned to one of
-    # its rooms — every declared room always gets a box (empty or not) for
-    # as long as the structure itself is active (see requirements/public.md
-    # -> Structures -> Active range and Sleeping -> Nested box display).
-    # Structures without a `rooms` list keep the old occupancy-only
-    # behavior (e.g. Tent/Camper Van, which are free-text-instance places).
-    for s in accommodation_structures:
-        rooms = s.get("rooms")
-        if not rooms or not structure_active(s, day_iso):
-            continue
-        bucket = by_structure.setdefault(s["name"], {})
-        for room_name in rooms:
-            bucket.setdefault(room_name, [])
+    working_by_structure = {}
+    for p, structure_name in working:
+        working_by_structure.setdefault(structure_name, []).append(p["name"])
 
-    if not by_structure:
+    # A structure with a fixed `rooms` list, or `always_shown: true`, is a
+    # real, physical place that doesn't disappear just because nobody's
+    # currently associated with it — it always gets a box (empty or not)
+    # for as long as the structure itself is active (see
+    # requirements/public.md -> Structures -> Active range and Structures
+    # -> Nested box display). A `rooms` structure also always shows every
+    # declared room; `always_shown` alone (no `rooms`, e.g. Red Shed) just
+    # guarantees the outer box, with no forced-empty room boxes inside it.
+    # Structures with neither keep the old occupancy-only behavior (e.g.
+    # Tent/Camper Van, which are free-text-instance places).
+    for s in accommodation_structures:
+        if not structure_active(s, day_iso):
+            continue
+        rooms = s.get("rooms")
+        if rooms:
+            bucket = by_structure.setdefault(s["name"], {})
+            for room_name in rooms:
+                bucket.setdefault(room_name, [])
+        elif s.get("always_shown"):
+            by_structure.setdefault(s["name"], {})
+
+    # working_by_structure can name a structure with nobody sleeping there
+    # at all (e.g. Red Shed occupied only by day-workers) — the outer box
+    # still needs to exist for it, so render every structure named by
+    # EITHER source, not just the sleeping side.
+    all_structures = set(by_structure) | set(working_by_structure)
+    if not all_structures:
         return ""
 
     def sort_key(k):
         return (k is None, k or "")
 
     boxes = []
-    for structure in sorted(by_structure, key=sort_key):
-        by_detail = by_structure[structure]
+    for structure in sorted(all_structures, key=sort_key):
+        by_detail = by_structure.get(structure, {})
         if structure is None:
-            names = sorted(by_detail[None])
+            names = sorted(by_detail.get(None, []))
             boxes.append(
                 '<div class="structure-box unassigned-box">'
                 '<span class="structure-label">Unassigned</span>'
@@ -482,6 +662,14 @@ def render_sleeping_row(present, accommodation_structures, day_iso):
                     f'<span class="room-people">{esc(", ".join(names))}</span>'
                     '</div>'
                 )
+        working_names = sorted(working_by_structure.get(structure, []))
+        if working_names:
+            inner.append(
+                '<div class="room-box working-box">'
+                '<span class="room-label">Working</span>'
+                f'<span class="room-people">{esc(", ".join(working_names))}</span>'
+                '</div>'
+            )
         boxes.append(
             '<div class="structure-box">'
             f'<span class="structure-label">{esc(structure)}</span>'
@@ -490,7 +678,7 @@ def render_sleeping_row(present, accommodation_structures, day_iso):
         )
 
     return (
-        '<div class="quarter-row"><span class="quarter-row-label">Sleeping:</span>'
+        '<div class="quarter-row"><span class="quarter-row-label">Structures:</span>'
         f'<div class="structure-boxes">{"".join(boxes)}</div></div>'
     )
 
@@ -501,6 +689,7 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
     arrivals = []
     departures = []
     present = []
+    working = []
 
     for entry in travel:
         person = people_by_id.get(entry["person_id"])
@@ -522,13 +711,16 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
         if arrived_by and not_departed:
             present.append((person, room_for_date(entry, day.isoformat())))
 
+        for structure_name in person_working_here(entry, day.isoformat(), quarter):
+            working.append((person, structure_name))
+
     rows = []
 
     if arrivals:
         lines = "".join(
             f'<span class="person-line">'
             f'<span class="mode-tag">{esc(MODE_TAGS.get(a["mode"], a["mode"]))}</span>'
-            f'{esc(p["name"])} — {esc(travel_detail(a))}'
+            f'{esc(p["name"])} — {esc(travel_detail(a, people_by_id))}'
             f"</span>"
             for p, a in arrivals
         )
@@ -538,15 +730,15 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
         lines = "".join(
             f'<span class="person-line">'
             f'<span class="mode-tag">{esc(MODE_TAGS.get(d["mode"], d["mode"]))}</span>'
-            f'{esc(p["name"])} — {esc(travel_detail(d))}'
+            f'{esc(p["name"])} — {esc(travel_detail(d, people_by_id))}'
             f"</span>"
             for p, d in departures
         )
         rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Departing:</span>{lines}</div>')
 
-    sleeping_row = render_sleeping_row(present, accommodation_structures, day.isoformat())
-    if sleeping_row:
-        rows.append(sleeping_row)
+    structures_row = render_structures_row(present, working, accommodation_structures, day.isoformat())
+    if structures_row:
+        rows.append(structures_row)
 
     meal = meals.get(day.isoformat(), {}).get(quarter)
     if meal:

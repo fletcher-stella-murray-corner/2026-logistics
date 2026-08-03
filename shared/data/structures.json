@@ -1,9 +1,9 @@
 [
   { "id": "cottage", "name": "Cottage", "category": "accommodation", "rooms": ["Blue Room", "Green Room", "Master Suite"] },
-  { "id": "red-shed", "name": "Red Shed", "category": "accommodation" },
+  { "id": "red-shed", "name": "Red Shed", "category": "accommodation", "always_shown": true },
   { "id": "sheogue-inn", "name": "Sheogue Inn", "category": "accommodation" },
   { "id": "camper-van", "name": "Camper Van", "category": "accommodation" },
-  { "id": "tent", "name": "Tent", "category": "accommodation" },
+  { "id": "tent", "name": "Tent", "category": "accommodation", "instances": ["Rachel's camping tent", "old worn out tent"] },
   { "id": "halifax-airport", "name": "Halifax Airport", "category": "transit" },
   { "id": "moncton-airport", "name": "Moncton Airport", "category": "transit" },
   { "id": "sackville-station", "name": "Sackville Station", "category": "transit" }
