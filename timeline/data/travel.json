@@ -43,10 +43,6 @@
     "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "Vehicle TBD" },
     "room": "Cottage — Blue Room",
     "room_by_date": {
-      "2026-08-04": "Tent — Rachel's camping tent",
-      "2026-08-05": "Tent — Rachel's camping tent",
-      "2026-08-06": "Tent — Rachel's camping tent",
-      "2026-08-07": "Tent — Rachel's camping tent",
       "2026-08-08": "Tent — Rachel's camping tent",
       "2026-08-09": "Tent — old worn out tent",
       "2026-08-10": "Tent — old worn out tent",
@@ -66,10 +62,6 @@
     "departure": { "date": "2026-08-09", "quarter": "00-06", "mode": "plane", "hub": "Moncton Airport", "detail": "6am flight · Departing Cottage at 3am", "driver_id": 7 },
     "room": "Cottage — Blue Room",
     "room_by_date": {
-      "2026-08-04": "Tent — Rachel's camping tent",
-      "2026-08-05": "Tent — Rachel's camping tent",
-      "2026-08-06": "Tent — Rachel's camping tent",
-      "2026-08-07": "Tent — Rachel's camping tent",
       "2026-08-08": "Tent — Rachel's camping tent"
     },
     "working_from": [
