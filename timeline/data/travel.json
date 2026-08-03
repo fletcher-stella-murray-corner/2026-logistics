@@ -1,5 +1,27 @@
 [
   {
+    "person_id": 5,
+    "room": "Cottage — Master Suite",
+    "excursions": [
+      {
+        "depart": { "date": "2026-08-04", "quarter": "12-18", "time_range": ["17:00", "17:00"], "mode": "car" },
+        "return": { "date": "2026-08-05", "quarter": "12-18", "time_range": ["17:59", "17:59"], "mode": "car" }
+      }
+    ],
+    "departure": { "date": "2026-08-06", "quarter": "00-06", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "With David" }
+  },
+  {
+    "person_id": 6,
+    "room": "Cottage — Master Suite",
+    "excursions": [
+      {
+        "depart": { "date": "2026-08-04", "quarter": "12-18", "time_range": ["17:00", "17:00"], "mode": "car" },
+        "return": { "date": "2026-08-05", "quarter": "12-18", "time_range": ["17:59", "17:59"], "mode": "car" }
+      }
+    ],
+    "departure": { "date": "2026-08-06", "quarter": "00-06", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "With David" }
+  },
+  {
     "person_id": 7,
     "pending": true,
     "arrival": { "date": "2026-08-01", "quarter": "18-24", "time_range": ["18:00", "18:00"], "mode": "car", "vehicle": "White Toyota Camry", "detail": "" },
