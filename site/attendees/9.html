@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Family Tree — Murray Corner 2026</title>
+<title>Susan — Murray Corner 2026</title>
 <style>
 /* Shared site-wide chrome — inlined into every page at build time (see
    technical.md -> Where CSS and JS changes go). Nav bar, color variables,
@@ -213,80 +213,51 @@ body {
 h1, h2, h3 { color: var(--primary); }
 a { color: var(--secondary); }
 
-/* Family-tree feature — inlined into site/family-tree/index.html at build
-   time. Generation-grouped layout: couples paired, children nested below. */
-.tree-title { margin-bottom: 0.25rem; }
-.tree-subtitle { color: var(--secondary); margin-top: 0; margin-bottom: 2rem; }
+/* Attendees feature — inlined into site/attendees/*.html at build time.
+   One page per attending person summarizing their own arrival/departure/
+   room facts (see requirements/public.md -> Attendees). No index page —
+   a person's page is reached by clicking them in the Family Tree, or via
+   the "Detail" link in the Timeline's "Folks ▾" disclosure. */
+.attendees-title { margin-bottom: 0.25rem; }
 
-.generation { margin-bottom: 1.5rem; }
-.family-unit { margin-bottom: 1rem; }
-.couple { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
-.person {
-  display: inline-block;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #fff;
-}
-/* An attending person's box is a link to their Attendees page — the sole
-   entry point to that feature (see family-tree/scripts/build.py ->
-   render_person()). Reset link defaults so it still reads as a plain box,
-   not a typical blue underlined link; a subtle border-color change on
-   hover/focus is the only affordance it's clickable, per
-   brand-guidelines.md's plain/unfussy, no-decoration visual language. A
-   not-attending person has no such page, so stays a plain <span> with no
-   hover treatment. */
-a.person {
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-}
-a.person:hover, a.person:focus-visible {
-  border-color: var(--secondary);
-}
-.person-name { display: block; }
-/* Married in (joined by marriage/partnership, not a blood descendant) —
-   dashed AND colored border, no caption any more (see
-   family-tree/scripts/build.py -> render_person()) — the words moved to
-   the nav's own "Folks ▾" dropdown (render_folks_menu()); on the tree
-   itself this is a purely visual signal now. */
-.person.married-in {
-  border-style: dashed;
-  border-color: var(--secondary);
-}
-/* Attending, but no travel.json entry yet — sand tint (brand-guidelines.md's
-   documented use for accent: "day-card background tint") flags it as
-   still-open without introducing a new color or an icon; no caption any
-   more, same reasoning as .married-in above. */
-.person.status-needed {
-  background: var(--accent);
-}
-.person.status-not-attending {
-  opacity: 0.55;
-}
-.couple-joiner { color: var(--secondary); }
-.empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
-.children {
-  margin: 0.5rem 0 0 1.5rem;
-  padding-left: 1rem;
-  border-left: 2px solid var(--border);
+/* Every row (Arrival, Sleeping, Working from, Departure, Driving — see
+   fact_row() in attendees/scripts/build.py) renders through the same
+   three-column shape, so the date always leads in the same position
+   instead of sometimes first and sometimes buried mid-string: a
+   fixed-width date column, a short label, then the detail filling the
+   rest. flex-wrap lets the date drop to its own line on a narrow phone
+   screen without losing its "always first" position. */
+.fact-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  align-items: baseline;
+  column-gap: 0.7rem;
+  row-gap: 0.1rem;
+  margin: 0.6rem 0;
+  font-size: 1.05rem;
 }
+.fact-date {
+  font-weight: 700;
+  color: var(--primary);
+  flex: 0 0 auto;
+  min-width: 9rem;
+}
+.fact-label {
+  font-weight: 600;
+  color: var(--secondary);
+  flex: 0 0 auto;
+  min-width: 6.5rem;
+}
+.fact-detail { flex: 1 1 16rem; min-width: 0; }
+.attendee-pending { color: var(--secondary); font-style: italic; }
 
 </style>
 </head>
 <body>
-<nav class="site-nav">
-<a href="../index.html">Murray Corner 2026</a>
-<strong class="active">Tree</strong>
-<details class="jump-menu"><summary>Folks<span class="nav-caret">▾</span></summary><div class="jump-panel"><div class="jump-links"><span class="jump-person"><span class="jump-person-name">David S</span><span class="jump-person-status">Collecting facts</span><a class="jump-person-details" href="../attendees/7.html">Detail</a></span><span class="jump-person"><span class="jump-person-name">Helen S</span><a class="jump-person-details" href="../attendees/6.html">Detail</a></span><span class="jump-person"><span class="jump-person-name">Jim S</span><a class="jump-person-details" href="../attendees/5.html">Detail</a></span><span class="jump-person"><span class="jump-person-name">Rachel</span><span class="jump-person-status">Collecting facts</span><a class="jump-person-details" href="../attendees/8.html">Detail</a></span><span class="jump-person"><span class="jump-person-name">Susan</span><a class="jump-person-details" href="../attendees/9.html">Detail</a></span></div></div></details>
-</nav>
-<h1 class="tree-title">Family Tree</h1>
-<p class="tree-subtitle">Where everyone fits</p>
+<nav class="site-nav"><a href="../index.html">Murray Corner 2026</a><a href="../family-tree/index.html">Tree</a></nav>
+<h1 class="attendees-title">Susan</h1>
 <main>
-<div class="generation"><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">Fletcher</span></span><span class="couple-joiner">&amp;</span><span class="person status-not-attending"><span class="person-name">Stella</span></span></div><div class="children"><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">Jesse</span></span><span class="couple-joiner">&amp;</span><span class="person married-in status-not-attending"><span class="person-name">Donald</span></span></div><div class="children"><div class="family-unit"><div class="couple"><a class="person" href="../attendees/5.html"><span class="person-name">Jim S</span></a><span class="couple-joiner">&amp;</span><a class="person married-in" href="../attendees/6.html"><span class="person-name">Helen S</span></a></div><div class="children"><div class="family-unit"><div class="couple"><a class="person status-needed" href="../attendees/7.html"><span class="person-name">David S</span></a><span class="couple-joiner">&amp;</span><a class="person married-in status-needed" href="../attendees/8.html"><span class="person-name">Rachel</span></a></div></div><div class="family-unit"><div class="couple"><a class="person" href="../attendees/9.html"><span class="person-name">Susan</span></a></div></div></div></div></div></div></div></div></div>
+<div class="fact-row"><span class="fact-date">Tuesday, Aug 4 · 5:15pm</span><span class="fact-label">Arrival</span><span class="fact-detail">🚗 Car</span></div><div class="fact-row"><span class="fact-date">Tuesday, Aug 4</span><span class="fact-label">Sleeping</span><span class="fact-detail">Cottage — Master Suite</span></div><div class="fact-row"><span class="fact-date">Wednesday, Aug 5 – Thursday, Aug 6</span><span class="fact-label">Sleeping</span><span class="fact-detail">Tent — old worn out tent</span></div><div class="fact-row"><span class="fact-date">Friday, Aug 7 – Tuesday, Aug 11</span><span class="fact-label">Sleeping</span><span class="fact-detail">Cottage — Blue Room</span></div><div class="fact-row"><span class="fact-date">Tuesday, Aug 11 · Afternoon · 12pm–6pm</span><span class="fact-label">Departure</span><span class="fact-detail">🚗 Car</span></div>
 </main>
 </body>
 </html>

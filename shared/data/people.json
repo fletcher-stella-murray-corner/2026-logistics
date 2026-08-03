@@ -65,5 +65,13 @@
     "partner_id": 7,
     "married_in": true,
     "attending": true
+  },
+  {
+    "id": 9,
+    "name": "Susan",
+    "generation": 4,
+    "parent_ids": [5, 6],
+    "partner_id": null,
+    "attending": true
   }
 ]

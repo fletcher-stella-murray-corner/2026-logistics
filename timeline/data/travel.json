@@ -1,5 +1,20 @@
 [
   {
+    "person_id": 9,
+    "arrival": { "date": "2026-08-04", "quarter": "12-18", "time_range": ["17:15", "17:15"], "mode": "car" },
+    "departure": { "date": "2026-08-11", "quarter": "12-18", "mode": "car" },
+    "room": "Cottage — Master Suite",
+    "room_by_date": {
+      "2026-08-05": "Tent — old worn out tent",
+      "2026-08-06": "Tent — old worn out tent",
+      "2026-08-07": "Cottage — Blue Room",
+      "2026-08-08": "Cottage — Blue Room",
+      "2026-08-09": "Cottage — Blue Room",
+      "2026-08-10": "Cottage — Blue Room",
+      "2026-08-11": "Cottage — Blue Room"
+    }
+  },
+  {
     "person_id": 5,
     "room": "Cottage — Master Suite",
     "excursions": [
