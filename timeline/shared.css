@@ -32,7 +32,7 @@ html.timeline-page.auto-scrolling {
   scroll-snap-type: none;
 }
 
-.intro-screen, .quarter-screen, .trip-done-screen {
+.intro-screen, .quarter-screen {
   /* svh (not dvh) deliberately: dvh recalculates live as a mobile browser's
      address bar collapses mid-scroll, which reflows box heights and makes
      scroll-snap re-target a second time once it settles — felt as a
@@ -54,12 +54,12 @@ html.timeline-page.auto-scrolling {
   flex-direction: column;
   border-bottom: 1px solid var(--border);
 }
-.intro-screen:last-child, .quarter-screen:last-child, .trip-done-screen:last-child {
+.intro-screen:last-child, .quarter-screen:last-child {
   border-bottom: none;
 }
 
-/* Intro/trip-done have no canvas-padding split — just one centered block. */
-.intro-screen, .trip-done-screen {
+/* Intro has no canvas-padding split — just one centered block. */
+.intro-screen {
   justify-content: center;
   padding: calc(var(--nav-height) + 1rem) 0 2rem;
 }
@@ -92,7 +92,7 @@ html.timeline-page.auto-scrolling {
 }
 .jump-menu > summary {
   cursor: pointer;
-  color: var(--secondary);
+  color: var(--nav-text);
   font-weight: 600;
   list-style: none;
 }
@@ -162,24 +162,45 @@ html.timeline-page.auto-scrolling {
   color: var(--secondary);
 }
 
-/* Live "current day quarter" label, left side of the single-row nav —
-   also the jump-to-time trigger: click/tap it to expand every remaining
-   day/quarter as links (the same .jump-panel content the old separate
-   "Jump ▾" control used to hold), rather than a separate control next to
-   it. render_nav() in timeline/scripts/build.py only wraps it in a
-   <details class="current-quarter-menu"> when there's actually something
-   to jump to (the trip hasn't ended) — otherwise .current-quarter-label
-   is a plain non-interactive <span>, same look either way. */
+/* "Murray Corner 2026" — permanent, unchanging nav item (see
+   render_nav() in timeline/scripts/build.py), unlike every other item in
+   this nav: a plain link back to the intro screen. Never shrinks/
+   truncates — it's the one fixed point in a nav bar where everything
+   else (the live label, "Now") reflects wherever you've scrolled to. No
+   color set here — shared/base.css's ".site-nav a" (a class+type
+   selector, more specific than this class alone) already wins that fight
+   and supplies --nav-text; only weight is this class's own job now, so
+   the color actually used isn't hidden in two places that could drift. */
+.site-title {
+  flex-shrink: 0;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+/* Live "current day quarter" label — separate from "Murray Corner 2026"
+   above (it used to double as the site title before scrolling; no longer
+   does, now that the title is its own permanent item) — also the
+   jump-to-time trigger: click/tap it to expand every day/quarter as
+   links (the same .jump-panel content the old separate "Jump ▾" control
+   used to hold). render_nav() in timeline/scripts/build.py only wraps it
+   in a <details class="current-quarter-menu"> when there's actually
+   something to jump to — always true now that every quarter screen
+   always exists in the page, but still guarded for safety, so
+   .current-quarter-label may still appear as a plain non-interactive
+   <span>, same look either way. */
 .current-quarter-menu {
   flex: 1;
   min-width: 0;
 }
 /* Two child spans (see render_nav() and timeline/shared.js), updated as
-   you scroll: the weekday name (.cq-day) prominent — that's what you
-   actually scan for while scrolling — and the month/day + quarter
-   (.cq-date) smaller/secondary, supporting detail. .cq-day alone holds
-   the site title before you've scrolled into any quarter, with .cq-date
-   empty. */
+   you scroll, in this reading order: the bare month/day (.cq-date, e.g.
+   "Aug 3") smaller/secondary, supporting detail, shown first; then the
+   weekday plus bare quarter name (.cq-day, e.g. "Monday Morning")
+   prominent — that's what you actually scan for while scrolling —
+   shown second, its own leading " - " baked into the text shared.js
+   sets rather than static markup. Both start empty and stay that way
+   until shared.js's IntersectionObserver reports you've scrolled into a
+   quarter screen. */
 .current-quarter-label {
   display: block;
   flex: 1;
@@ -193,21 +214,53 @@ summary.current-quarter-label {
   list-style: none;
 }
 summary.current-quarter-label::-webkit-details-marker { display: none; }
+/* Same color (--nav-text — best-contrast for whatever quarter's active,
+   see shared/base.css) and size for both pieces — a weight-only
+   distinction, not the size+color jump this used to be. Sitting right
+   next to "Murray Corner 2026" (bold, its own distinct anchor — see
+   .site-title), a second big/bold segment right after a small one in a
+   DIFFERENT color read as three fighting fragments, not one phrase;
+   keeping the whole live label in one consistent color removes that
+   noise while still keeping the weekday+quarter part (the one you
+   actually scan for while scrolling) a touch more prominent than the
+   date, via weight alone. */
 .cq-day {
   font-weight: 700;
-  color: var(--primary);
-  font-size: 1.15rem;
+  color: var(--nav-text);
+  font-size: 1.05rem;
 }
 .cq-date {
   font-weight: 500;
-  color: var(--secondary);
-  font-size: 0.85rem;
+  color: var(--nav-text);
+  font-size: 1.05rem;
 }
 .cq-caret {
-  color: var(--secondary);
+  color: var(--nav-text);
   font-size: 0.85rem;
   margin-left: 0.2rem;
 }
+
+/* "Now" — jumps to the visitor's own real-world current quarter (see
+   timeline/shared.js), computed client-side rather than baked into a
+   static href, so it's a <button>, not an <a> — styled to read as a
+   plain nav link all the same, same weight/color/no-decoration as the
+   jump-to-time/"Folks ▾" triggers (shared/base.css -> .site-nav a).
+   Hover is an underline, not a color swap — a color chosen for good
+   contrast against the current --quarter-bg has no guarantee of also
+   looking good as a "highlight" shade against that same background, and
+   underline sidesteps needing one at all. */
+.jump-now-toggle {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--nav-text);
+  cursor: pointer;
+}
+.jump-now-toggle:hover { text-decoration: underline; }
 
 /* Play/pause auto-advance toggle — icon-only (no text label, see
    requirements/public.md -> Navigation), same weight/color/no-decoration
@@ -222,10 +275,41 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
   font: inherit;
   font-weight: 600;
   font-size: 1.05rem;
-  color: var(--secondary);
+  color: var(--nav-text);
   cursor: pointer;
 }
-.run-toggle:hover { color: var(--primary); }
+.run-toggle:hover { opacity: 0.7; }
+
+/* Six items now share one nav row (Murray Corner 2026, the live label,
+   Now, Play/Pause, Tree, Folks ▾ — Folks last, furthest right, see
+   render_nav() in timeline/scripts/build.py) — measured on an actual
+   375px phone viewport, the five fixed-width items plus gaps alone came
+   within a few px of the full row, squeezing the live label (the one
+   item meant to flex/shrink) to 0 width — invisible, not just truncated.
+   Tighten the gap and shrink every item's own font on narrow phone
+   widths so there's real room left over, and give the live label an
+   explicit min-width so it always shows at least a sliver of truncated
+   text rather than disappearing entirely (see brand-guidelines.md ->
+   Audience: most family will be checking this from a phone). */
+@media (max-width: 480px) {
+  .site-nav { gap: 0.4rem; }
+  /* ".site-nav > a" to out-specificity shared/base.css's own
+     ".site-nav a { font-size: 1.05rem }" — a plain ".site-title" class
+     selector alone loses that fight (equal specificity, base.css's rule
+     wins on tag-selector specificity), silently keeping the larger size
+     regardless of this media query matching. */
+  .site-nav > a.site-title { font-size: 0.85rem; }
+  .jump-menu > summary,
+  .jump-now-toggle,
+  .run-toggle,
+  /* :last-of-type, not :last-child — Folks (a <details>, not an <a>) is
+     the actual last child now, so a plain :last-child here would match
+     nothing and silently stop sizing "Tree" at all on narrow phones. */
+  .site-nav > a:last-of-type {
+    font-size: 0.9rem;
+  }
+  .current-quarter-menu { min-width: 55px; }
+}
 
 .trip-title { margin-bottom: 0.25rem; }
 .trip-subtitle { color: var(--secondary); margin-top: 0; }
@@ -234,8 +318,6 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
   color: var(--secondary);
   font-size: 0.9rem;
 }
-
-.trip-done-screen { font-size: 1.2rem; }
 
 .quarter-row { margin: 0.6rem 0; font-size: 1.05rem; }
 .quarter-row-label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 0.2rem; }
@@ -284,3 +366,126 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
    different from someone actually sleeping in this structure, without
    introducing a new icon or color per brand-guidelines.md. */
 .room-box.working-box { border-style: dashed; }
+
+/* Time-of-day background — a tint per day quarter (see
+   requirements/public.md -> Homepage = Timeline -> Time-of-day
+   background), set on data-quarter (timeline/scripts/build.py's
+   render_quarter_screen()) rather than reusing the id, which also
+   encodes the date. This is the site's atmosphere layer, not its
+   information layer (see brand-guidelines.md -> Materials/Design
+   Language) — Afternoon reuses --accent (driftwood sand), already
+   documented there as the "day-card background tint". The structure/room
+   cards below keep their own always-white/paper background regardless of
+   quarter — only the surrounding canvas signals time of day.
+
+   Each quarter blends in FROM the previous quarter's color at its own
+   top edge (--prev-quarter-bg), rather than cutting hard at the section
+   boundary — the quarters cycle in a fixed, always-the-same order
+   (00-06 -> 06-12 -> 12-18 -> 18-24 -> 00-06...), so "the previous
+   quarter's color" is static, known ahead of time, and needs no JS or
+   per-day build-time logic, just one extra custom property per quarter.
+   Deliberately one-directional (blend in at the top only, hold flat for
+   the rest, no blend-out at the bottom) rather than also blending toward
+   the NEXT quarter at the bottom: that would need each section to blend
+   toward a color chosen by its successor, and the two directions can't
+   agree on a color exactly at the shared edge without fighting each
+   other. One direction per section, chained across sections, always
+   agrees at the seam (section N's bottom is flat at its own color;
+   section N+1's top starts blending FROM that exact color) — the very
+   first quarter screen of the trip (Aug 1, 00-06) blends in "from"
+   Evening/peach same as any other Night screen would, even though
+   there's no literal previous evening — harmless, since the sticky nav
+   already covers most of that blend zone there regardless.
+
+   One pair of colors per quarter, held in custom properties rather than
+   repeated per-rule, since the gradient is painted twice: once as the
+   section's own background (covering the centered content column) and
+   once via the ::before below (a full-bleed layer breaking out to the
+   actual viewport edges, per the standard "left:50%; width:100vw;
+   margin-left:-50vw" technique — body/main are centered with a
+   max-width, per technical.md -> Shape of the system, so the plain
+   section background alone would only ever color that narrow column,
+   leaving the flanking gutters and the sticky nav bar — see below —
+   looking untouched). */
+.quarter-screen[data-quarter="00-06"] { --quarter-bg: #16232e; --prev-quarter-bg: #f0c9a8; }
+.quarter-screen[data-quarter="06-12"] { --quarter-bg: #e4f1f8; --prev-quarter-bg: #16232e; }
+.quarter-screen[data-quarter="12-18"] { --quarter-bg: var(--accent); --prev-quarter-bg: #e4f1f8; }
+.quarter-screen[data-quarter="18-24"] { --quarter-bg: #f0c9a8; --prev-quarter-bg: var(--accent); }
+.quarter-screen[data-quarter] {
+  position: relative;
+  background: linear-gradient(to bottom, var(--prev-quarter-bg) 0%, var(--quarter-bg) 20%, var(--quarter-bg) 100%);
+}
+.quarter-screen[data-quarter]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  z-index: -1;
+  background: linear-gradient(to bottom, var(--prev-quarter-bg) 0%, var(--quarter-bg) 20%, var(--quarter-bg) 100%);
+}
+
+/* Night's background is dark enough that the default charcoal body text
+   and deep-blue row labels lose contrast — flip both to --mist, the same
+   best-contrast-on-dark color the nav uses (see shared/base.css ->
+   --nav-text), scoped to this one quarter. Morning/Afternoon/Evening are
+   light tints, so the existing dark text stays legible with no changes.
+   Row labels use --mist too now, not --secondary — a mid-tone teal has
+   real but mediocre contrast against dark navy, and --mist is the
+   genuinely best option, same reasoning as the nav; row-label's own
+   font-weight:600 (see .quarter-row-label below) is what keeps it
+   reading as a label rather than plain text, not a different hue. */
+.quarter-screen[data-quarter="00-06"] .quarter-canvas { color: var(--mist); }
+.quarter-screen[data-quarter="00-06"] .quarter-row-label { color: var(--mist); }
+.quarter-screen[data-quarter="00-06"] .quarter-empty-hint { color: #93a4ab; }
+/* Cards keep their own always-dark text on their own always-white/paper
+   background, regardless of the canvas's ambient color — without this
+   they'd inherit Night's light text above and go unreadable on white. */
+.structure-box { color: var(--text); }
+
+/* The sticky nav bar shares the same --quarter-bg color as whichever
+   quarter screen is actually in view, but — unlike the quarter screens
+   above, which get their color straight from a CSS attribute selector —
+   the nav is one single element with no "position within a gradient" of
+   its own, so a plain selector-driven swap can only ever be discrete
+   (the .site-nav[data-quarter="X"] rules below are exactly that: a
+   fallback/default, and what actually drives the Night-only text-
+   contrast rules further down). What the nav VISUALLY shows is
+   overridden continuously by timeline/shared.js on every scroll frame,
+   reading --quarter-bg/--prev-quarter-bg straight off whichever quarter
+   screen currently sits at the nav's own bottom edge and blending
+   between them at the exact same point the CSS gradient below has
+   reached — this is what keeps the nav from ever visibly disagreeing
+   with the canvas immediately below it, which a fixed-threshold swap
+   alone could not do (see that file for the full rationale). Same
+   full-bleed ::before as the quarter screens, since .site-nav is also a
+   child of the centered, max-width body (shared/base.css already gives
+   .site-nav its base background: var(--quarter-bg, var(--bg)), falling
+   back to the plain, unchanging --bg on every page but this one, and on
+   this one before scrolling into any quarter). */
+/* No position:relative needed here — shared/base.css's .site-nav is
+   already position:sticky, which (like relative) establishes a
+   containing block for an absolutely-positioned descendant on its own.
+   Declaring position again on the same selector would win the cascade
+   (this file loads after base.css) and silently replace sticky with
+   whatever's declared here — costly to get wrong, since sticky is what
+   keeps the nav pinned while scrolling at all. No transition here either
+   — see shared/base.css's .site-nav rule for why one doesn't belong
+   alongside JS that updates --quarter-bg every scroll frame. */
+.site-nav::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  z-index: -1;
+  background: var(--quarter-bg, var(--grove));
+}
+.site-nav[data-quarter="00-06"] { --quarter-bg: #16232e; --nav-text: var(--mist); }
+.site-nav[data-quarter="06-12"] { --quarter-bg: #e4f1f8; }
+.site-nav[data-quarter="12-18"] { --quarter-bg: var(--accent); }
+.site-nav[data-quarter="18-24"] { --quarter-bg: #f0c9a8; }

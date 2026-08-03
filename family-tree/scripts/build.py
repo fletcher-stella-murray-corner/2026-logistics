@@ -48,7 +48,7 @@ PAGE_TITLE = "Family Tree — Murray Corner 2026"
 TREE_SUBTITLE = "Where everyone fits"
 
 NAV_ITEMS = [
-    ("Timeline", "../index.html", False),
+    ("Murray Corner 2026", "../index.html", False),
     ("Tree", None, True),
 ]
 
@@ -165,12 +165,15 @@ def build_children_map(people):
 
 
 def person_status(person, collected_ids):
-    """The same states the Attendees feature computes (see
-    requirements/public.md -> Attendees -> The three states), reused here
-    for the Family Tree box's visual treatment — not attending, collecting
-    facts (attending, no travel.json entry yet or the entry is marked
-    "pending": true), or facts collected (attending, has a non-pending
-    entry — the default box, nothing extra shown)."""
+    """Not attending, plus the same two states the Attendees feature
+    computes for everyone else (see requirements/public.md -> Attendees ->
+    The two states) reused here for the Family Tree box's visual
+    treatment — collecting facts (attending, no travel.json entry yet or
+    the entry is marked "pending": true), or facts collected (attending,
+    has a non-pending entry — the default box, nothing extra shown). Not
+    attending isn't one of the Attendees feature's own two states (that
+    feature only covers attending people at all) — its visual treatment is
+    documented in requirements/public.md -> Family Tree -> Layout instead."""
     if not person.get("attending"):
         return "not-attending"
     if person["id"] in collected_ids:

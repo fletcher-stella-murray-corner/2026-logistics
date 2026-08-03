@@ -11,17 +11,27 @@
 :root {
   --primary: #1b4965;   /* deep tide blue */
   --secondary: #5fa8a0; /* sea glass */
-  --accent: #e8d9b5;    /* driftwood sand */
-  --bg: #faf8f4;
-  --text: #23282b;
+  --accent: #e8d9b5;    /* driftwood sand (= Afternoon, see timeline/shared.css) */
+  --bg: #faf8f4;        /* off-white — the fixed "paper card" color (structure/room boxes), never the atmosphere */
+  --text: #23282b;      /* charcoal */
+  --mist: #edf1f2;      /* the one color that reads clearly on a DARK background (Night) */
+  --grove: #dde8d4;     /* soft sage green — background for anything that isn't a specific day/quarter: see body below */
   --border: #ddd6c4;
   --nav-height: 3.75rem;
 }
 * { box-sizing: border-box; }
-html { color-scheme: light; }
+html { color-scheme: light; overflow-x: hidden; }
 body {
   font-family: system-ui, -apple-system, sans-serif;
-  background: var(--bg);
+  /* --grove, not --bg — the page itself (Family Tree, Attendees, and the
+     Timeline's own intro screen before you've scrolled into a day) is a
+     fifth "place" alongside the four day-quarter colors, not a plain
+     white default. --bg stays reserved for the structure/room "paper
+     cards" that stay the same regardless of time of day or page (see
+     timeline/shared.css) — a genuinely different job from the page
+     background, so it needed its own variable rather than reusing this
+     one for both. */
+  background: var(--grove);
   color: var(--text);
   margin: 0;
   padding: 0 1.25rem 3rem;
@@ -39,16 +49,52 @@ body {
   border-bottom: 2px solid var(--border);
   position: sticky;
   top: 0;
-  background: var(--bg);
+  /* --quarter-bg is set (and overridden per data-quarter) only by the
+     Timeline feature's own shared.css, which is only ever inlined into
+     site/index.html — falls back to --grove (this page's own background,
+     see body above) on every other page, and on the Timeline itself
+     before scrolling into any quarter. No transition here on purpose:
+     timeline/shared.js continuously recomputes --quarter-bg on scroll
+     (matching the exact color the canvas shows right at the nav's own
+     bottom edge, not just a discrete swap — see that file), and a
+     `transition: background-color` declared alongside updates that land
+     faster than the transition's own duration gets stuck chasing a
+     moving target instead of ever settling — confirmed by testing
+     (removing the transition made the color update immediately and
+     correctly; keeping it left the color frozen at its very first value
+     indefinitely). The JS already provides its own smoothing by
+     recomputing every scroll frame, so a CSS transition on top is
+     redundant even where it doesn't misbehave.
+
+     --nav-text picks the one BEST-contrast text color for whatever
+     --quarter-bg currently is — default here is --primary, since every
+     background this ever falls back to (--grove, and three of the four
+     day-quarter colors) is light; timeline/shared.css overrides it to
+     --mist only for Night, the one dark background. Every nav item reads
+     this one variable (see the rule below and .cq-day/.cq-date/
+     .jump-now-toggle/.run-toggle in timeline/shared.css) rather than
+     each picking its own color independently — that's what let three
+     items end up teal and two end up primary/bold with no visible logic
+     to it. Role (title vs. label vs. action) is expressed by weight and
+     size instead, not by a different hue. */
+  --nav-text: var(--primary);
+  background: var(--quarter-bg, var(--grove));
   z-index: 10;
 }
 .site-nav a, .site-nav strong {
   text-decoration: none;
-  color: var(--primary);
+  color: var(--nav-text);
   font-weight: 600;
   font-size: 1.05rem;
 }
-.site-nav strong.active { color: var(--secondary); }
+/* The one deliberate exception: the site's brand/home link ("Murray
+   Corner 2026"), always the nav's first item on every page — bolder
+   than everything else, but the SAME --nav-text color (not a separate
+   hue), so it still stays legible against Night without needing its own
+   override. */
+.site-nav > a:first-child {
+  font-weight: 700;
+}
 h1, h2, h3 { color: var(--primary); }
 a { color: var(--secondary); }
 
@@ -93,7 +139,7 @@ a { color: var(--secondary); }
 </style>
 </head>
 <body>
-<nav class="site-nav"><a href="../index.html">Timeline</a><a href="../family-tree/index.html">Tree</a></nav>
+<nav class="site-nav"><a href="../index.html">Murray Corner 2026</a><a href="../family-tree/index.html">Tree</a></nav>
 <h1 class="attendees-title">Jim S</h1>
 <main>
 <p class="attendee-pending">We don’t have your travel details yet — check back soon, or let the organizers know your plans.</p>

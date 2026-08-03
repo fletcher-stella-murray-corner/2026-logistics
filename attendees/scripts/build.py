@@ -61,24 +61,9 @@ PROJECT_ROOT = ROOT.parent  # repo root — site/ and shared/ live here
 
 sys.path.insert(0, str(PROJECT_ROOT / "shared"))
 import nav  # noqa: E402
+from trip import TRIP_START, TRIP_END, QUARTER_LABELS, MODE_TAGS, WORK_QUARTERS, format_time_range  # noqa: E402
 
 TITLE_SUFFIX = " — Murray Corner 2026"
-
-TRIP_START = date(2026, 8, 1)
-TRIP_END = date(2026, 8, 15)
-
-QUARTER_LABELS = {
-    "00-06": "Night · 12am–6am",
-    "06-12": "Morning · 6am–12pm",
-    "12-18": "Afternoon · 12pm–6pm",
-    "18-24": "Evening · 6pm–12am",
-}
-MODE_TAGS = {
-    "plane": "✈️ Plane",
-    "train": "🚆 Train",
-    "car": "🚗 Car",
-}
-WORK_QUARTERS = ("06-12", "12-18")
 
 
 def esc(s):
@@ -89,9 +74,12 @@ def nav_items_for_person():
     # Plain two-item row — no third "Attendees" item, since there's no
     # index/home page for this feature to link to or indicate as active
     # (see module docstring). "Tree" is the natural way back, since
-    # that's where every person page is linked from.
+    # that's where every person page is linked from. "Murray Corner 2026"
+    # is the site-wide permanent home link (see requirements/public.md ->
+    # Navigation), same label/href every page uses to get back to the
+    # Timeline.
     return [
-        ("Timeline", "../index.html", False),
+        ("Murray Corner 2026", "../index.html", False),
         ("Tree", "../family-tree/index.html", False),
     ]
 
@@ -138,18 +126,6 @@ def validate_attendance_vs_travel(people_by_id, travel):
                 f"marked attending: false in shared/data/people.json — remove one "
                 f"or the other."
             )
-
-
-def format_clock(hhmm):
-    hour, minute = (int(part) for part in hhmm.split(":"))
-    period = "am" if hour < 12 else "pm"
-    hour12 = hour % 12 or 12
-    return f"{hour12}{period}" if minute == 0 else f"{hour12}:{minute:02d}{period}"
-
-
-def format_time_range(time_range):
-    start, end = time_range
-    return format_clock(start) if start == end else f"{format_clock(start)}–{format_clock(end)}"
 
 
 def format_leg_date(leg):

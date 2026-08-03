@@ -6,12 +6,15 @@ Reads shared/data/people.json, shared/data/structures.json,
 shared/data/vehicles.json, timeline/data/travel.json,
 timeline/data/meals.json, and timeline/data/activities.json. Renders
 August 1-15, 2026 split into four day quarters (6-hour segments) per
-day, one full-viewport-height "quarter screen" per quarter, always
-starting from max(today, Aug 1) so past days quietly drop off the site
-on every rebuild — and, on that first rendered day, from the CURRENT
-quarter of the actual time-of-day at build time (see quarter_for_hour()),
-so e.g. rebuilding at 9pm doesn't still show three quarters of today
-that have already passed.
+day, one full-viewport-height "quarter screen" per quarter, ALWAYS in
+full — every day, every quarter, regardless of the real-world date at
+build time. This script no longer looks at the clock at all: which
+quarter is "now" is entirely a client-side, browser-time concern (see
+timeline/shared.js and TRIP_CONFIG below), not a build-time one — so
+unlike the old cutoff-based version, this build's output never depends
+on when it happens to run, and never needs a rebuild+push just because
+a day has passed (see requirements/public.md -> Homepage = Timeline ->
+Time-of-day background... -> "Now").
 
 Validated at build time, all as hard errors rather than silent typos:
 every record in people.json/structures.json/vehicles.json/travel.json
@@ -58,20 +61,40 @@ either is set — not both) is non-empty with no duplicates, and its
 not before `active_from`; and
 ids are unique within people.json/structures.json/vehicles.json.
 
-The nav bar is one single row: a live "current day quarter" label on the
-left (updated by shared.js via IntersectionObserver as you scroll — the
-weekday name prominent, the month/day + quarter smaller/secondary) that
-doubles as the jump-to-time trigger — click/tap it to expand a disclosure
-of every remaining day/quarter as links, rather than a separate "Jump ▾"
-control — plus a "Folks ▾" disclosure, each entry showing the person's
-name (plain text) and two labeled links: "Timeline" jumps to their
-arrival's quarter screen, "Detail" goes to their own attendees page
-instead (both the label's own links and these land via anchor,
-independent of scroll-snap), a "▶"/"⏸" play/pause button that
-auto-advances through every screen (see requirements/public.md ->
-Navigation), and the Family Tree link on the right — no Attendees link;
-an attendees page is reached via the Family Tree or the "Details" link
+The nav bar is one single row: "Murray Corner 2026" on the far left,
+always present, a link back to the very top of the page (see
+render_intro_screen()'s INTRO_SCREEN_ID) — unlike every other nav item
+here, this one never changes; then a live "current day quarter" label
+(updated by shared.js via IntersectionObserver as you scroll — the bare
+month/day smaller/secondary shown first, e.g. "Aug 3", then the weekday
+name plus bare quarter name bold/prominent shown second, e.g.
+"- Monday Morning", no time-range suffix here unlike the jump-to-time
+dropdown's own link text; empty until you've scrolled into a quarter
+screen) that doubles as the jump-to-time trigger — click/tap it to
+expand a disclosure of every day/quarter as links, rather than a
+separate "Jump ▾" control — then a "Now" button that jumps straight to
+whichever quarter screen is current at the cottage (Murray Corner, New
+Brunswick — Atlantic Time, not the visitor's own device timezone),
+computed fresh in their browser at click time (see timeline/shared.js)
+— clamped to the trip's last quarter if "now" is already past August 15
+— then a "▶"/"⏸" play/pause button that auto-advances through every
+screen (see requirements/public.md -> Navigation), the Family Tree link,
+and — furthest right, last in the row — a "Folks ▾" disclosure, each
+entry showing the person's name (plain text) and two labeled links:
+"Timeline" jumps to their arrival's quarter screen, "Detail" goes to
+their own attendees page instead (both the label's own links and these
+land via anchor, independent of scroll-snap). No Attendees nav item; an
+attendees page is reached via the Family Tree or the "Details" link
 above, not a nav entry of its own.
+
+The page also auto-scrolls (instantly, no animation) to "now" at the
+cottage on first load — same target the "Now" button jumps to — UNLESS
+the URL already has a #quarter-screen hash (a shared link to a specific
+moment), which is left alone. Scrolling further down from "now" moves
+forward through the rest of the trip; scrolling back up moves backward
+through it, all the way past August 1 back to the intro screen — the
+full range is always in the page, nothing before "now" is ever hidden
+(see requirements/public.md -> Homepage = Timeline).
 
 Each quarter screen has two parts, per requirements/public.md ->
 Terminology: a "day quarter canvas padding" spacer (blank space reserved
@@ -87,7 +110,7 @@ site/index.html is a pure build artifact — edit this template, not the HTML.
 """
 import json
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent  # timeline/
@@ -95,25 +118,16 @@ PROJECT_ROOT = ROOT.parent  # repo root — site/ and shared/ live here
 
 sys.path.insert(0, str(PROJECT_ROOT / "shared"))
 import nav  # noqa: E402
+from trip import TRIP_START, TRIP_END, QUARTER_LABELS, MODE_TAGS, WORK_QUARTERS, format_time_range  # noqa: E402
 
 PAGE_TITLE = "Murray Corner 2026"
 TRIP_SUBTITLE = "Murray Corner, New Brunswick · August 1–15, 2026"
-
-TRIP_START = date(2026, 8, 1)
-TRIP_END = date(2026, 8, 15)
+# Anchor target for the permanent "Murray Corner 2026" nav link — see
+# render_intro_screen()/render_nav() below.
+INTRO_SCREEN_ID = "trip-top"
 
 QUARTERS = ["00-06", "06-12", "12-18", "18-24"]
 QUARTER_INDEX = {q: i for i, q in enumerate(QUARTERS)}
-# The only quarters a `working_from` block may cover (see
-# requirements/public.md -> Data -> travel.json -> working_from) — working
-# from a structure isn't a concept this site tracks overnight.
-WORK_QUARTERS = ("06-12", "12-18")
-QUARTER_LABELS = {
-    "00-06": "Night · 12am–6am",
-    "06-12": "Morning · 6am–12pm",
-    "12-18": "Afternoon · 12pm–6pm",
-    "18-24": "Evening · 6pm–12am",
-}
 # Minute-of-day (0-1440) bounds for each quarter, used to sanity-check an
 # optional time_range against the quarter it's attached to. Inclusive on
 # both ends, so an exact boundary instant (e.g. "18:00") validates against
@@ -125,11 +139,6 @@ QUARTER_MINUTES = {
     "06-12": (360, 720),
     "12-18": (720, 1080),
     "18-24": (1080, 1440),
-}
-MODE_TAGS = {
-    "plane": "✈️ Plane",
-    "train": "🚆 Train",
-    "car": "🚗 Car",
 }
 VALID_MODES = tuple(MODE_TAGS)
 
@@ -492,21 +501,6 @@ def quarter_key(iso_date, quarter):
     return (iso_date, QUARTER_INDEX[quarter])
 
 
-def quarter_for_hour(hour):
-    """Which quarter a given hour-of-day (0-23) falls in — used to start
-    the site at the CURRENT quarter of today, not the start of today, so
-    e.g. loading the site at 9pm doesn't show three quarters that have
-    already passed today (see requirements/public.md -> Auto-hiding past
-    days and quarters)."""
-    if hour < 6:
-        return "00-06"
-    if hour < 12:
-        return "06-12"
-    if hour < 18:
-        return "12-18"
-    return "18-24"
-
-
 def quarter_screen_id(iso_date, quarter):
     return f"qc-{iso_date}-{quarter}"
 
@@ -516,18 +510,6 @@ def daterange(start, end):
     while d <= end:
         yield d
         d += timedelta(days=1)
-
-
-def format_clock(hhmm):
-    hour, minute = (int(part) for part in hhmm.split(":"))
-    period = "am" if hour < 12 else "pm"
-    hour12 = hour % 12 or 12
-    return f"{hour12}{period}" if minute == 0 else f"{hour12}:{minute:02d}{period}"
-
-
-def format_time_range(time_range):
-    start, end = time_range
-    return format_clock(start) if start == end else f"{format_clock(start)}–{format_clock(end)}"
 
 
 def travel_detail(leg, people_by_id):
@@ -749,16 +731,19 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
         rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Activities:</span> {esc(activity)}</div>')
 
     body = "".join(rows) if rows else '<div class="quarter-empty-hint">Nothing scheduled</div>'
-    # Split into two pieces (see render_nav() and timeline/shared.js): the
-    # full weekday name, shown prominent, and the month/day + quarter
-    # label, shown smaller/secondary — rather than one flat string, per
-    # the requested nav-bar typography (day name is what you actually
-    # scan for while scrolling; the date is supporting detail).
+    # Three pieces (see render_nav() and timeline/shared.js): the bare
+    # month/day (e.g. "Aug 3"), shown first and smaller/secondary as
+    # supporting detail; the weekday name plus bare quarter name (e.g.
+    # "Monday Morning"), shown second and bold/prominent since that's
+    # what you actually scan for while scrolling — no time-range suffix
+    # here, unlike QUARTER_LABELS' own full value ("Morning · 6am–12pm"),
+    # which stays as-is for the jump-to-time dropdown's own link text.
     day_name = day.strftime("%A")
-    date_quarter = day.strftime("%b ") + str(day.day) + " · " + QUARTER_LABELS[quarter]
+    date_label = day.strftime("%b ") + str(day.day)
+    quarter_name = QUARTER_LABELS[quarter].split(" · ")[0]
 
     return f"""<section class="quarter-screen" id="{quarter_screen_id(day.isoformat(), quarter)}" \
-data-day-name="{esc(day_name)}" data-date-quarter="{esc(date_quarter)}">
+data-day-name="{esc(day_name)}" data-date="{esc(date_label)}" data-quarter-name="{esc(quarter_name)}" data-quarter="{quarter}">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 {body}
@@ -767,35 +752,25 @@ data-day-name="{esc(day_name)}" data-date-quarter="{esc(date_quarter)}">
 
 
 def render_intro_screen():
-    return f"""<section class="intro-screen">
+    return f"""<section class="intro-screen" id="{INTRO_SCREEN_ID}">
 <h1 class="trip-title">{PAGE_TITLE}</h1>
 <p class="trip-subtitle">{TRIP_SUBTITLE}</p>
 <p class="scroll-hint">Scroll or swipe down to start ↓</p>
 </section>"""
 
 
-def quarters_from(current_quarter):
-    """The quarter keys from current_quarter through the end of the day, in
-    order — QUARTERS itself when current_quarter is None (a day after the
-    cutoff day, always rendered/linked in full)."""
-    if current_quarter is None:
-        return QUARTERS
-    return QUARTERS[QUARTER_INDEX[current_quarter]:]
-
-
-def render_jump_panel(cutoff, current_quarter):
+def render_jump_panel():
     """Inner jump-to-time content only (no <details>/<summary> wrapper) —
     the current-quarter-label itself is the disclosure trigger this sits
-    behind, not a separate "Jump ▾" control, see render_nav() below."""
-    if cutoff > TRIP_END:
-        return ""
-
+    behind, not a separate "Jump ▾" control, see render_nav() below.
+    Always the full August 1-15 range — every quarter screen always
+    exists in the page (see build_timeline_html() below), so unlike the
+    old cutoff-based version there's no day/quarter this could ever omit."""
     groups = []
-    for d in daterange(cutoff, TRIP_END):
+    for d in daterange(TRIP_START, TRIP_END):
         day_label = d.strftime("%a, %b ") + str(d.day)
-        quarters = quarters_from(current_quarter) if d == cutoff else QUARTERS
         links = "".join(
-            f'<a href="#{quarter_screen_id(d.isoformat(), q)}">{QUARTER_LABELS[q]}</a>' for q in quarters
+            f'<a href="#{quarter_screen_id(d.isoformat(), q)}">{QUARTER_LABELS[q]}</a>' for q in QUARTERS
         )
         groups.append(
             f'<div class="jump-day-group"><span class="jump-day-label">{day_label}</span>'
@@ -805,32 +780,29 @@ def render_jump_panel(cutoff, current_quarter):
     return "".join(groups)
 
 
-def render_folks_menu(travel, people_by_id, cutoff, current_quarter):
+def render_folks_menu(travel, people_by_id):
     """Jump-to-person, labeled "Folks" — each entry shows the person's name
     (plain text, not itself a link) plus two labeled links: "Timeline"
-    jumps to wherever they first appear (their arrival's quarter screen if
-    it's still being rendered, otherwise the very first quarter screen
-    currently shown, covering "arrived before the rendering window
-    starts", "no arrival at all", and today's already-past quarters being
-    skipped, see quarter_for_hour()), and "Detail" goes to their own
-    attendees page (site/attendees/<id>.html, see
+    jumps to their arrival's quarter screen (every quarter screen always
+    exists in the page — see build_timeline_html() below — so this always
+    lands exactly on their arrival), or the very first quarter screen of
+    the trip if they have no arrival at all, and "Detail" goes to their
+    own attendees page (site/attendees/<id>.html, see
     attendees/scripts/build.py) instead — see requirements/public.md ->
     Navigation."""
-    if cutoff > TRIP_END or not travel:
+    if not travel:
         return ""
 
-    first_quarter = current_quarter or "00-06"
-    first_key = quarter_key(cutoff.isoformat(), first_quarter)
     entries = []
     for entry in travel:
         person = people_by_id.get(entry["person_id"])
         if person is None:
             continue
         arrival = entry.get("arrival")
-        if arrival and quarter_key(arrival["date"], arrival["quarter"]) >= first_key:
+        if arrival:
             target_date, target_quarter = arrival["date"], arrival["quarter"]
         else:
-            target_date, target_quarter = cutoff.isoformat(), first_quarter
+            target_date, target_quarter = TRIP_START.isoformat(), QUARTERS[0]
         entries.append((person["name"], person["id"], target_date, target_quarter))
 
     if not entries:
@@ -852,16 +824,29 @@ def render_folks_menu(travel, people_by_id, cutoff, current_quarter):
 
 
 def render_nav(jump_panel, folks_menu):
-    """The live current-quarter label doubles as the jump-to-time trigger —
-    click/tap it to expand the same day/quarter link list a separate
-    "Jump ▾" control used to hold (see requirements/public.md ->
-    Navigation). Only made an expandable <details> when there's actually
-    something to jump to (jump_panel non-empty, i.e. the trip hasn't
-    ended) — otherwise it's a plain, non-interactive label, same as
-    before "Jump ▾" would have been omitted entirely in that case."""
+    """"Murray Corner 2026" is now a permanent, unchanging nav item — a
+    link back to the intro screen (INTRO_SCREEN_ID) — separate from the
+    live current-quarter label next to it, which no longer doubles as the
+    site title (see requirements/public.md -> Navigation): cq-date/cq-day
+    start empty and are only ever filled in by shared.js's
+    IntersectionObserver once you've actually scrolled into a quarter
+    screen. cq-date (smaller/secondary) holds the bare month/day, shown
+    first; cq-day (bold/prominent) holds the weekday plus bare quarter
+    name, shown second (e.g. "Aug 3" then "Monday Morning") — reversed
+    from DOM/id naming history, but each id keeps the styling it always
+    had, just holding different content now. That label still doubles as
+    the jump-to-time trigger — click/tap it to expand the full day/quarter
+    link list (jump_panel is always non-empty now that every quarter
+    screen always exists in the page — see build_timeline_html() below —
+    but this is still guarded for safety). "Now" jumps straight to the
+    visitor's own real-world current quarter — computed client-side in
+    shared.js, not here, since that's a property of whoever's looking at
+    the page right now, not of this build (see module docstring). "Folks"
+    sits last, furthest right, after "Tree" — see requirements/public.md
+    -> Navigation for the full nav item order."""
     day_date_html = (
-        f'<span class="cq-day" id="cq-day">{esc(PAGE_TITLE)}</span>'
         f'<span class="cq-date" id="cq-date"></span>'
+        f'<span class="cq-day" id="cq-day"></span>'
     )
     if jump_panel:
         label_html = (
@@ -872,52 +857,50 @@ def render_nav(jump_panel, folks_menu):
             # timeline/shared.css so it correctly wins over
             # ".jump-menu { flex-shrink: 0 }" for this element specifically.
             '<details class="jump-menu current-quarter-menu">'
-            f'<summary id="current-quarter-label">{day_date_html}<span class="cq-caret">▾</span></summary>'
+            f'<summary class="current-quarter-label" id="current-quarter-label">{day_date_html}<span class="cq-caret">▾</span></summary>'
             f'<div class="jump-panel">{jump_panel}</div>'
             '</details>'
         )
     else:
         label_html = f'<span class="current-quarter-label" id="current-quarter-label">{day_date_html}</span>'
     return f"""<nav class="site-nav">
+<a href="#{INTRO_SCREEN_ID}" class="site-title">{esc(PAGE_TITLE)}</a>
 {label_html}
-{folks_menu}
+<button type="button" id="jump-now-toggle" class="jump-now-toggle">Now</button>
 <button type="button" id="run-toggle" class="run-toggle" aria-label="Play">▶</button>
 <a href="family-tree/index.html">Tree</a>
+{folks_menu}
 </nav>"""
 
 
-def build_timeline_html(people, travel, meals, activities, cutoff, accommodation_structures, current_quarter):
+def build_timeline_html(people, travel, meals, activities, accommodation_structures):
     people_by_id = {p["id"]: p for p in people}
 
     screens = [render_intro_screen()]
-
-    if cutoff > TRIP_END:
-        screens.append(
-            '<section class="trip-done-screen"><p>The trip is over — thanks for a great one!</p></section>'
-        )
-    else:
-        for d in daterange(cutoff, TRIP_END):
-            quarters = quarters_from(current_quarter) if d == cutoff else QUARTERS
-            for q in quarters:
-                screens.append(render_quarter_screen(d, q, travel, people_by_id, meals, activities, accommodation_structures))
+    for d in daterange(TRIP_START, TRIP_END):
+        for q in QUARTERS:
+            screens.append(render_quarter_screen(d, q, travel, people_by_id, meals, activities, accommodation_structures))
 
     return "\n".join(screens)
 
 
-def build_page_html(people, travel, meals, activities, structures, shared_base_css, shared_css, shared_js, now=None):
-    now = now or datetime.now()
-    today = now.date()
-    cutoff = max(today, TRIP_START)
-    # Only meaningful for the cutoff day itself — a future cutoff day (the
-    # trip hasn't started yet) or any day after it always renders/links in
-    # full, so current_quarter is None (see quarters_from() above).
-    current_quarter = quarter_for_hour(now.hour) if cutoff == today else None
+def build_page_html(people, travel, meals, activities, structures, shared_base_css, shared_css, shared_js):
     people_by_id = {p["id"]: p for p in people}
-    jump_panel = render_jump_panel(cutoff, current_quarter)
-    folks_menu = render_folks_menu(travel, people_by_id, cutoff, current_quarter)
+    jump_panel = render_jump_panel()
+    folks_menu = render_folks_menu(travel, people_by_id)
     nav_row = render_nav(jump_panel, folks_menu)
     accommodation_structures = [s for s in structures if s["category"] == "accommodation"]
-    timeline_html = build_timeline_html(people, travel, meals, activities, cutoff, accommodation_structures, current_quarter)
+    timeline_html = build_timeline_html(people, travel, meals, activities, accommodation_structures)
+    # Page-specific configuration constants for shared.js (see technical.md
+    # -> Where CSS and JS changes go) — the trip window, so shared.js can
+    # compute the visitor's own "now" quarter and clamp it into range
+    # entirely client-side, without duplicating these two dates as a
+    # separate hardcoded literal in JS (see shared/trip.py, the single
+    # source of truth for both).
+    config_script = (
+        "var TRIP_CONFIG = "
+        f'{{"start": "{TRIP_START.isoformat()}", "end": "{TRIP_END.isoformat()}"}};'
+    )
     return f"""<!DOCTYPE html>
 <html lang="en" class="timeline-page">
 <head>
@@ -935,6 +918,7 @@ def build_page_html(people, travel, meals, activities, structures, shared_base_c
 {timeline_html}
 </main>
 <script>
+{config_script}
 {shared_js}
 </script>
 </body>
