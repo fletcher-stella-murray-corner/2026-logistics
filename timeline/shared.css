@@ -85,18 +85,6 @@ html.timeline-page.auto-scrolling {
   padding: 1rem 0 2rem;
 }
 
-/* DEBUG — outline the exact bounds of the padding spacer (blue) and the
-   canvas (red) separately, to check they're not being confused with each
-   other while testing snap alignment. Remove both rules once done. */
-.quarter-canvas-padding {
-  outline: 3px dashed dodgerblue;
-  outline-offset: -3px;
-}
-.quarter-canvas {
-  outline: 3px dashed red;
-  outline-offset: -3px;
-}
-
 /* Jump menu lives directly in the single-row nav (shared/base.css ->
    .site-nav) as a dropdown, not a second sticky bar. */
 .jump-menu {
@@ -147,24 +135,83 @@ html.timeline-page.auto-scrolling {
   text-decoration: none;
   color: var(--text);
 }
+/* "Folks ▾" (render_folks_menu() in timeline/scripts/build.py) — each
+   person is a name plus two labeled links, not a single link: "Timeline"
+   jumps to their arrival's quarter screen, "Detail" goes to their own
+   Attendees page instead. Combined into one bordered pill (overriding
+   the plain single-link .jump-links a styling above) so the three read
+   as one unit, each segment split by a thin divider. */
+.jump-person {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.jump-person-name {
+  padding: 0.25rem 0.5rem;
+  font-weight: 600;
+}
+.jump-person a {
+  border: none;
+  border-radius: 0;
+  border-left: 1px solid var(--border);
+  padding: 0.25rem 0.5rem;
+}
+.jump-person a.jump-person-details {
+  color: var(--secondary);
+}
 
-/* Live "current day quarter" label, left side of the single-row nav.
-   Text is updated by shared.js (IntersectionObserver) as you scroll;
-   starts out as the site title before you've scrolled into any quarter. */
+/* Live "current day quarter" label, left side of the single-row nav —
+   also the jump-to-time trigger: click/tap it to expand every remaining
+   day/quarter as links (the same .jump-panel content the old separate
+   "Jump ▾" control used to hold), rather than a separate control next to
+   it. render_nav() in timeline/scripts/build.py only wraps it in a
+   <details class="current-quarter-menu"> when there's actually something
+   to jump to (the trip hasn't ended) — otherwise .current-quarter-label
+   is a plain non-interactive <span>, same look either way. */
+.current-quarter-menu {
+  flex: 1;
+  min-width: 0;
+}
+/* Two child spans (see render_nav() and timeline/shared.js), updated as
+   you scroll: the weekday name (.cq-day) prominent — that's what you
+   actually scan for while scrolling — and the month/day + quarter
+   (.cq-date) smaller/secondary, supporting detail. .cq-day alone holds
+   the site title before you've scrolled into any quarter, with .cq-date
+   empty. */
 .current-quarter-label {
+  display: block;
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 600;
+}
+summary.current-quarter-label {
+  cursor: pointer;
+  list-style: none;
+}
+summary.current-quarter-label::-webkit-details-marker { display: none; }
+.cq-day {
+  font-weight: 700;
   color: var(--primary);
-  font-size: 1.05rem;
+  font-size: 1.15rem;
+}
+.cq-date {
+  font-weight: 500;
+  color: var(--secondary);
+  font-size: 0.85rem;
+}
+.cq-caret {
+  color: var(--secondary);
+  font-size: 0.85rem;
+  margin-left: 0.2rem;
 }
 
 /* Play/pause auto-advance toggle — icon-only (no text label, see
    requirements/public.md -> Navigation), same weight/color/no-decoration
-   look as the Jump/People disclosure triggers (shared/base.css ->
+   look as the jump-to-time/"Folks ▾" disclosure triggers (shared/base.css ->
    .site-nav a), not a boxed/decorated button, per brand-guidelines.md's
    flat visual language. */
 .run-toggle {

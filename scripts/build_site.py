@@ -21,7 +21,7 @@ def main():
 
     subprocess.run([sys.executable, str(ROOT / "timeline" / "scripts" / "build.py")], check=True)
     subprocess.run([sys.executable, str(ROOT / "family-tree" / "scripts" / "build.py")], check=True)
-    subprocess.run([sys.executable, str(ROOT / "facts" / "scripts" / "build.py")], check=True)
+    subprocess.run([sys.executable, str(ROOT / "attendees" / "scripts" / "build.py")], check=True)
 
 
 if __name__ == "__main__":

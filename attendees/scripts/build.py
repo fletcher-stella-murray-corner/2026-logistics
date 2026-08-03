@@ -1,38 +1,45 @@
 #!/usr/bin/env python3
-"""Regenerate site/facts/ — the Facts feature: one page per attending
-person summarizing their own travel/room facts as a chronological
-milestone list (arrive, sleep here for a stretch, sleep there for a
-stretch, depart — not a night-by-night listing, see room_milestones()
-below), plus an index page grouping everyone into the three states this
-tracks (see requirements/public.md -> Facts): facts collected, facts
-needed, not attending.
+"""Regenerate site/attendees/ — the Attendees feature: one page per
+attending person summarizing their own travel/room facts as a
+chronological milestone list (arrive, sleep here for a stretch, sleep
+there for a stretch, depart — not a night-by-night listing, see
+room_milestones() below). No index page and no nav link of its own — a
+person's page is reached by clicking them in the Family Tree (see
+family-tree/scripts/build.py's render_person(), which links an attending
+person's box straight to their site/attendees/<id>.html). People marked
+attending: false don't get a page here at all — see the Family Tree for
+the full family, attending or not.
 
 Reads shared/data/people.json and timeline/data/travel.json. Nothing is
-entered separately here — a person's collected/needed status is computed
-from whether they have a travel.json entry at all, and the facts shown
-are exactly the arrival/departure/room fields already in that entry, the
-same single source of truth the Timeline schedule is built from. That's
-deliberate: updating travel.json updates both the schedule and a
-person's own facts page at once, so there's no second copy of the data
-that could drift out of sync (see requirements/public.md -> Facts ->
-Data integrity).
+entered separately here — the facts shown are exactly the
+arrival/departure/room fields already in that entry, the same single
+source of truth the Timeline schedule is built from. That's deliberate:
+updating travel.json updates both the schedule and a person's own facts
+page at once, so there's no second copy of the data that could drift out
+of sync (see requirements/public.md -> Attendees -> Data integrity). The
+facts-collected/collecting-facts distinction (whether a travel.json entry
+exists and isn't marked "pending": true) is computed and shown on the
+Family Tree page, not here — this script doesn't need it.
 
-Validated at build time: `attending` must be present and a boolean on
-every shared/data/people.json entry; a person marked attending: false
-must not have a timeline/data/travel.json entry (a contradiction).
+Validated at build time: every person has an 'id' and 'name' (a friendly
+message naming the record, not a raw KeyError, when one's missing);
+every travel.json entry has a 'person_id'; `attending` must be present
+and a boolean on every shared/data/people.json entry; a person marked
+attending: false must not have a timeline/data/travel.json entry (a
+contradiction).
 
 Run after hand-editing shared/data/people.json or
 timeline/data/travel.json, or use scripts/build_site.py to rebuild every
 feature at once.
 
-site/facts/*.html are pure build artifacts — edit this template, not the HTML.
+site/attendees/*.html are pure build artifacts — edit this template, not the HTML.
 """
 import json
 import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent  # facts/
+ROOT = Path(__file__).resolve().parent.parent  # attendees/
 PROJECT_ROOT = ROOT.parent  # repo root — site/ and shared/ live here
 
 sys.path.insert(0, str(PROJECT_ROOT / "shared"))
@@ -60,25 +67,14 @@ def esc(s):
     return nav.esc(s)
 
 
-def nav_items_for_index():
-    return [
-        ("Timeline", "../index.html", False),
-        ("Tree", "../family-tree/index.html", False),
-        ("Facts", None, True),
-    ]
-
-
 def nav_items_for_person():
-    # "Facts" is a link back to the index here, not the active indicator —
-    # a person page isn't the Facts feature's home, index.html is (see
-    # nav_items_for_index above). Same directory as index.html, so the
-    # bare filename is correct — unlike crossing from family-tree/ or
-    # facts/ up to the site root, which needs "../" (see technical.md ->
-    # Lessons learned for the bug that taught us to check this).
+    # Plain two-item row — no third "Attendees" item, since there's no
+    # index/home page for this feature to link to or indicate as active
+    # (see module docstring). "Tree" is the natural way back, since
+    # that's where every person page is linked from.
     return [
         ("Timeline", "../index.html", False),
         ("Tree", "../family-tree/index.html", False),
-        ("Facts", "index.html", False),
     ]
 
 
@@ -87,6 +83,22 @@ def load_json(path):
         return json.loads(path.read_text())
     except json.JSONDecodeError as e:
         raise ValueError(f"Malformed JSON in {path}: {e}") from e
+
+
+def record_label(r, index, file_label):
+    """A human-identifiable label for a record that might itself be missing
+    'id' — falls back to its position in the array so a build error always
+    points somewhere findable instead of just KeyError-ing."""
+    if "id" in r:
+        return f"Record id {r['id']!r} (index {index}) in {file_label}"
+    return f"Record at index {index} in {file_label}"
+
+
+def validate_required_fields(records, fields, file_label):
+    for i, r in enumerate(records):
+        label = record_label(r, i, file_label)
+        for field in fields:
+            nav.require(r, field, label)
 
 
 def validate_people_attending(people):
@@ -110,10 +122,24 @@ def validate_attendance_vs_travel(people_by_id, travel):
             )
 
 
+def format_clock(hhmm):
+    hour, minute = (int(part) for part in hhmm.split(":"))
+    period = "am" if hour < 12 else "pm"
+    hour12 = hour % 12 or 12
+    return f"{hour12}{period}" if minute == 0 else f"{hour12}:{minute:02d}{period}"
+
+
+def format_time_range(time_range):
+    start, end = time_range
+    return format_clock(start) if start == end else f"{format_clock(start)}–{format_clock(end)}"
+
+
 def format_leg(leg):
     quarter_label = QUARTER_LABELS.get(leg["quarter"], leg["quarter"])
+    time_range = leg.get("time_range")
+    time_display = format_time_range(time_range) if time_range else quarter_label
     mode_label = MODE_TAGS.get(leg["mode"], leg["mode"])
-    parts = [f"{leg['date']} · {quarter_label}", mode_label]
+    parts = [f"{leg['date']} · {time_display}", mode_label]
     if leg.get("hub"):
         parts.append(leg["hub"])
     if leg.get("vehicle"):
@@ -139,7 +165,7 @@ def room_milestones(entry, start_date, end_date):
     """Collapse a person's room/room_by_date into contiguous same-room date
     ranges, in chronological order — a milestone list (arrive, sleep here
     for a stretch, sleep there for a stretch, depart), not a night-by-night
-    listing. See requirements/public.md -> Facts -> Layout."""
+    listing. See requirements/public.md -> Attendees -> Layout."""
     milestones = []
     current_room = None
     current_start = None
@@ -165,7 +191,7 @@ def render_person_page(person, entry, shared_base_css, shared_css):
 
     if entry is None:
         body = (
-            '<p class="facts-pending">We don’t have your travel details yet '
+            '<p class="attendee-pending">We don’t have your travel details yet '
             '— check back soon, or let the organizers know your plans.</p>'
         )
     else:
@@ -206,63 +232,9 @@ def render_person_page(person, entry, shared_base_css, shared_css):
 </head>
 <body>
 {nav_row}
-<h1 class="facts-title">{esc(person['name'])}’s facts</h1>
+<h1 class="attendees-title">{esc(person['name'])}’s facts</h1>
 <main>
 {body}
-</main>
-</body>
-</html>
-"""
-
-
-def render_index_page(people, travel_by_person_id, shared_base_css, shared_css):
-    nav_row = nav.render_row(nav_items_for_index())
-
-    collected, needed, not_attending = [], [], []
-    for p in sorted(people, key=lambda p: p["name"]):
-        if not p.get("attending"):
-            not_attending.append(p)
-        elif p["id"] in travel_by_person_id:
-            collected.append(p)
-        else:
-            needed.append(p)
-
-    def linked_list(ppl):
-        items = "".join(f'<li><a href="{p["id"]}.html">{esc(p["name"])}</a></li>' for p in ppl)
-        return items or '<li class="facts-empty-hint">No one yet</li>'
-
-    def plain_list(ppl):
-        items = "".join(f'<li class="not-attending-name">{esc(p["name"])}</li>' for p in ppl)
-        return items or '<li class="facts-empty-hint">No one</li>'
-
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Facts{TITLE_SUFFIX}</title>
-<style>
-{shared_base_css}
-{shared_css}
-</style>
-</head>
-<body>
-{nav_row}
-<h1 class="facts-title">Facts</h1>
-<p class="facts-subtitle">Who's got their travel details in, and who's still deciding</p>
-<main>
-<section class="facts-group">
-<h2>Facts collected</h2>
-<ul class="facts-list">{linked_list(collected)}</ul>
-</section>
-<section class="facts-group">
-<h2>Facts needed</h2>
-<ul class="facts-list">{linked_list(needed)}</ul>
-</section>
-<section class="facts-group">
-<h2>Not attending</h2>
-<ul class="facts-list">{plain_list(not_attending)}</ul>
-</section>
 </main>
 </body>
 </html>
@@ -279,13 +251,15 @@ def main():
     shared_base_css = (PROJECT_ROOT / "shared" / "base.css").read_text()
     shared_css = (ROOT / "shared.css").read_text()
 
+    validate_required_fields(people, ["id", "name"], "shared/data/people.json")
+    validate_required_fields(travel, ["person_id"], "timeline/data/travel.json")
     validate_people_attending(people)
     people_by_id = {p["id"]: p for p in people}
     validate_attendance_vs_travel(people_by_id, travel)
 
     travel_by_person_id = {entry["person_id"]: entry for entry in travel}
 
-    out_dir = PROJECT_ROOT / "site" / "facts"
+    out_dir = PROJECT_ROOT / "site" / "attendees"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     attending_people = [p for p in people if p.get("attending")]
@@ -294,9 +268,7 @@ def main():
         html = render_person_page(p, entry, shared_base_css, shared_css)
         (out_dir / f"{p['id']}.html").write_text(html)
 
-    index_html = render_index_page(people, travel_by_person_id, shared_base_css, shared_css)
-    (out_dir / "index.html").write_text(index_html)
-    print(f"Updated site/facts/ ({len(attending_people)} person page(s) + index)")
+    print(f"Updated site/attendees/ ({len(attending_people)} person page(s), no index — linked from the Family Tree)")
 
 
 if __name__ == "__main__":

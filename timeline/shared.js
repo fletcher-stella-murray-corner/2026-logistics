@@ -8,9 +8,11 @@ document.addEventListener('DOMContentLoaded', function () {
   // scroll-snap settling, and pairing it with scroll-snap-type is a known
   // Safari/iOS bug (see timeline/shared.css). Scoping "smooth" to just
   // this explicit, deliberate jump action avoids that entirely.
-  // Both "Jump ▾" (time) and "People ▾" share the .jump-menu/.jump-panel
-  // markup and need the same smooth-scroll-and-close behavior — this must
-  // stay a loop over ALL of them, not just the first match.
+  // Both the jump-to-time disclosure (the current-quarter label itself,
+  // see render_nav() in timeline/scripts/build.py) and "Folks ▾" share
+  // the .jump-menu/.jump-panel markup and need the same smooth-scroll-
+  // and-close behavior — this must stay a loop over ALL of them, not
+  // just the first match.
   var menus = document.querySelectorAll('.jump-menu');
   menus.forEach(function (menu) {
     var links = menu.querySelectorAll('a');
@@ -30,19 +32,24 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // Keeps the nav bar's left-side label showing which day quarter is
-  // currently in view, updated as you scroll. NAV_HEIGHT_PX must match
-  // --nav-height in shared/base.css (3.75rem = 60px at the default root
-  // font size) — it's hardcoded here since reading a CSS custom property
-  // and converting rem to px reliably isn't worth the extra code for a
-  // fixed, known value.
-  var label = document.getElementById('current-quarter-label');
-  var screens = document.querySelectorAll('.quarter-screen[data-quarter-label]');
-  if (label && screens.length && 'IntersectionObserver' in window) {
+  // currently in view, updated as you scroll — the weekday name
+  // (.cq-day, prominent) and the month/day + quarter (.cq-date,
+  // smaller/secondary) as two separate spans, not one flat string, so
+  // CSS can style them differently (see timeline/shared.css). NAV_HEIGHT_PX
+  // must match --nav-height in shared/base.css (3.75rem = 60px at the
+  // default root font size) — it's hardcoded here since reading a CSS
+  // custom property and converting rem to px reliably isn't worth the
+  // extra code for a fixed, known value.
+  var dayEl = document.getElementById('cq-day');
+  var dateEl = document.getElementById('cq-date');
+  var screens = document.querySelectorAll('.quarter-screen[data-day-name]');
+  if (dayEl && dateEl && screens.length && 'IntersectionObserver' in window) {
     var NAV_HEIGHT_PX = 60;
     var observer = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         if (entry.isIntersecting) {
-          label.textContent = entry.target.getAttribute('data-quarter-label');
+          dayEl.textContent = entry.target.getAttribute('data-day-name');
+          dateEl.textContent = ' · ' + entry.target.getAttribute('data-date-quarter');
         }
       });
     }, { rootMargin: '-' + NAV_HEIGHT_PX + 'px 0px -90% 0px', threshold: 0 });

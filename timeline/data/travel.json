@@ -1,8 +1,9 @@
 [
   {
     "person_id": 7,
-    "arrival": { "date": "2026-08-01", "quarter": "12-18", "mode": "car", "vehicle": "White Toyota Camry", "detail": "" },
-    "departure": { "date": "2026-08-13", "quarter": "00-06", "mode": "car", "detail": "Vehicle TBD" },
+    "pending": true,
+    "arrival": { "date": "2026-08-01", "quarter": "18-24", "time_range": ["18:00", "18:00"], "mode": "car", "vehicle": "White Toyota Camry", "detail": "" },
+    "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "Vehicle TBD" },
     "room": "Cottage — Blue Room",
     "room_by_date": {
       "2026-08-04": "Tent — David & Rachel",
@@ -19,6 +20,8 @@
   },
   {
     "person_id": 8,
+    "pending": true,
+    "arrival": { "date": "2026-08-01", "quarter": "18-24", "time_range": ["18:00", "18:00"], "mode": "car", "vehicle": "White Toyota Camry", "detail": "" },
     "departure": { "date": "2026-08-09", "quarter": "00-06", "mode": "car", "hub": "Moncton Airport", "detail": "David S driving" },
     "room": "Cottage — Blue Room",
     "room_by_date": {

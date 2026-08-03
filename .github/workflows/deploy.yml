@@ -15,7 +15,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  verify-build:
+    # Reruns every feature's build.py from the committed data and fails if
+    # site/ doesn't come out identical — catches a hand-edited data file
+    # pushed without rerunning scripts/build_site.py first (site/ silently
+    # stale), a hand-edited site/ page (drifts from its own source next
+    # rebuild), or invalid data that build.py's own validation would have
+    # caught locally (see technical.md -> Scripts). Gates deploy below.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Rebuild site/ and diff against the committed output
+        run: |
+          python3 scripts/build_site.py
+          if ! git diff --exit-code -- site/; then
+            echo "::error::site/ doesn't match what scripts/build_site.py produces from the committed data. Run 'python3 scripts/build_site.py' locally, commit the regenerated site/ files, and push again."
+            exit 1
+          fi
+
   deploy:
+    needs: verify-build
     runs-on: ubuntu-latest
     environment:
       name: github-pages

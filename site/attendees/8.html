@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rachel — Murray Corner 2026</title>
+<style>
+/* Shared site-wide chrome — inlined into every page at build time (see
+   technical.md -> Where CSS and JS changes go). Nav bar, color variables,
+   and base typography, per brand-guidelines.md -> Visual Identity. */
+:root {
+  --primary: #1b4965;   /* deep tide blue */
+  --secondary: #5fa8a0; /* sea glass */
+  --accent: #e8d9b5;    /* driftwood sand */
+  --bg: #faf8f4;
+  --text: #23282b;
+  --border: #ddd6c4;
+  --nav-height: 3.75rem;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0 1.25rem 3rem;
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
+}
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-height: var(--nav-height);
+  padding: 0.5rem 0;
+  border-bottom: 2px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+.site-nav a, .site-nav strong {
+  text-decoration: none;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+.site-nav strong.active { color: var(--secondary); }
+h1, h2, h3 { color: var(--primary); }
+a { color: var(--secondary); }
+
+/* Attendees feature — inlined into site/attendees/*.html at build time.
+   One page per attending person summarizing their own arrival/departure/
+   room facts (see requirements/public.md -> Attendees). No index page —
+   a person's page is reached by clicking them in the Family Tree, or via
+   the "Detail" link in the Timeline's "Folks ▾" disclosure. */
+.attendees-title { margin-bottom: 0.25rem; }
+
+.fact-row { margin: 0.6rem 0; font-size: 1.05rem; }
+.fact-label { font-weight: 600; color: var(--primary); margin-right: 0.4rem; }
+.fact-date-range { color: var(--secondary); font-size: 0.9rem; }
+.attendee-pending { color: var(--secondary); font-style: italic; }
+
+</style>
+</head>
+<body>
+<nav class="site-nav"><a href="../index.html">Timeline</a><a href="../family-tree/index.html">Tree</a></nav>
+<h1 class="attendees-title">Rachel’s facts</h1>
+<main>
+<div class="fact-row"><span class="fact-label">Arrival:</span> 2026-08-01 · 6pm — 🚗 Car — White Toyota Camry</div><div class="fact-row"><span class="fact-label">Sleeping:</span> Cottage — Blue Room <span class="fact-date-range">(Aug 1–3)</span></div><div class="fact-row"><span class="fact-label">Sleeping:</span> Tent — David &amp; Rachel <span class="fact-date-range">(Aug 4–9)</span></div><div class="fact-row"><span class="fact-label">Departure:</span> 2026-08-09 · Night · 12am–6am — 🚗 Car — Moncton Airport — David S driving</div>
+</main>
+</body>
+</html>

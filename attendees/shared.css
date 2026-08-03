@@ -1,0 +1,11 @@
+/* Attendees feature — inlined into site/attendees/*.html at build time.
+   One page per attending person summarizing their own arrival/departure/
+   room facts (see requirements/public.md -> Attendees). No index page —
+   a person's page is reached by clicking them in the Family Tree, or via
+   the "Detail" link in the Timeline's "Folks ▾" disclosure. */
+.attendees-title { margin-bottom: 0.25rem; }
+
+.fact-row { margin: 0.6rem 0; font-size: 1.05rem; }
+.fact-label { font-weight: 600; color: var(--primary); margin-right: 0.4rem; }
+.fact-date-range { color: var(--secondary); font-size: 0.9rem; }
+.attendee-pending { color: var(--secondary); font-style: italic; }

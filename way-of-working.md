@@ -3,7 +3,7 @@
 A tiny project: a requirements doc + an implementation. Keep it that way. This doc is about how we (human + AI) work together — the requirements-doc loop, git rhythm, session/state hygiene. For how the system is actually built (single-repo structure, scripts, the build pipeline, where CSS/JS changes go), see `technical.md`.
 
 One requirements doc — see `00-index.md` for the full doc map:
-- [requirements/public.md](requirements/public.md) — the public site (`site/`): the Timeline (homepage), Family Tree, and Facts features. There is no admin site for this project; the sole editor hand-edits data files directly (see `00-index.md` → *Editing data*).
+- [requirements/public.md](requirements/public.md) — the public site (`site/`): the Timeline (homepage), Family Tree, and Attendees features. There is no admin site for this project; the sole editor hand-edits data files directly (see `00-index.md` → *Editing data*).
 
 ## The loop
 

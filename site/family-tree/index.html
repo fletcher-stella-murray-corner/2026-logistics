@@ -67,8 +67,50 @@ a { color: var(--secondary); }
   border-radius: 6px;
   background: #fff;
 }
+/* An attending person's box is a link to their Attendees page — the sole
+   entry point to that feature (see family-tree/scripts/build.py ->
+   render_person()). Reset link defaults so it still reads as a plain box,
+   not a typical blue underlined link; a subtle border-color change on
+   hover/focus is the only affordance it's clickable, per
+   brand-guidelines.md's plain/unfussy, no-decoration visual language. A
+   not-attending person has no such page, so stays a plain <span> with no
+   hover treatment. */
+a.person {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+a.person:hover, a.person:focus-visible {
+  border-color: var(--secondary);
+}
+.person-name { display: block; }
+/* Small caption under the name, only shown for a non-default state (see
+   requirements/public.md -> Family Tree -> Layout) — the everyday case
+   (attending, facts collected) is the plain box above with no caption,
+   so a caption always means "look here," not decoration. */
+.person-status {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--secondary);
+}
+/* Married in (joined by marriage/partnership, not a blood descendant) —
+   dashed AND colored border, plus the "Married in" caption above, so it
+   reads clearly even for someone who can't recall what a dashed border
+   means on its own. */
 .person.married-in {
   border-style: dashed;
+  border-color: var(--secondary);
+}
+/* Attending, but no travel.json entry yet — sand tint (brand-guidelines.md's
+   documented use for accent: "day-card background tint") flags it as
+   still-open without introducing a new color or an icon. */
+.person.status-needed {
+  background: var(--accent);
+}
+.person.status-not-attending {
+  opacity: 0.55;
 }
 .couple-joiner { color: var(--secondary); }
 .empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
@@ -84,11 +126,11 @@ a { color: var(--secondary); }
 </style>
 </head>
 <body>
-<nav class="site-nav"><a href="../index.html">Timeline</a><strong class="active">Tree</strong><a href="../facts/index.html">Facts</a></nav>
+<nav class="site-nav"><a href="../index.html">Timeline</a><strong class="active">Tree</strong></nav>
 <h1 class="tree-title">Family Tree</h1>
 <p class="tree-subtitle">Where everyone fits</p>
 <main>
-<div class="generation"><div class="family-unit"><div class="couple"><span class="person">Fletcher</span><span class="couple-joiner">&amp;</span><span class="person">Stella</span></div><div class="children"><div class="family-unit"><div class="couple"><span class="person">Jesse</span><span class="couple-joiner">&amp;</span><span class="person married-in">Donald</span></div><div class="children"><div class="family-unit"><div class="couple"><span class="person">Jim S</span><span class="couple-joiner">&amp;</span><span class="person married-in">Helen S</span></div><div class="children"><div class="family-unit"><div class="couple"><span class="person">David S</span><span class="couple-joiner">&amp;</span><span class="person married-in">Rachel</span></div></div></div></div></div></div></div></div></div>
+<div class="generation"><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">Fletcher</span><span class="person-status">Not attending</span></span><span class="couple-joiner">&amp;</span><span class="person status-not-attending"><span class="person-name">Stella</span><span class="person-status">Not attending</span></span></div><div class="children"><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">Jesse</span><span class="person-status">Not attending</span></span><span class="couple-joiner">&amp;</span><span class="person married-in status-not-attending"><span class="person-name">Donald</span><span class="person-status">Married in · Not attending</span></span></div><div class="children"><div class="family-unit"><div class="couple"><a class="person status-needed" href="../attendees/5.html"><span class="person-name">Jim S</span><span class="person-status">Collecting facts</span></a><span class="couple-joiner">&amp;</span><a class="person married-in status-needed" href="../attendees/6.html"><span class="person-name">Helen S</span><span class="person-status">Married in · Collecting facts</span></a></div><div class="children"><div class="family-unit"><div class="couple"><a class="person status-needed" href="../attendees/7.html"><span class="person-name">David S</span><span class="person-status">Collecting facts</span></a><span class="couple-joiner">&amp;</span><a class="person married-in status-needed" href="../attendees/8.html"><span class="person-name">Rachel</span><span class="person-status">Married in · Collecting facts</span></a></div></div></div></div></div></div></div></div></div>
 </main>
 </body>
 </html>
