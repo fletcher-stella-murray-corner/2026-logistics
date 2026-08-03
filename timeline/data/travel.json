@@ -8,7 +8,7 @@
         "return": { "date": "2026-08-05", "quarter": "12-18", "time_range": ["17:59", "17:59"], "mode": "car" }
       }
     ],
-    "departure": { "date": "2026-08-06", "quarter": "00-06", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "With David" }
+    "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "With David · Vehicle TBD" }
   },
   {
     "person_id": 6,
@@ -19,7 +19,7 @@
         "return": { "date": "2026-08-05", "quarter": "12-18", "time_range": ["17:59", "17:59"], "mode": "car" }
       }
     ],
-    "departure": { "date": "2026-08-06", "quarter": "00-06", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "With David" }
+    "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "With David · Vehicle TBD" }
   },
   {
     "person_id": 7,

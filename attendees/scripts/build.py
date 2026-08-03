@@ -161,14 +161,16 @@ def format_leg_body(leg, people_by_id):
 
 
 def format_date_label(d):
-    return d.strftime("%b ") + str(d.day)
+    """Always weekday-first (e.g. "Monday, Aug 3") — critical for this
+    page specifically, since a family member checking their own facts
+    needs the day of the week, not just the calendar date (see
+    requirements/public.md -> Attendees -> Layout)."""
+    return d.strftime("%A, %b ") + str(d.day)
 
 
 def format_date_range(start, end):
     if start == end:
         return format_date_label(start)
-    if start.month == end.month and start.year == end.year:
-        return f"{start.strftime('%b ')}{start.day}–{end.day}"
     return f"{format_date_label(start)} – {format_date_label(end)}"
 
 
