@@ -25,7 +25,9 @@ reference points at an id that actually exists in people.json; nobody
 lists themselves as their own parent or partner; a set partner_id is
 reciprocated (if A's partner_id is B, B's partner_id must be A); nobody
 has both married_in: true and a non-empty parent_ids (a contradiction —
-see requirements/public.md -> people.json); and, after the tree is
+see requirements/public.md -> people.json); a person's optional
+birth_order (see requirements/public.md -> people.json -> birth_order)
+is an integer when present; and, after the tree is
 built, every person is actually reachable from a generation-1 root by
 walking parent_ids/partner_id — someone who isn't (e.g. a generation/
 parent_ids typo that never connects back to a root) would otherwise
@@ -110,6 +112,9 @@ def validate_people_shape(people):
         parent_ids = p.get("parent_ids") or []
         if len(parent_ids) > 2:
             raise ValueError(f"{name!r} has {len(parent_ids)} parent_ids — a person can have at most 2.")
+        birth_order = p.get("birth_order")
+        if birth_order is not None and not isinstance(birth_order, int):
+            raise ValueError(f"{label} has a non-integer birth_order {birth_order!r} — birth_order must be an integer.")
 
 
 def validate_people(people):
@@ -152,6 +157,20 @@ def validate_people(people):
                 f"{p['name']!r} has married_in: true but also has parent_ids set — "
                 f"someone with documented parents is a blood descendant, not married in."
             )
+
+
+def sibling_sort_key(p):
+    """Left-to-right display order for siblings and for the top-level
+    roots (see requirements/public.md -> people.json -> birth_order) —
+    oldest first. `id` alone can't express this: ids are permanent and
+    never renumbered, but people are entered in whatever order the editor
+    learns about them, not birth order, so an older sibling added later
+    usually ends up with a higher id than younger siblings already in the
+    file. `birth_order` is the explicit override for exactly that case;
+    everyone else just falls back to their own id, which is why the
+    common case (siblings already entered oldest-to-youngest) needs no
+    birth_order at all."""
+    return (p.get("birth_order", p["id"]), p["id"])
 
 
 def build_children_map(people):
@@ -228,7 +247,7 @@ def render_unit(person, people_by_id, children_by_parent, rendered_ids, collecte
             if kid["id"] not in seen_kid_ids:
                 seen_kid_ids.add(kid["id"])
                 kids.append(kid)
-    kids.sort(key=lambda p: p["id"])
+    kids.sort(key=sibling_sort_key)
 
     kids_html = "".join(
         render_unit(k, people_by_id, children_by_parent, rendered_ids, collected_ids) for k in kids
@@ -247,7 +266,7 @@ def build_tree_html(people, collected_ids):
     min_generation = min(p.get("generation", 1) for p in people)
 
     roots = [p for p in people if p.get("generation", 1) == min_generation]
-    roots.sort(key=lambda p: p["id"])
+    roots.sort(key=sibling_sort_key)
 
     rendered_ids = set()
     units_html = "".join(

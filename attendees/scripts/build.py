@@ -225,18 +225,25 @@ def sleeping_end_date(departure):
 def excursion_away_ranges(entry):
     """The date range(s) a person is away on an excursion (see
     requirements/public.md -> Data -> travel.json -> excursions), for
-    room_milestones() below to skip. Mirrors sleeping_end_date()'s own
-    quarter-based rule for the bookend departure: the depart date itself
-    still counts as present unless its quarter is "00-06" (gone before any
-    of it); the return date always counts as back, same as how the
+    room_milestones() below to skip. Unlike the bookend departure/arrival
+    (sleeping_end_date() below), which count the calendar date itself as
+    present because it's still preceded by a real night spent there, an
+    excursion's depart date is never that: whatever time they leave, they
+    aren't back at the accommodation again until the return leg, so the
+    depart date itself is always the first away night — no quarter
+    exception. The return date always counts as back, same as how the
     bookend arrival date always counts as present with no quarter
-    adjustment — so the away range is exclusive of both ends."""
+    adjustment. This deliberately shows a break for ANY excursion that
+    crosses into a new calendar date, even a short one (e.g. leave one
+    afternoon, back the next evening) — the point of a Sleeping-row gap is
+    to show the person genuinely wasn't there for a stretch, not to hide
+    it just because that stretch happened to be brief. Only a same-day
+    round trip (depart and return on the identical date) produces no
+    gap — away_start would be later than away_end, so nothing is added."""
     ranges = []
     for exc in entry.get("excursions", []):
         depart, ret = exc["depart"], exc["return"]
         away_start = date.fromisoformat(depart["date"])
-        if depart["quarter"] != "00-06":
-            away_start += timedelta(days=1)
         away_end = date.fromisoformat(ret["date"]) - timedelta(days=1)
         if away_start <= away_end:
             ranges.append((away_start, away_end))
