@@ -13,6 +13,9 @@
   border-radius: 6px;
   background: #fff;
 }
+.person.married-in {
+  border-style: dashed;
+}
 .couple-joiner { color: var(--secondary); }
 .empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
 .children {

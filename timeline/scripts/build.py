@@ -12,19 +12,25 @@ on every rebuild.
 
 Validated at build time, all as hard errors rather than silent typos:
 every `room`/`room_by_date`/`hub` value in travel.json against
-shared/data/structures.json; every `vehicle` value against
+shared/data/structures.json — including, for a structure with a fixed
+`rooms` list (e.g. Cottage), that the room detail is one of the declared
+names, not arbitrary free text; every `vehicle` value against
 shared/data/vehicles.json (see requirements/public.md -> Structures /
 Vehicles); every `person_id` in travel.json against people.json; every
 `date`/`quarter` value everywhere (travel.json, meals.json,
 activities.json) for valid ISO-date/quarter-key shape; a travel entry's
-departure isn't before its arrival; and ids are unique within
-people.json/structures.json/vehicles.json.
+departure isn't before its arrival; a structure's `rooms` list (if any)
+is non-empty with no duplicates, and its `active_from`/`active_to` (if
+set) are valid ISO dates with `active_to` not before `active_from`; and
+ids are unique within people.json/structures.json/vehicles.json.
 
 The nav bar is one single row: a live "current day quarter" label on the
 left (updated by shared.js via IntersectionObserver as you scroll), the
-"Jump" disclosure in the middle (links straight to any quarter screen
-via anchor, independent of scroll-snap), and the Family Tree link on
-the right.
+"Jump ▾" (jump to time) and "People ▾" (jump to person) disclosures
+(links straight to any quarter screen via anchor, independent of
+scroll-snap), a "▶"/"⏸" play/pause button that auto-advances through
+every screen (see requirements/public.md -> Navigation), and the Family
+Tree / Facts links on the right.
 
 Each quarter screen has two parts, per requirements/public.md ->
 Terminology: a "day quarter canvas padding" spacer (blank space reserved
@@ -100,6 +106,30 @@ def validate_structures_file(structures):
                 f"Invalid category {s['category']!r} for structure {s['name']!r} in "
                 f"shared/data/structures.json — must be 'accommodation' or 'transit'."
             )
+        rooms = s.get("rooms")
+        if rooms is not None:
+            if not rooms or len(set(rooms)) != len(rooms):
+                raise ValueError(
+                    f"Structure {s['name']!r} in shared/data/structures.json has an invalid "
+                    f"'rooms' list — must be non-empty with no duplicate room names."
+                )
+        active_from = s.get("active_from")
+        active_to = s.get("active_to")
+        if active_from is not None:
+            validate_date_str(active_from, f"active_from for structure {s['name']!r}")
+        if active_to is not None:
+            validate_date_str(active_to, f"active_to for structure {s['name']!r}")
+        if active_from is not None and active_to is not None and active_to < active_from:
+            raise ValueError(
+                f"Structure {s['name']!r} in shared/data/structures.json has active_to "
+                f"({active_to}) before active_from ({active_from})."
+            )
+
+
+def structure_active(structure, iso_date):
+    start = structure.get("active_from") or TRIP_START.isoformat()
+    end = structure.get("active_to") or TRIP_END.isoformat()
+    return start <= iso_date <= end
 
 
 def validate_vehicles_file(vehicles):
@@ -124,13 +154,22 @@ def validate_quarter_value(value, context):
         )
 
 
-def validate_room(room, accommodation_names, context):
+def validate_room(room, accommodation_structures, context):
     if not room:
         return
-    if room in accommodation_names:
-        return
-    for name in accommodation_names:
-        if room.startswith(f"{name} — "):
+    for s in accommodation_structures:
+        name = s["name"]
+        if room == name:
+            return
+        prefix = f"{name} — "
+        if room.startswith(prefix):
+            declared_rooms = s.get("rooms")
+            detail = room[len(prefix):]
+            if declared_rooms and detail not in declared_rooms:
+                raise ValueError(
+                    f"Unknown room {detail!r} for structure {name!r} in room for {context} — "
+                    f"{name!r} has a fixed rooms list, must be one of {', '.join(declared_rooms)}."
+                )
             return
     raise ValueError(
         f"Unknown structure {room!r} in room for {context} — must exactly match an "
@@ -168,7 +207,7 @@ def validate_leg(leg, person_name, field, transit_names, vehicle_names):
 
 
 def validate_travel(travel, people_by_id, structures, vehicles):
-    accommodation_names = structure_names(structures, "accommodation")
+    accommodation_structures = [s for s in structures if s["category"] == "accommodation"]
     transit_names = structure_names(structures, "transit")
     vehicle_names = {v["name"] for v in vehicles}
 
@@ -196,10 +235,10 @@ def validate_travel(travel, people_by_id, structures, vehicles):
                     f"Departure ({departure['date']} {departure['quarter']}) is before arrival "
                     f"({arrival['date']} {arrival['quarter']}) for {person_name!r}."
                 )
-        validate_room(entry.get("room", ""), accommodation_names, person_name)
+        validate_room(entry.get("room", ""), accommodation_structures, person_name)
         for room_date, room in entry.get("room_by_date", {}).items():
             validate_date_str(room_date, f"room_by_date for {person_name!r}")
-            validate_room(room, accommodation_names, f"{person_name!r} on {room_date}")
+            validate_room(room, accommodation_structures, f"{person_name!r} on {room_date}")
 
 
 def validate_day_quarter_notes(data, label):
@@ -234,7 +273,88 @@ def room_for_date(entry, iso_date):
     return entry.get("room_by_date", {}).get(iso_date, entry.get("room", ""))
 
 
-def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities):
+def parse_room(room, accommodation_structures):
+    """Split a validated room string into (structure_name, detail) — detail
+    is None for a bare structure name or an unset room (see
+    requirements/public.md -> Sleeping -> Nested box display)."""
+    if not room:
+        return None, None
+    for s in accommodation_structures:
+        name = s["name"]
+        if room == name:
+            return name, None
+        prefix = f"{name} — "
+        if room.startswith(prefix):
+            return name, room[len(prefix):]
+    return room, None
+
+
+def render_sleeping_row(present, accommodation_structures, day_iso):
+    by_structure = {}
+    for p, room in present:
+        structure, detail = parse_room(room, accommodation_structures)
+        by_structure.setdefault(structure, {}).setdefault(detail, []).append(p["name"])
+
+    # A structure with a fixed `rooms` list is a real, physical place that
+    # doesn't disappear just because nobody's currently assigned to one of
+    # its rooms — every declared room always gets a box (empty or not) for
+    # as long as the structure itself is active (see requirements/public.md
+    # -> Structures -> Active range and Sleeping -> Nested box display).
+    # Structures without a `rooms` list keep the old occupancy-only
+    # behavior (e.g. Tent/Camper Van, which are free-text-instance places).
+    for s in accommodation_structures:
+        rooms = s.get("rooms")
+        if not rooms or not structure_active(s, day_iso):
+            continue
+        bucket = by_structure.setdefault(s["name"], {})
+        for room_name in rooms:
+            bucket.setdefault(room_name, [])
+
+    if not by_structure:
+        return ""
+
+    def sort_key(k):
+        return (k is None, k or "")
+
+    boxes = []
+    for structure in sorted(by_structure, key=sort_key):
+        by_detail = by_structure[structure]
+        if structure is None:
+            names = sorted(by_detail[None])
+            boxes.append(
+                '<div class="structure-box unassigned-box">'
+                '<span class="structure-label">Unassigned</span>'
+                f'<span class="room-people">{esc(", ".join(names))}</span>'
+                '</div>'
+            )
+            continue
+
+        inner = []
+        for detail in sorted(by_detail, key=sort_key):
+            names = sorted(by_detail[detail])
+            if detail is None:
+                inner.append(f'<span class="room-people">{esc(", ".join(names))}</span>')
+            else:
+                inner.append(
+                    '<div class="room-box">'
+                    f'<span class="room-label">{esc(detail)}</span>'
+                    f'<span class="room-people">{esc(", ".join(names))}</span>'
+                    '</div>'
+                )
+        boxes.append(
+            '<div class="structure-box">'
+            f'<span class="structure-label">{esc(structure)}</span>'
+            f'<div class="structure-rooms">{"".join(inner)}</div>'
+            '</div>'
+        )
+
+    return (
+        '<div class="quarter-row"><span class="quarter-row-label">Sleeping:</span>'
+        f'<div class="structure-boxes">{"".join(boxes)}</div></div>'
+    )
+
+
+def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities, accommodation_structures):
     key = quarter_key(day.isoformat(), quarter)
 
     arrivals = []
@@ -283,16 +403,9 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities)
         )
         rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Departing:</span>{lines}</div>')
 
-    if present:
-        by_room = {}
-        for p, room in present:
-            by_room.setdefault(room or "Unassigned", []).append(p["name"])
-        room_lines = "".join(
-            f'<span class="room-group"><span class="room-name">{esc(room)}:</span> '
-            f'{esc(", ".join(sorted(names)))}</span>'
-            for room, names in sorted(by_room.items())
-        )
-        rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Sleeping:</span>{room_lines}</div>')
+    sleeping_row = render_sleeping_row(present, accommodation_structures, day.isoformat())
+    if sleeping_row:
+        rows.append(sleeping_row)
 
     meal = meals.get(day.isoformat(), {}).get(quarter)
     if meal:
@@ -343,15 +456,52 @@ def render_jump_menu(cutoff):
 </details>"""
 
 
-def render_nav(jump_menu):
+def render_people_menu(travel, people_by_id, cutoff):
+    """Jump-to-person: each entry links to where that person first appears —
+    their arrival's quarter screen if it's still being rendered, otherwise
+    the very first quarter screen currently shown (covers both "arrived
+    before the rendering window starts" and "no arrival at all")."""
+    if cutoff > TRIP_END or not travel:
+        return ""
+
+    first_key = quarter_key(cutoff.isoformat(), "00-06")
+    entries = []
+    for entry in travel:
+        person = people_by_id.get(entry["person_id"])
+        if person is None:
+            continue
+        arrival = entry.get("arrival")
+        if arrival and quarter_key(arrival["date"], arrival["quarter"]) >= first_key:
+            target_date, target_quarter = arrival["date"], arrival["quarter"]
+        else:
+            target_date, target_quarter = cutoff.isoformat(), "00-06"
+        entries.append((person["name"], target_date, target_quarter))
+
+    if not entries:
+        return ""
+
+    entries.sort(key=lambda e: e[0])
+    links = "".join(
+        f'<a href="#{quarter_screen_id(d, q)}">{esc(name)}</a>' for name, d, q in entries
+    )
+    return f"""<details class="jump-menu">
+<summary>People ▾</summary>
+<div class="jump-panel"><div class="jump-links">{links}</div></div>
+</details>"""
+
+
+def render_nav(jump_menu, people_menu):
     return f"""<nav class="site-nav">
 <span class="current-quarter-label" id="current-quarter-label">{esc(PAGE_TITLE)}</span>
 {jump_menu}
-<span class="nav-disabled" aria-disabled="true">Tree</span>
+{people_menu}
+<button type="button" id="run-toggle" class="run-toggle" aria-label="Play">▶</button>
+<a href="family-tree/index.html">Tree</a>
+<a href="facts/index.html">Facts</a>
 </nav>"""
 
 
-def build_timeline_html(people, travel, meals, activities, cutoff):
+def build_timeline_html(people, travel, meals, activities, cutoff, accommodation_structures):
     people_by_id = {p["id"]: p for p in people}
 
     screens = [render_intro_screen()]
@@ -363,16 +513,19 @@ def build_timeline_html(people, travel, meals, activities, cutoff):
     else:
         for d in daterange(cutoff, TRIP_END):
             for q in QUARTERS:
-                screens.append(render_quarter_screen(d, q, travel, people_by_id, meals, activities))
+                screens.append(render_quarter_screen(d, q, travel, people_by_id, meals, activities, accommodation_structures))
 
     return "\n".join(screens)
 
 
-def build_page_html(people, travel, meals, activities, shared_base_css, shared_css, shared_js, today=None):
+def build_page_html(people, travel, meals, activities, structures, shared_base_css, shared_css, shared_js, today=None):
     cutoff = max(today or date.today(), TRIP_START)
+    people_by_id = {p["id"]: p for p in people}
     jump_menu = render_jump_menu(cutoff)
-    nav_row = render_nav(jump_menu)
-    timeline_html = build_timeline_html(people, travel, meals, activities, cutoff)
+    people_menu = render_people_menu(travel, people_by_id, cutoff)
+    nav_row = render_nav(jump_menu, people_menu)
+    accommodation_structures = [s for s in structures if s["category"] == "accommodation"]
+    timeline_html = build_timeline_html(people, travel, meals, activities, cutoff, accommodation_structures)
     return f"""<!DOCTYPE html>
 <html lang="en" class="timeline-page">
 <head>
@@ -421,7 +574,7 @@ def main():
     validate_day_quarter_notes(meals, "timeline/data/meals.json")
     validate_day_quarter_notes(activities, "timeline/data/activities.json")
 
-    html = build_page_html(people, travel, meals, activities, shared_base_css, shared_css, shared_js)
+    html = build_page_html(people, travel, meals, activities, structures, shared_base_css, shared_css, shared_js)
     out_path = PROJECT_ROOT / "site" / "index.html"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html)

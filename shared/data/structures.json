@@ -1,5 +1,5 @@
 [
-  { "id": "cottage", "name": "Cottage", "category": "accommodation" },
+  { "id": "cottage", "name": "Cottage", "category": "accommodation", "rooms": ["Blue Room", "Green Room", "Master Suite"] },
   { "id": "red-shed", "name": "Red Shed", "category": "accommodation" },
   { "id": "sheogue-inn", "name": "Sheogue Inn", "category": "accommodation" },
   { "id": "camper-van", "name": "Camper Van", "category": "accommodation" },

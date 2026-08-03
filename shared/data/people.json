@@ -1,1 +1,69 @@
-[]
+[
+  {
+    "id": 1,
+    "name": "Fletcher",
+    "generation": 1,
+    "parent_ids": [],
+    "partner_id": 2,
+    "attending": false
+  },
+  {
+    "id": 2,
+    "name": "Stella",
+    "generation": 1,
+    "parent_ids": [],
+    "partner_id": 1,
+    "attending": false
+  },
+  {
+    "id": 3,
+    "name": "Jesse",
+    "generation": 2,
+    "parent_ids": [1, 2],
+    "partner_id": 4,
+    "attending": false
+  },
+  {
+    "id": 4,
+    "name": "Donald",
+    "generation": 2,
+    "parent_ids": [],
+    "partner_id": 3,
+    "married_in": true,
+    "attending": false
+  },
+  {
+    "id": 5,
+    "name": "Jim S",
+    "generation": 3,
+    "parent_ids": [3, 4],
+    "partner_id": 6,
+    "attending": true
+  },
+  {
+    "id": 6,
+    "name": "Helen S",
+    "generation": 3,
+    "parent_ids": [],
+    "partner_id": 5,
+    "married_in": true,
+    "attending": true
+  },
+  {
+    "id": 7,
+    "name": "David S",
+    "generation": 4,
+    "parent_ids": [5, 6],
+    "partner_id": 8,
+    "attending": true
+  },
+  {
+    "id": 8,
+    "name": "Rachel",
+    "generation": 4,
+    "parent_ids": [],
+    "partner_id": 7,
+    "married_in": true,
+    "attending": true
+  }
+]

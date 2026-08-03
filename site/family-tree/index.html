@@ -49,12 +49,6 @@ body {
   font-size: 1.05rem;
 }
 .site-nav strong.active { color: var(--secondary); }
-.site-nav .nav-disabled {
-  font-weight: 600;
-  font-size: 1.05rem;
-  color: #b0aca0;
-  cursor: not-allowed;
-}
 h1, h2, h3 { color: var(--primary); }
 a { color: var(--secondary); }
 
@@ -73,6 +67,9 @@ a { color: var(--secondary); }
   border-radius: 6px;
   background: #fff;
 }
+.person.married-in {
+  border-style: dashed;
+}
 .couple-joiner { color: var(--secondary); }
 .empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
 .children {
@@ -87,11 +84,11 @@ a { color: var(--secondary); }
 </style>
 </head>
 <body>
-<nav class="site-nav"><a href="index.html">Timeline</a><strong class="active">Tree</strong></nav>
+<nav class="site-nav"><a href="../index.html">Timeline</a><strong class="active">Tree</strong><a href="../facts/index.html">Facts</a></nav>
 <h1 class="tree-title">Family Tree</h1>
 <p class="tree-subtitle">Where everyone fits</p>
 <main>
-<p class="empty-hint">No one added to the family tree yet.</p>
+<div class="generation"><div class="family-unit"><div class="couple"><span class="person">Fletcher</span><span class="couple-joiner">&amp;</span><span class="person">Stella</span></div><div class="children"><div class="family-unit"><div class="couple"><span class="person">Jesse</span><span class="couple-joiner">&amp;</span><span class="person married-in">Donald</span></div><div class="children"><div class="family-unit"><div class="couple"><span class="person">Jim S</span><span class="couple-joiner">&amp;</span><span class="person married-in">Helen S</span></div><div class="children"><div class="family-unit"><div class="couple"><span class="person">David S</span><span class="couple-joiner">&amp;</span><span class="person married-in">Rachel</span></div></div></div></div></div></div></div></div></div>
 </main>
 </body>
 </html>

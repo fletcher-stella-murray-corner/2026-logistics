@@ -42,11 +42,5 @@ body {
   font-size: 1.05rem;
 }
 .site-nav strong.active { color: var(--secondary); }
-.site-nav .nav-disabled {
-  font-weight: 600;
-  font-size: 1.05rem;
-  color: #b0aca0;
-  cursor: not-allowed;
-}
 h1, h2, h3 { color: var(--primary); }
 a { color: var(--secondary); }

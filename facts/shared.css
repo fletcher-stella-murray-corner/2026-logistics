@@ -1,0 +1,37 @@
+/* Facts feature — inlined into site/facts/*.html at build time. An index
+   page grouping everyone into the three states this feature tracks
+   (facts collected / facts needed / not attending), plus one page per
+   attending person summarizing their own arrival/departure/room facts
+   (see requirements/public.md -> Facts). */
+.facts-title { margin-bottom: 0.25rem; }
+.facts-subtitle { color: var(--secondary); margin-top: 0; margin-bottom: 2rem; }
+
+.facts-group { margin-bottom: 1.75rem; }
+.facts-group h2 { font-size: 1.05rem; margin-bottom: 0.5rem; }
+
+.facts-list { display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; padding: 0; margin: 0; }
+.facts-list a {
+  display: inline-block;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  text-decoration: none;
+  color: var(--text);
+}
+/* Not-attending names get the same dashed-border treatment as a
+   married-in person box on the Family Tree page (family-tree/shared.css
+   -> .person.married-in) — reusing that "exception, not the norm" motif
+   rather than inventing a new visual language for it. */
+.facts-list li.not-attending-name {
+  padding: 0.4rem 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  color: var(--secondary);
+}
+.facts-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
+
+.fact-row { margin: 0.6rem 0; font-size: 1.05rem; }
+.fact-label { font-weight: 600; color: var(--primary); margin-right: 0.4rem; }
+.fact-date-range { color: var(--secondary); font-size: 0.9rem; }
+.facts-pending { color: var(--secondary); font-style: italic; }

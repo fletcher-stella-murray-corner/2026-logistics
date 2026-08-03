@@ -20,6 +20,17 @@
 html.timeline-page {
   scroll-snap-type: y mandatory;
 }
+/* Suspends scroll-snap while the play/pause auto-advance control
+   (timeline/shared.js) is stepping through screens — repeatedly firing
+   scrollIntoView({behavior: 'smooth'}) while mandatory snap stays active
+   is a known bad combination (each jump interrupts the previous one
+   mid-snap) that can leave the page visibly stuck, so snap is switched
+   off for the run and restored the moment playback stops. Two classes on
+   the same element beats the single-class rule above on specificity, no
+   !important needed. */
+html.timeline-page.auto-scrolling {
+  scroll-snap-type: none;
+}
 
 .intro-screen, .quarter-screen, .trip-done-screen {
   /* svh (not dvh) deliberately: dvh recalculates live as a mobile browser's
@@ -151,6 +162,24 @@ html.timeline-page {
   font-size: 1.05rem;
 }
 
+/* Play/pause auto-advance toggle — icon-only (no text label, see
+   requirements/public.md -> Navigation), same weight/color/no-decoration
+   look as the Jump/People disclosure triggers (shared/base.css ->
+   .site-nav a), not a boxed/decorated button, per brand-guidelines.md's
+   flat visual language. */
+.run-toggle {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--secondary);
+  cursor: pointer;
+}
+.run-toggle:hover { color: var(--primary); }
+
 .trip-title { margin-bottom: 0.25rem; }
 .trip-subtitle { color: var(--secondary); margin-top: 0; }
 .scroll-hint {
@@ -165,6 +194,39 @@ html.timeline-page {
 .quarter-row-label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 0.2rem; }
 .person-line { display: block; margin-left: 0.1rem; }
 .mode-tag { margin-right: 0.3rem; }
-.room-group { display: block; margin: 0.15rem 0; }
-.room-name { font-weight: 600; }
 .quarter-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
+
+/* Sleeping row — nested boxes (structure, then room/detail inside it),
+   same plain flat-box motif as the Family Tree page's person boxes (see
+   family-tree/shared.css -> .person), reused here for one visual language
+   site-wide. See requirements/public.md -> Sleeping -> Nested box display. */
+.structure-boxes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.3rem; }
+.structure-box {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+}
+.structure-box.unassigned-box { border-style: dashed; color: var(--secondary); }
+.structure-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--primary);
+  margin-bottom: 0.3rem;
+}
+.structure-rooms { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.3rem; }
+.room-box {
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  background: var(--bg);
+}
+.room-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--secondary);
+  margin-bottom: 0.15rem;
+}
+.room-people { font-size: 0.95rem; }

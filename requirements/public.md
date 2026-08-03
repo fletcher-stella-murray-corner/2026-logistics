@@ -2,7 +2,7 @@
 
 What the public-facing site (`site/`) should be/do. There is no admin site for this project — the sole editor hand-edits data files directly and reruns the build (see `technical.md` → *Repo & deployment*).
 
-Two features: **Timeline** (the homepage) and **Family Tree**.
+Three features: **Timeline** (the homepage), **Family Tree**, and **Facts**.
 
 ## Terminology
 
@@ -15,15 +15,20 @@ Use these terms consistently in code, comments, and docs — not "block"/"block 
 
 ## Navigation
 
-**Timeline page** — nav bar is a single sticky row, always visible, three items left to right:
+**Timeline page** — nav bar is a single sticky row, always visible, six items left to right:
 
 1. **Current day quarter label** — live text showing which day quarter is currently in view (e.g. "Sat, Aug 1 · 12am–6am"), updated as you scroll (via `IntersectionObserver` in `timeline/shared.js`). Shows the site title before you've scrolled into any quarter, and is the only place this date/time information appears (see *Terminology* — it's deliberately not repeated on the canvas).
-2. **"Jump ▾"** — a dropdown disclosure listing every remaining day, each with its four day-quarter times as links. Clicking one does a smooth animated scroll to that quarter screen (`scrollIntoView({behavior: 'smooth'})` in `timeline/shared.js`, not the CSS `scroll-behavior` property — see that file for why) and closes the disclosure. This is the reliable way to reach any quarter screen; don't assume scroll/swipe alone is enough.
-3. **Tree** — currently disabled (plain muted text, not a link, `cursor: not-allowed`). Will become a working link to the Family Tree page once that page is ready to be reached this way.
+2. **"Jump ▾"** — jump to a *time*: a dropdown disclosure listing every remaining day, each with its four day-quarter times as links. Clicking one does a smooth animated scroll to that quarter screen (`scrollIntoView({behavior: 'smooth'})` in `timeline/shared.js`, not the CSS `scroll-behavior` property — see that file for why) and closes the disclosure. This is the reliable way to reach any quarter screen; don't assume scroll/swipe alone is enough.
+3. **"People ▾"** — jump to a *person*: a dropdown disclosure listing everyone who has a `timeline/data/travel.json` entry, alphabetically by name (people with no travel entry aren't on the trip, so aren't listed). Clicking a name scrolls to the quarter screen where they first appear: their arrival's day+quarter if it's still within the rendered window (see *Auto-hiding past days* above), otherwise the very first quarter screen currently shown — which covers both "their arrival has already passed" and "they have no `arrival` at all" (both cases mean they're simply present from day one). Same click/scroll/close behavior as "Jump ▾". Omitted entirely if `travel.json` is empty, or if the trip is over.
+4. **"▶" play/pause toggle** — an icon-only button (no text label, `aria-label` of "Play"/"Pause" for accessibility) that steps through every screen one at a time: jump to the next screen, pause so there's time to actually read it, jump to the next, pause — not a continuous scroll. The pause length is a single named constant (`PAUSE_MS` in `timeline/shared.js`, currently 1.8 seconds) meant to be retuned freely for a natural rhythm, not a fixed spec value. Mainly a testing/demo aid for checking the full sequence renders correctly, but it's a permanent, visible control, not hidden. Always starts from wherever you currently are, not the very first screen — clicking it partway through the trip continues forward from there. While running, native scroll-snap is suspended for the page — repeatedly firing a smooth jump at every screen while mandatory snap stays active is a known bad combination that can leave the page visibly stuck (see `timeline/shared.css`) — and the icon switches to "⏸"; clicking it again, or scrolling/swiping manually, stops the advance immediately (manual scroll always wins), restores snap, and reverts the icon to "▶". It also stops itself automatically on reaching the last screen. This is an intentional, scoped exception to `brand-guidelines.md`'s "no interactivity beyond scrolling and links" principle — see that doc's *Core Principles*.
+5. **Tree** — a working link to the Family Tree page.
+6. **Facts** — a working link to the Facts index page (`site/facts/index.html`).
 
-**Family Tree page** — nav bar is the plain two-item row (`Timeline` link, `Tree` active/current-page indicator). It does not have the live label or the jump menu — those are Timeline-only, since only the Timeline has quarter screens to label or jump between.
+**Family Tree page** — nav bar is the plain three-item row (`Timeline` link, `Tree` active/current-page indicator, `Facts` link). It does not have the live label, jump-to-time, jump-to-person, or Run — those are Timeline-only, since only the Timeline has quarter screens to label, jump between, or auto-advance through.
 
-Both navs are one sticky row, always visible, at the top of every page — you're never more than a tap away from the other page (once Tree is enabled) or, on the Timeline, from any quarter screen.
+**Facts pages** — nav bar is also a plain three-item row (`Timeline` link, `Tree` link, `Facts`), same shape as Family Tree's. On the Facts index page, `Facts` is the active/current-page indicator; on a person's own facts page, `Facts` is instead a link back to the index (a person page isn't the feature's home, the index is) — see *Facts* → *Navigation* below.
+
+All three navs are one sticky row, always visible, at the top of every page — you're never more than a tap away from any other page or, on the Timeline, from any quarter screen or any person.
 
 ## Device support
 
@@ -37,7 +42,7 @@ The site tracks a fixed list of named physical locations relevant to the trip �
 
 ```json
 [
-  { "id": "cottage", "name": "Cottage", "category": "accommodation" },
+  { "id": "cottage", "name": "Cottage", "category": "accommodation", "rooms": ["Blue Room", "Green Room", "Master Suite"] },
   { "id": "red-shed", "name": "Red Shed", "category": "accommodation" },
   { "id": "sheogue-inn", "name": "Sheogue Inn", "category": "accommodation" },
   { "id": "camper-van", "name": "Camper Van", "category": "accommodation" },
@@ -51,8 +56,10 @@ The site tracks a fixed list of named physical locations relevant to the trip �
 - `id` — stable slug, never reused or renumbered. A duplicate is a build error.
 - `name` — canonical display name; must be referenced exactly by other data (see below).
 - `category` — `"accommodation"` (referenced by `travel.json`'s `room`/`room_by_date` fields, grouped in the Timeline's Sleeping row) or `"transit"` (referenced by `travel.json`'s `hub` field — see *Homepage = Timeline* → *Data* below). Any other value is a build error.
+- `rooms` — optional list of fixed room names within an accommodation structure (e.g. Cottage's `["Blue Room", "Green Room", "Master Suite"]`). If present, must be non-empty with no duplicates — a build error otherwise. A structure with `rooms` declared is a real, permanent physical place: it and every one of its named rooms always render in the Sleeping row (empty or not) for as long as the structure is active (see `active_from`/`active_to` below), never only when someone happens to be assigned there — see *Homepage = Timeline* → *Sleeping* → *Nested box display*. Most structures don't need this — see *Accommodation — single vs. multi-instance* below for the alternative (free-text instance/room detail, occupancy-driven, nothing shown when empty).
+- `active_from` / `active_to` — optional ISO dates (inclusive), independently settable. Default to the start/end of the trip window when omitted, so a structure with neither set is active the whole trip (August 1–15) — the common case today. Meant for a structure that only exists for part of the trip (an inn booked for a specific stretch, in the requirements author's own words: "airports will come and go, inns will exist for like a period") — no current structure narrows this yet, but the fields are validated (ISO date shape, `active_to` not before `active_from`) and ready to use. Only affects the "always shown" behavior of a structure with `rooms` declared — doesn't (yet) restrict which dates a `hub`/`vehicle`/free-text `room` reference is allowed on.
 
-**Accommodation — single vs. multi-instance:** Cottage, Red Shed, and Sheogue Inn are used as-is. Camper Van and Tent cover multiple actual instances (different families bring their own) — write the specific instance as `"<structure name> — detail"`, e.g. `"Camper Van — Smiths"` or `"Tent — Sarah & Jon"`. A `room` value is valid if it exactly matches an accommodation structure's `name`, or starts with `"<name> — "`. The same `"<name> — detail"` shape also covers specific named rooms within a structure, e.g. `"Cottage — Green Room"`, `"Cottage — Blue Room"`, `"Cottage — Master Suite"`, `"Red Shed — Futon"` — these aren't separate structures.json entries, just free text after the structure name.
+**Accommodation — single vs. multi-instance:** Red Shed and Sheogue Inn are used as-is, with no fixed rooms declared. Camper Van and Tent cover multiple actual instances (different families bring their own) — write the specific instance as `"<structure name> — detail"`, e.g. `"Camper Van — Smiths"` or `"Tent — Sarah & Jon"`. A `room` value is valid if it exactly matches an accommodation structure's `name`, or starts with `"<name> — "` followed by free text — *unless* that structure has a `rooms` list declared (only Cottage today), in which case the text after `" — "` must exactly match one of its declared rooms (`"Cottage — Blue Room"` is valid, `"Cottage — Anything Else"` is a build error) rather than being arbitrary free text. Structures without a `rooms` list only ever show up in the Sleeping row when someone's actually assigned there — no permanent box for Red Shed just because it exists.
 
 **Transit hubs:** Halifax Airport, Moncton Airport, and Sackville Station are the three hubs travel routes through. `arrival`/`departure` each get an optional `hub` field that must exactly match a transit structure's `name` — flight/train numbers and other free text stay in the existing `detail` field.
 
@@ -103,11 +110,36 @@ The build always starts rendering from `max(today, August 1)` through August 15 
 
 Content is pinned to the **top-left** of the canvas (not centered) — just the five rows below, in this order, each showing nothing if it has no content for that day quarter. No date or quarter-time label here — that's already shown live in the nav bar (see *Navigation* above), so repeating it on the canvas would be redundant.
 
-1. **Arrivals** — people whose arrival falls in this exact day+quarter: name, mode (✈️ plane / 🚆 train / 🚗 car), hub (which airport/station, if set — see *Structures* above), vehicle (if set — see *Vehicles* above), free-text detail (flight/train number, who's driving, etc).
-2. **Departures** — same shape, for people leaving in this day+quarter.
-3. **Sleeping** — everyone present on the trip during this quarter (arrived by this quarter, not yet departed), grouped by room/structure (see *Structures* above — not everyone is at the Cottage itself). Computed from each person's arrival/departure, not entered separately — updating someone's travel dates automatically updates every day quarter canvas's sleeping list. A person's room can change night to night (see `room_by_date` in *Data* below) — someone moving from the Cottage to the Red Shed partway through shows under the correct room on each affected night.
-4. **Meal** — a free-text note for this quarter, if one exists (e.g. "Lobster boil — Dave grilling"). Not every quarter has one; most likely only `06-12` (breakfast), `12-18` (lunch), and `18-24` (dinner) will ever be filled in, but all four quarters support it.
-5. **Activities** — a free-text note for this quarter, if one exists (e.g. "Beach volleyball", "Bonfire at Red Shed"). Same shape as Meal — not every quarter has one, all four quarters support it.
+#### Row applicability by quarter
+
+This table is the source of truth for how the canvas structurally varies by quarter — as of the Sleeping row's *always-there structures* behavior (see below), all five rows are now eligible in all four quarters; each simply renders nothing (Arrivals/Departures/Meal/Activities) or just its always-there structures with no one in them (Sleeping) when there's no further data for that specific day+quarter (see each row's own description below).
+
+| Row | `00-06` Night | `06-12` Morning | `12-18` Afternoon | `18-24` Evening |
+|-----|:---:|:---:|:---:|:---:|
+| Arrivals | eligible | eligible | eligible | eligible |
+| Departures | eligible | eligible | eligible | eligible |
+| Sleeping | eligible | eligible | eligible | eligible |
+| Meal | eligible | eligible (breakfast) | eligible (lunch) | eligible (dinner) |
+| Activities | eligible | eligible | eligible | eligible |
+
+"Eligible" means the row renders if it has content for that day+quarter, and is omitted if it doesn't (per each row's rule below) — normal data-driven emptiness, not a quarter restriction. Sleeping was previously the one exception (never shown in `12-18`/Afternoon, since sleeping location didn't seem to matter mid-day) — that restriction is gone: a structure with fixed rooms (see *Structures* above) is a real physical place, unaffected by time of day, so it and its rooms now render in every quarter, whether or not anyone's actually assigned there right now.
+
+#### Row-by-row rules
+
+1. **Arrivals** — people whose arrival falls in this exact day+quarter: name, mode (✈️ plane / 🚆 train / 🚗 car), hub (which airport/station, if set — see *Structures* above), vehicle (if set — see *Vehicles* above), free-text detail (flight/train number, who's driving, etc). Omitted if nobody arrives in this day+quarter.
+2. **Departures** — same shape and same omit-if-empty rule, for people leaving in this day+quarter.
+3. **Sleeping** — two things merged into one row: (a) everyone present on the trip during this quarter (arrived by this quarter, not yet departed), grouped by room/structure — computed from each person's arrival/departure, not entered separately, so updating someone's travel dates automatically updates every day quarter canvas's sleeping list; and (b) every accommodation structure with a fixed `rooms` list (see *Structures* above) that's currently active, shown with all of its declared rooms regardless of whether anyone's in them. A person's room can change night to night (see `room_by_date` in *Data* below) — someone moving from the Cottage to the Red Shed partway through shows under the correct room on each affected night. The row itself is only omitted if there's truly nothing to show at all — no always-there structure exists yet *and* nobody's present (shouldn't happen once any structure has a `rooms` list, since that structure alone guarantees the row always has something).
+
+   **Nested box display** — rendered as boxes, matching the same plain-box motif as the Family Tree page's person boxes (see *Family Tree* → *Layout* below), not a flat text list, so a room's structure is visible at a glance rather than read out of a string:
+   - One outer box per **structure**, labeled with the structure's name — either because someone's actually staying there this quarter, or because it has a fixed `rooms` list and is currently active (see *Structures* above), even with nobody in any of its rooms right now.
+   - A structure with a fixed `rooms` list (only Cottage today) always shows an inner box for *every* declared room, in a fixed order, whether or not anyone's assigned to it this quarter — an empty room box just has no names inside it, it doesn't disappear.
+   - A structure *without* a fixed `rooms` list only ever gets an inner box for a specific `"<name> — detail"` value if someone's actually assigned there this quarter (e.g. Tent instances) — no permanent placeholder box, since there's no fixed list of what those could be.
+   - If a person's `room` is a bare structure name with no `" — detail"` suffix (e.g. `"Sheogue Inn"`), there's nothing to nest — the people are listed directly inside that structure's outer box, no inner box.
+   - People with no `room` set at all are grouped into a single plain "Unassigned" box, not nested under any structure.
+   - No third level of box per person — inside the innermost box, people are listed as plain text (comma-separated), not individually boxed. This is a deliberate balance call for a ~27-person roster: two box levels (structure, then room/detail) show real structure without the row turning into boxes-within-boxes-within-boxes. Revisit if the real data makes this row hard to scan once filled in.
+   - No new data field on the *travel* side for any of this — the structure/detail split is still parsed from the existing `room`/`room_by_date` string values (already validated against `structures.json` at build time, see *Structures* above); the always-there behavior comes entirely from `structures.json`'s own `rooms`/`active_from`/`active_to` fields.
+4. **Meal** — a free-text note for this quarter, if one exists (e.g. "Lobster boil — Dave grilling"). Omitted if no note is set for this day+quarter in `meals.json`; most likely only `06-12` (breakfast), `12-18` (lunch), and `18-24` (dinner) will ever be filled in, but all four quarters support it.
+5. **Activities** — a free-text note for this quarter, if one exists (e.g. "Beach volleyball", "Bonfire at Red Shed"). Same shape and omit-if-empty rule as Meal.
 
 A day quarter canvas with nothing in all five rows still renders inside its own full-screen quarter screen — never collapsed or skipped — so scrolling always advances one quarter screen at a time and the five-part shape stays consistent (see `brand-guidelines.md` → *Signature visual conventions*).
 
@@ -115,7 +147,7 @@ A day quarter canvas with nothing in all five rows still renders inside its own 
 
 Several data files, all hand-edited directly (no data-entry scripts):
 
-**`shared/data/people.json`** — shared with the Family Tree feature. Flat array:
+**`shared/data/people.json`** — shared with the Family Tree and Facts features. Flat array:
 
 ```json
 [
@@ -124,16 +156,19 @@ Several data files, all hand-edited directly (no data-entry scripts):
     "name": "Full Name",
     "generation": 1,
     "parent_ids": [],
-    "partner_id": null
+    "partner_id": null,
+    "attending": true
   }
 ]
 ```
 
 - `id` — integer, unique, stable. Never reuse or renumber an existing id. Validated at build time: a duplicate id is a build error.
-- `name` — display name.
+- `name` — display name. When two or more people in the roster share the same first name, disambiguate by appending the first letter of their last name (e.g. `"Helen S"`, `"Jim S"`) — last names are otherwise never shown. If a first name is unique in the roster, use it alone with no letter. Applies as soon as a second person with that first name is added; go back and add the letter to the existing person's `name` at that point if it wasn't already disambiguated.
 - `generation` — integer, 1 = the eldest generation appearing in the tree, increasing by 1 per generation down. Used only by the Family Tree page.
 - `parent_ids` — list of 0–2 ids, this person's parent(s). Used only by the Family Tree page. Validated at build time: every id must reference a real person, and nobody can be their own parent.
 - `partner_id` — id of this person's spouse/partner, or `null`. Used only by the Family Tree page. Validated at build time: if set, must reference a real person, and nobody can be their own partner.
+- `married_in` — optional boolean, defaults to `false`/omitted. `true` marks someone who joined the family by marriage/partnership rather than being a blood descendant (a person with no parents of their own in the tree, e.g. a partner who married a blood descendant). Used only by the Family Tree page, to render them with a visually distinct (dashed-border) box — see *Family Tree* → *Layout* below. Not meant for the founding generation (`generation` 1): they're the root of the tree, not "married in" to anything documented, so leave `married_in` unset even though their `parent_ids` is also empty. Validated at build time: a person can't have both `married_in: true` and a non-empty `parent_ids` — that's a contradiction (someone with documented parents is a blood descendant by definition).
+- `attending` — required boolean, no default — a build error if missing or not `true`/`false` on any person. Used only by the Facts feature (see *Facts* below): everyone in the family tree is listed there, but only people with `attending: true` get their own facts page or a `timeline/data/travel.json` entry. Validated at build time: `attending: false` combined with an existing `travel.json` entry for that person is a contradiction (a build error) — remove one or the other rather than leaving both in place.
 
 **`timeline/data/travel.json`** — one entry per person who has travel and/or a room assignment:
 
@@ -195,6 +230,8 @@ If `travel.json` is empty and no meals or activities are set, the timeline still
 
 Nav bar per *Navigation* above. Below it, people grouped by `generation` (from `shared/data/people.json`), lowest number first. Within a generation, partners (`partner_id`) are shown paired together; each person/couple's children (people whose `parent_ids` includes them) are shown nested/indented below.
 
+Anyone with `married_in: true` is rendered with a dashed border instead of the default solid one, so it's visually clear at a glance who's a blood descendant and who joined the family by marriage/partnership — no other visual difference (same box shape, same text style), per `brand-guidelines.md`'s plain/unfussy visual language.
+
 ### Purpose
 
 Purely reference — so someone new to the family (a partner, a young cousin) can see where they fit. No editing UI, no interactivity beyond the page itself.
@@ -202,6 +239,32 @@ Purely reference — so someone new to the family (a partner, a young cousin) ca
 ### Data
 
 Backed entirely by `shared/data/people.json` — see *Homepage = Timeline* → *Data* above for the file structure. No separate data file for this feature.
+
+## Facts (`site/facts/`)
+
+### Purpose
+
+A per-person summary of someone's own travel/room facts — "what's the summary of my facts, so I can just see my facts as me" — pulled out of the day-by-day Timeline schedule into one place, so a family member can check their own arrival/departure/room without scrolling the whole trip to find themselves. Also gives the organizers a single place to see who's still owed a "what are your plans" conversation. Purely reference, same as the Family Tree — no editing UI, no interactivity beyond the pages themselves. There's no way to actually submit or correct your own facts from this page; that still happens by the sole editor hand-editing `timeline/data/travel.json` (see `way-of-working.md` → *The loop*) — this is a read-only view of that same edit, not a new place to make one.
+
+### Data integrity
+
+This is the load-bearing rule for the whole feature: **a person's facts page shows exactly the same `arrival`/`departure`/`room`/`room_by_date` data already in their `timeline/data/travel.json` entry — nothing is entered a second time for this feature.** Updating someone's travel.json entry updates both the Timeline schedule and their facts page from the same rebuild, so the two can never silently disagree. The only new data this feature introduces is `attending` on `shared/data/people.json` (see *Homepage = Timeline* → *Data* above) — everything else is a different view of data that already exists.
+
+### The three states
+
+Every person in `shared/data/people.json` falls into exactly one of these, computed at build time, never hand-assigned as its own field:
+
+1. **Not attending** — `attending: false`. Shown by name only, no facts page, no link (matches Fletcher, Stella, Jesse, and Donald today — none of them are on the trip, even though they're in the Family Tree).
+2. **Facts needed** — `attending: true`, no `timeline/data/travel.json` entry yet. Gets a facts page, but it just says their travel details aren't in yet.
+3. **Facts collected** — `attending: true`, has a `travel.json` entry. Gets a facts page showing their arrival, departure, and room, formatted for reading rather than the Timeline's day-quarter-grouped shape.
+
+### Layout
+
+**`site/facts/index.html`** — nav bar per *Navigation* above. Below it, three labeled groups in this order — Facts collected, Facts needed, Not attending — each listing that group's people alphabetically by name, using the same plain-box motif as the Family Tree page's person boxes. Facts-collected and facts-needed names are links to their own facts page (`<id>.html`); not-attending names are shown in a dashed-border box (same "exception" visual as `married_in` on the Family Tree page), not a link, since they have no facts page.
+
+**`site/facts/<id>.html`** (one per person with `attending: true`, `<id>` is their stable `shared/data/people.json` id, e.g. `site/facts/7.html` for David) — nav bar per *Navigation* above. Below it, the person's name as a heading, then:
+- If they have no `travel.json` entry: a single line saying their travel details aren't in yet.
+- If they have an entry: a **chronological milestone list**, not a flat Arrival/Departure/Room breakdown — **Arrival** first (date, day quarter label, mode, hub/vehicle, free-text detail — or "Already at the accommodation before August 1" if `arrival` is omitted), then one **Sleeping** row per contiguous same-room date range in date order (each labeled with the room and a date range, e.g. "Cottage — Blue Room (Aug 1–3)"), then **Departure** last (same shape as Arrival, or "Staying past August 15" if omitted). Computed by walking every date from arrival (or August 1 if omitted) through departure (or August 15 if omitted) and collapsing consecutive same-room dates into one range — the same `room`/`room_by_date` resolution the Timeline's Sleeping row uses, just grouped into ranges instead of listed per night, and re-split into a new milestone if the same room recurs non-consecutively (e.g. Cottage → Tent → Cottage again shows as three separate Sleeping rows, not two, since the two Cottage stretches aren't adjacent). This reads as "arrive, sleep here for a stretch, sleep there for a stretch, depart" rather than a night-by-night list.
 
 ## Favicon
 

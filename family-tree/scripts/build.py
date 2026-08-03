@@ -8,7 +8,8 @@ nested below them, recursively (see requirements/public.md -> Family Tree).
 Validated at build time, as hard errors rather than silent typos: ids
 are unique; every parent_ids/partner_id reference points at an id that
 actually exists in people.json; nobody lists themselves as their own
-parent or partner.
+parent or partner; nobody has both married_in: true and a non-empty
+parent_ids (a contradiction — see requirements/public.md -> people.json).
 
 Run after hand-editing shared/data/people.json, or use
 scripts/build_site.py to rebuild every feature at once.
@@ -30,8 +31,9 @@ PAGE_TITLE = "Family Tree — Murray Corner 2026"
 TREE_SUBTITLE = "Where everyone fits"
 
 NAV_ITEMS = [
-    ("Timeline", "index.html", False),
+    ("Timeline", "../index.html", False),
     ("Tree", None, True),
+    ("Facts", "../facts/index.html", False),
 ]
 
 
@@ -72,6 +74,11 @@ def validate_people(people):
                     f"{p['name']!r}'s partner_id references id {partner_id!r}, which doesn't "
                     f"exist in shared/data/people.json."
                 )
+        if p.get("married_in") and p.get("parent_ids"):
+            raise ValueError(
+                f"{p['name']!r} has married_in: true but also has parent_ids set — "
+                f"someone with documented parents is a blood descendant, not married in."
+            )
 
 
 def build_children_map(people):
@@ -83,7 +90,8 @@ def build_children_map(people):
 
 
 def render_person(person):
-    return f'<span class="person">{esc(person["name"])}</span>'
+    cls = "person married-in" if person.get("married_in") else "person"
+    return f'<span class="{cls}">{esc(person["name"])}</span>'
 
 
 def render_unit(person, people_by_id, children_by_parent, rendered_ids):

@@ -1,12 +1,13 @@
-"""Shared nav helpers, imported by both features' build.py.
+"""Shared nav helpers, imported by every feature's build.py.
 Not a script: no CLI, imported like a plain module.
 
-esc() is used by both features for HTML-escaping. render_row() — a flat
-nav row of links with one active/current item — is used only by
-family-tree/scripts/build.py; the timeline feature builds its own richer
-nav (live label, jump menu, disabled Tree item) directly in
-timeline/scripts/build.py's render_nav(), since render_row()'s flat
-link-row shape doesn't fit it.
+esc() is used by every feature for HTML-escaping. render_row() — a flat
+nav row of links with one active/current item — is used by
+family-tree/scripts/build.py and facts/scripts/build.py; the timeline
+feature builds its own richer nav (live label, jump-to-time,
+jump-to-person, play/pause auto-advance, working Tree/Facts links)
+directly in timeline/scripts/build.py's render_nav(), since
+render_row()'s flat link-row shape doesn't fit it.
 """
 
 
