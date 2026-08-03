@@ -41,7 +41,10 @@ from a structure during the day, independent of where they're sleeping —
 see requirements/public.md -> Data -> travel.json -> working_from) each
 reference a real structure, have valid non-inverted ISO start/end dates,
 and only use `06-12`/`12-18` quarters (working from a structure isn't
-tracked overnight); every `vehicle` value against
+tracked overnight); an entry's optional `excursions` blocks (a mid-stay
+round trip — see requirements/public.md -> Data -> travel.json ->
+excursions) each have valid `depart`/`return` legs, in order, within the
+entry's own arrival/departure window, and non-overlapping with each other; every `vehicle` value against
 shared/data/vehicles.json (see requirements/public.md -> Structures /
 Vehicles); every `person_id` in travel.json against people.json, and
 that no person_id appears more than once in travel.json (a duplicate —
@@ -437,6 +440,44 @@ def validate_leg(leg, person_id, person_name, field, transit_names, vehicle_name
     validate_driver(leg.get("driver_id"), person_id, people_by_id, person_name, field)
 
 
+def validate_excursions(excursions, person_id, person_name, transit_names, vehicle_names, people_by_id, arrival, departure):
+    """excursions — a mid-stay round trip (leave and come back), each block
+    a {depart, return} pair of full legs (see requirements/public.md ->
+    Data -> travel.json -> excursions). Unlike arrival/departure, which
+    only capture joining and finally leaving the trip once, this covers a
+    temporary absence in between."""
+    if excursions is None:
+        return
+    if not isinstance(excursions, list):
+        raise ValueError(f"excursions for {person_name!r} must be a list of {{depart, return}} blocks.")
+    arrival_key = quarter_key(arrival["date"], arrival["quarter"]) if arrival else None
+    departure_key = quarter_key(departure["date"], departure["quarter"]) if departure else None
+    prev_return_key = None
+    for i, exc in enumerate(excursions):
+        label = f"excursions[{i}] for {person_name!r}"
+        depart = nav.require(exc, "depart", label)
+        ret = nav.require(exc, "return", label)
+        validate_leg(depart, person_id, person_name, f"{label} depart", transit_names, vehicle_names, people_by_id)
+        validate_leg(ret, person_id, person_name, f"{label} return", transit_names, vehicle_names, people_by_id)
+        depart_key = quarter_key(depart["date"], depart["quarter"])
+        return_key = quarter_key(ret["date"], ret["quarter"])
+        if return_key < depart_key:
+            raise ValueError(
+                f"return ({ret['date']} {ret['quarter']}) is before depart "
+                f"({depart['date']} {depart['quarter']}) in {label}."
+            )
+        if arrival_key is not None and depart_key < arrival_key:
+            raise ValueError(f"{label} departs before arrival for {person_name!r}.")
+        if departure_key is not None and return_key > departure_key:
+            raise ValueError(f"{label} returns after the final departure for {person_name!r}.")
+        if prev_return_key is not None and depart_key < prev_return_key:
+            raise ValueError(
+                f"{label} overlaps the previous excursion for {person_name!r} — excursions "
+                f"must be in chronological, non-overlapping order."
+            )
+        prev_return_key = return_key
+
+
 def validate_travel(travel, people_by_id, structures, vehicles):
     accommodation_structures = [s for s in structures if s["category"] == "accommodation"]
     transit_names = structure_names(structures, "transit")
@@ -488,6 +529,7 @@ def validate_travel(travel, people_by_id, structures, vehicles):
             validate_date_str(room_date, f"room_by_date for {person_name!r}")
             validate_room(room, accommodation_structures, f"{person_name!r} on {room_date}")
         validate_working_from(entry.get("working_from"), person_name, all_structure_names)
+        validate_excursions(entry.get("excursions"), person_id, person_name, transit_names, vehicle_names, people_by_id, arrival, departure)
 
 
 def validate_day_quarter_notes(data, label):
@@ -688,9 +730,21 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
         if departure_key == key:
             departures.append((person, departure))
 
+        excursion_keys = []
+        for exc in entry.get("excursions", []):
+            exc_depart, exc_return = exc["depart"], exc["return"]
+            exc_depart_key = quarter_key(exc_depart["date"], exc_depart["quarter"])
+            exc_return_key = quarter_key(exc_return["date"], exc_return["quarter"])
+            excursion_keys.append((exc_depart_key, exc_return_key))
+            if exc_depart_key == key:
+                departures.append((person, exc_depart))
+            if exc_return_key == key:
+                arrivals.append((person, exc_return))
+
         arrived_by = True if arrival_key is None else key >= arrival_key
         not_departed = True if departure_key is None else key < departure_key
-        if arrived_by and not_departed:
+        away = any(d_key <= key < r_key for d_key, r_key in excursion_keys)
+        if arrived_by and not_departed and not away:
             present.append((person, room_for_date(entry, day.isoformat())))
 
         for structure_name in person_working_here(entry, day.isoformat(), quarter):

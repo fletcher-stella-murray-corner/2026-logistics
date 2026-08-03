@@ -220,17 +220,53 @@ def sleeping_end_date(departure):
     return d
 
 
+def excursion_away_ranges(entry):
+    """The date range(s) a person is away on an excursion (see
+    requirements/public.md -> Data -> travel.json -> excursions), for
+    room_milestones() below to skip. Mirrors sleeping_end_date()'s own
+    quarter-based rule for the bookend departure: the depart date itself
+    still counts as present unless its quarter is "00-06" (gone before any
+    of it); the return date always counts as back, same as how the
+    bookend arrival date always counts as present with no quarter
+    adjustment — so the away range is exclusive of both ends."""
+    ranges = []
+    for exc in entry.get("excursions", []):
+        depart, ret = exc["depart"], exc["return"]
+        away_start = date.fromisoformat(depart["date"])
+        if depart["quarter"] != "00-06":
+            away_start += timedelta(days=1)
+        away_end = date.fromisoformat(ret["date"]) - timedelta(days=1)
+        if away_start <= away_end:
+            ranges.append((away_start, away_end))
+    return ranges
+
+
 def room_milestones(entry, start_date, end_date):
     """Collapse a person's room/room_by_date into contiguous same-room date
     ranges, in chronological order — a milestone list (arrive, sleep here
     for a stretch, sleep there for a stretch, depart), not a night-by-night
-    listing. See requirements/public.md -> Attendees -> Layout."""
+    listing. See requirements/public.md -> Attendees -> Layout. Dates
+    covered by an excursion (see excursion_away_ranges() above) are
+    skipped entirely, splitting the stay into two milestones with a gap
+    rather than one range that wrongly includes time the person was away
+    — the excursion's own Departure/Arrival rows already say so."""
+    away_ranges = excursion_away_ranges(entry)
+
+    def is_away(d):
+        return any(start <= d <= end for start, end in away_ranges)
+
     milestones = []
     current_room = None
     current_start = None
     prev_d = None
     d = start_date
     while d <= end_date:
+        if is_away(d):
+            if current_room is not None:
+                milestones.append((current_room, current_start, prev_d))
+                current_room = None
+            d += timedelta(days=1)
+            continue
         room = entry.get("room_by_date", {}).get(d.isoformat(), entry.get("room", ""))
         if room != current_room:
             if current_room is not None:
@@ -262,6 +298,10 @@ def driving_assignments(person_id, travel, people_by_id):
             leg = entry.get(field)
             if leg and leg.get("driver_id") == person_id:
                 assignments.append((traveler, field, leg))
+        for exc in entry.get("excursions", []):
+            for field, leg in (("excursion departure", exc["depart"]), ("excursion return", exc["return"])):
+                if leg.get("driver_id") == person_id:
+                    assignments.append((traveler, field, leg))
     assignments.sort(key=lambda a: (a[2]["date"], a[2]["quarter"]))
     return assignments
 
@@ -314,6 +354,21 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
             items.append((
                 block["start_date"],
                 fact_row(format_work_date(block), "Working from", esc(block["structure"])),
+            ))
+
+        # Excursion legs — a mid-stay round trip (see requirements/public.md
+        # -> Data -> travel.json -> excursions) — render exactly like the
+        # bookend legs, just sorted into the middle of the timeline by
+        # their own dates instead of always being first/last.
+        for exc in entry.get("excursions", []):
+            depart, ret = exc["depart"], exc["return"]
+            items.append((
+                depart["date"],
+                fact_row(format_leg_date(depart), "Departure", format_leg_body(depart, people_by_id)),
+            ))
+            items.append((
+                ret["date"],
+                fact_row(format_leg_date(ret), "Arrival", format_leg_body(ret, people_by_id)),
             ))
 
         if departure:
