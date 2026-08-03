@@ -220,33 +220,46 @@ a { color: var(--secondary); }
    the "Detail" link in the Timeline's "Folks ▾" disclosure. */
 .attendees-title { margin-bottom: 0.25rem; }
 
-/* Every row (Arrival, Sleeping, Working from, Departure, Driving — see
-   fact_row() in attendees/scripts/build.py) renders through the same
-   three-column shape, so the date always leads in the same position
-   instead of sometimes first and sometimes buried mid-string: a
-   fixed-width date column, a short label, then the detail filling the
-   rest. flex-wrap lets the date drop to its own line on a narrow phone
-   screen without losing its "always first" position. */
-.fact-row {
+/* One <h2 class="fact-day"> per distinct date (see render_person_page()
+   in attendees/scripts/build.py), matching brand-guidelines.md ->
+   Typography -> Headlines' own "Day headings" spec (bold, Primary) —
+   every fact starting on that date (Arrival, Sleeping, Working from,
+   Departure, Driving) is grouped underneath it as one or more
+   .fact-line rows, instead of each fact repeating its own full date. */
+.fact-day {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 1.4rem 0 0.4rem;
+}
+.fact-day:first-of-type { margin-top: 0; }
+/* Every fact line reads as one flowing sentence — time (or bare quarter
+   name) leading, a short label, then the detail — rather than a
+   three-column table row: a point-in-time fact (Arrival/Departure/
+   Driving) leads with .fact-time (see time_label() in
+   attendees/scripts/build.py); a date-range fact (Sleeping/Working from)
+   has no single time of day to lead with, so it starts straight at the
+   label instead — see fact_line(). flex-wrap lets a long detail (e.g. a
+   Driving line) wrap onto its own line on a narrow phone without
+   breaking the label away from its time. */
+.fact-line {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  column-gap: 0.7rem;
+  column-gap: 0.4rem;
   row-gap: 0.1rem;
-  margin: 0.6rem 0;
+  margin: 0.5rem 0;
   font-size: 1.05rem;
 }
-.fact-date {
+.fact-time {
   font-weight: 700;
   color: var(--primary);
   flex: 0 0 auto;
-  min-width: 9rem;
 }
 .fact-label {
   font-weight: 600;
   color: var(--secondary);
   flex: 0 0 auto;
-  min-width: 6.5rem;
 }
 .fact-detail { flex: 1 1 16rem; min-width: 0; }
 .attendee-pending { color: var(--secondary); font-style: italic; }
@@ -257,7 +270,7 @@ a { color: var(--secondary); }
 <nav class="site-nav"><a href="../index.html">Murray Corner 2026</a><a href="../family-tree/index.html">Tree</a></nav>
 <h1 class="attendees-title">Susan</h1>
 <main>
-<div class="fact-row"><span class="fact-date">Tuesday, Aug 4 · 5:15pm</span><span class="fact-label">Arrival</span><span class="fact-detail">🚗 Car</span></div><div class="fact-row"><span class="fact-date">Tuesday, Aug 4</span><span class="fact-label">Sleeping</span><span class="fact-detail">Cottage — Master Suite</span></div><div class="fact-row"><span class="fact-date">Wednesday, Aug 5 – Thursday, Aug 6</span><span class="fact-label">Sleeping</span><span class="fact-detail">Tent — old worn out tent</span></div><div class="fact-row"><span class="fact-date">Friday, Aug 7 – Tuesday, Aug 11</span><span class="fact-label">Sleeping</span><span class="fact-detail">Cottage — Blue Room</span></div><div class="fact-row"><span class="fact-date">Tuesday, Aug 11 · Afternoon · 12pm–6pm</span><span class="fact-label">Departure</span><span class="fact-detail">🚗 Car</span></div>
+<h2 class="fact-day">Tuesday, Aug 4</h2><div class="fact-line"><span class="fact-time">5:15pm</span> <span class="fact-label">Arrival</span> <span class="fact-detail">by 🚗 Car</span></div><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Cottage — Master Suite</span></div><h2 class="fact-day">Wednesday, Aug 5</h2><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Tent — old worn out tent till Thursday, Aug 6</span></div><h2 class="fact-day">Friday, Aug 7</h2><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Cottage — Blue Room till Tuesday, Aug 11</span></div><h2 class="fact-day">Tuesday, Aug 11</h2><div class="fact-line"><span class="fact-time">Afternoon</span> <span class="fact-label">Departure</span> <span class="fact-detail">by 🚗 Car</span></div>
 </main>
 </body>
 </html>
