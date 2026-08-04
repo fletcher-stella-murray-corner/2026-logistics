@@ -64,22 +64,21 @@ PROJECT_ROOT = ROOT.parent  # repo root — site/ and shared/ live here
 
 sys.path.insert(0, str(PROJECT_ROOT / "shared"))
 import nav  # noqa: E402
-from trip import TRIP_START, TRIP_END, QUARTER_NAMES, QUARTER_TIMES, MODE_TAGS, WORK_QUARTERS, format_time_range  # noqa: E402
+from trip import TRIP_START, TRIP_END, QUARTER_NAMES, QUARTER_TIMES, MODE_TAGS, WORK_QUARTERS, format_time_range, format_date_full  # noqa: E402
 
 
 def _import_build_module(name, path):
     """Load a sibling feature's build.py as a distinctly-named module —
-    render_jump_panel() is timeline/scripts/build.py's, render_folks_menu()/
-    collected_person_ids() are family-tree/scripts/build.py's, both reused
-    here rather than reimplemented so this page's nav bar (identical shape
-    to every other page's — see requirements/public.md -> Navigation) can
-    never drift from either. A plain `import build as X` (the pattern
+    render_jump_panel() is timeline/scripts/build.py's, reused here rather
+    than reimplemented so this page's nav bar (identical shape to every
+    other page's — see requirements/public.md -> Navigation) can never
+    drift from it. A plain `import build as X` (the pattern
     scripts/report.py uses for a single such cross-import) breaks the
     moment a script needs TWO different build.py files this way: Python's
     import cache keys on the module's own name ("build" either time), so
     the second `import build as ...` silently returns the first module
-    again instead of loading the second file at all. Loading each under
-    its own distinct name in sys.modules sidesteps that entirely."""
+    again instead of loading the second file at all. Loading it under its
+    own distinct name in sys.modules sidesteps that."""
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
@@ -88,7 +87,6 @@ def _import_build_module(name, path):
 
 
 timeline_build = _import_build_module("timeline_build", PROJECT_ROOT / "timeline" / "scripts" / "build.py")
-family_tree_build = _import_build_module("family_tree_build", PROJECT_ROOT / "family-tree" / "scripts" / "build.py")
 
 TITLE_SUFFIX = " — Murray Corner 2026"
 
@@ -179,14 +177,15 @@ def format_leg_body(leg, people_by_id, lead_with_by=False):
 
 
 def format_date_label(d):
-    """Always weekday-first, bare day number, no ordinal suffix (e.g.
-    "Monday, Aug 3", never "Monday, Aug 3rd") — matches the date format
-    used everywhere else on the site (the Timeline's nav label, its
-    jump-to-time panel). Critical that the weekday is never dropped on
-    this page specifically, even inline mid-sentence: a family member
-    checking their own facts needs the day of the week, not just the
-    calendar date (see requirements/public.md -> Attendees -> Layout)."""
-    return d.strftime("%A, %b ") + str(d.day)
+    """Full natural-speech date — "Wednesday, August 5th" — this page has
+    the room for it (see shared/trip.py -> format_date_full(), and
+    requirements/public.md -> Navigation for why the Timeline's own nav
+    label stays abbreviated instead). Critical that the weekday is never
+    dropped on this page specifically, even inline mid-sentence: a family
+    member checking their own facts needs the day of the week, not just
+    the calendar date (see requirements/public.md -> Attendees ->
+    Layout)."""
+    return format_date_full(d)
 
 
 def format_work_quarters(quarters):
@@ -516,14 +515,11 @@ def main():
     attending_people = [p for p in people if p.get("attending")]
 
     # Same nav bar shape/content for every person's page — computed once,
-    # not per page (see requirements/public.md -> Navigation): the
-    # people.json-sourced Folks panel variant (same one Family Tree uses,
-    # with "Collecting facts" markers — a Details page has no quarter
-    # screens to jump a "Timeline" sub-link to, so the travel.json variant
-    # doesn't fit here) and the day/quarter jump list, both reused from
-    # their owning feature rather than reimplemented.
-    collected_ids = family_tree_build.collected_person_ids(travel)
-    folks_menu = family_tree_build.render_folks_menu(people, collected_ids)
+    # not per page (see requirements/public.md -> Navigation): the Folks
+    # panel (shared/nav.py -> render_folks_menu(), the same one every page
+    # uses) and the day/quarter jump list (reused from timeline/scripts/
+    # build.py, the feature that owns it), not reimplemented here.
+    folks_menu = nav.render_folks_menu(people, travel, timeline_prefix="../index.html", attendees_prefix="")
     nav_row = nav.render_nav(
         mc26_href="../index.html#trip-top",
         timeline_prefix="../index.html",

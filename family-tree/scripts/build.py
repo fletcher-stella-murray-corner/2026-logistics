@@ -8,9 +8,11 @@ Also reads timeline/data/travel.json (read-only, same as the Attendees
 feature) purely to compute each attending person's facts-collected/
 collecting-facts status — shown on the box itself as a visual-only signal
 (border style, background tint, opacity — see render_person() and
-family-tree/shared.css), and spelled out in words in the nav's own
-"Folks ▾" dropdown instead (see render_folks_menu() below) — see
-requirements/public.md -> Family Tree -> Layout. This is also the sole
+family-tree/shared.css) and explained once in the on-page legend
+(render_legend() below), not per-entry in the nav's own "Folks ▾"
+dropdown, which is a plain jump list now (see shared/nav.py ->
+render_folks_menu()) — see requirements/public.md -> Family Tree ->
+Layout and -> Navigation -> Folks panel. This is also the sole
 entry point to the Attendees feature: an attending person's box (and
 their "Folks ▾" entry) is a link straight to their site/attendees/<id>.html
 page (the Attendees feature has no index page or nav link of its own —
@@ -212,8 +214,8 @@ def render_person(person, collected_ids):
     # facts/not-attending read on the tree itself (see
     # family-tree/shared.css -> .married-in/.status-needed/
     # .status-not-attending); the words themselves ("Married in",
-    # "Collecting facts", "Not attending") moved to the "Folks ▾"
-    # dropdown instead (see render_folks_menu() below) — see
+    # "Collecting facts", "Not attending") are explained once by the
+    # on-page legend instead (render_legend() below) — see
     # requirements/public.md -> Family Tree -> Layout for why.
     status = person_status(person, collected_ids)
     classes = ["person"]
@@ -233,6 +235,28 @@ def render_person(person, collected_ids):
     else:
         tag, extra = "span", ""
     return f'<{tag} class="{" ".join(classes)}"{extra}>{inner}</{tag}>'
+
+
+def render_legend():
+    """A one-time key explaining the tree's visual-only language (see
+    render_person() above and requirements/public.md -> Family Tree ->
+    Layout) — shown once near the top of the page rather than a caption
+    repeated under every third name, so someone new to the family can
+    learn the convention in one glance instead of needing to already know
+    it or go hunting in the "Folks ▾" dropdown for the words. Each swatch
+    reuses the exact same classes as a real person box (.person plus its
+    modifier), not a hand-drawn copy of the styling, so the key can never
+    silently drift out of sync with what the boxes actually look like."""
+    items = [
+        ("married-in", "Married in"),
+        ("status-needed", "Collecting facts"),
+        ("status-not-attending", "Not attending"),
+    ]
+    swatches = "".join(
+        f'<span class="legend-item"><span class="person legend-swatch {cls}"></span> {esc(label)}</span>'
+        for cls, label in items
+    )
+    return f'<div class="tree-legend">{swatches}</div>'
 
 
 def render_unit(person, people_by_id, children_by_parent, rendered_ids, collected_ids):
@@ -295,50 +319,8 @@ def build_tree_html(people, collected_ids):
     return f'<div class="generation">{units_html}</div>'
 
 
-def render_folks_menu(people, collected_ids):
-    """Jump-to-person, labeled "Folks" — replaces the per-box "Collecting
-    facts"/"Not attending"/"Married in" captions this page used to show
-    directly on the tree (see render_person() above and
-    requirements/public.md -> Family Tree -> Layout): one dropdown listing
-    every ATTENDING person, alphabetically by name, each linking straight
-    to their own Attendees page — the same "Detail" link the Timeline's
-    own "Folks ▾" uses (site/attendees/<id>.html). Not-attending people
-    are left out entirely, same as the Attendees feature itself (see
-    requirements/public.md -> Attendees -> Purpose) — there's no page to
-    link to and no facts left to collect from them.
-
-    Unlike the Timeline's "Folks ▾" (built from travel.json entries, so a
-    person with no entry yet wouldn't even appear), this one is built
-    from people.json directly — the whole point is to also show people
-    who are STILL "collecting facts", who by definition have no
-    travel.json entry yet. Each entry gets an extra "Collecting facts"
-    segment for exactly that status (person_status() == "needed");
-    the default/common case (facts already collected) shows no extra
-    segment at all, same "no extra treatment for the expected case"
-    convention used everywhere else on this page."""
-    attending = [p for p in people if p.get("attending")]
-    if not attending:
-        return ""
-
-    attending = sorted(attending, key=lambda p: p["name"])
-    entries = []
-    for person in attending:
-        status_html = ""
-        if person_status(person, collected_ids) == "needed":
-            status_html = '<span class="jump-person-status">Collecting facts</span>'
-        entries.append(
-            f'<span class="jump-person">'
-            f'<span class="jump-person-name">{esc(person["name"])}</span>'
-            f"{status_html}"
-            f'<a class="jump-person-details" href="../attendees/{person["id"]}.html">Detail</a>'
-            f"</span>"
-        )
-
-    return "".join(entries)
-
-
-def build_page_html(people, collected_ids, shared_base_css, shared_css, shared_nav_js):
-    folks_menu = render_folks_menu(people, collected_ids)
+def build_page_html(people, travel, collected_ids, shared_base_css, shared_css, shared_nav_js):
+    folks_menu = nav.render_folks_menu(people, travel, timeline_prefix="../index.html", attendees_prefix="../attendees/")
     attending_people = [p for p in people if p.get("attending")]
     nav_row = nav.render_nav(
         mc26_href="../index.html#trip-top",
@@ -368,6 +350,7 @@ def build_page_html(people, collected_ids, shared_base_css, shared_css, shared_n
 {nav_row}
 <h1 class="tree-title">Family Tree</h1>
 <p class="tree-subtitle">{TREE_SUBTITLE}</p>
+{render_legend()}
 <main>
 {tree_html}
 </main>
@@ -392,7 +375,7 @@ def main():
     shared_css = (ROOT / "shared.css").read_text()
     shared_nav_js = (PROJECT_ROOT / "shared" / "nav.js").read_text()
 
-    html = build_page_html(people, collected_ids, shared_base_css, shared_css, shared_nav_js)
+    html = build_page_html(people, travel, collected_ids, shared_base_css, shared_css, shared_nav_js)
     out_dir = PROJECT_ROOT / "site" / "family-tree"
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(html)

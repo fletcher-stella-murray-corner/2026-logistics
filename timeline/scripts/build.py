@@ -75,9 +75,11 @@ click time (see shared/nav.js) — clamped to the trip's last quarter if
 "now" is already past August 15 — showing the static word "Timeline"
 normally, or the live "current day quarter" label instead once actually
 scrolled into a quarter screen (updated by shared.js via
-IntersectionObserver — the bare month/day smaller/secondary shown first,
-e.g. "Aug 3", then the weekday name plus bare quarter name bold/prominent
-shown second, e.g. "· Monday Morning"); its own caret opens a panel of
+IntersectionObserver — the abbreviated weekday+date smaller/secondary
+shown first, e.g. "Wed, Aug 5" (kept short since this one-row control
+shares space with three other nav items on a phone — see
+shared/trip.py -> format_date_abbrev()), then the bare quarter name
+bold/prominent shown second, e.g. "· Morning"); its own caret opens a panel of
 every day/quarter as links plus the "▶"/"⏸" play/pause auto-advance
 control (see requirements/public.md -> Navigation -> Timeline's panel);
 then "Folks", the same split-control shape, whose label jumps to a random
@@ -123,7 +125,7 @@ PROJECT_ROOT = ROOT.parent  # repo root — site/ and shared/ live here
 
 sys.path.insert(0, str(PROJECT_ROOT / "shared"))
 import nav  # noqa: E402
-from trip import TRIP_START, TRIP_END, QUARTER_LABELS, QUARTER_NAMES, MODE_TAGS, WORK_QUARTERS, format_time_range  # noqa: E402
+from trip import TRIP_START, TRIP_END, QUARTERS, QUARTER_LABELS, QUARTER_NAMES, MODE_TAGS, WORK_QUARTERS, format_time_range, format_date_full, format_date_abbrev, quarter_screen_id  # noqa: E402
 
 PAGE_TITLE = "Murray Corner 2026"
 TRIP_SUBTITLE = "Murray Corner, New Brunswick · August 1–15, 2026"
@@ -131,7 +133,6 @@ TRIP_SUBTITLE = "Murray Corner, New Brunswick · August 1–15, 2026"
 # render_intro_screen() below and shared/nav.py -> render_nav().
 INTRO_SCREEN_ID = "trip-top"
 
-QUARTERS = ["00-06", "06-12", "12-18", "18-24"]
 QUARTER_INDEX = {q: i for i, q in enumerate(QUARTERS)}
 # Minute-of-day (0-1440) bounds for each quarter, used to sanity-check an
 # optional time_range against the quarter it's attached to. Inclusive on
@@ -545,10 +546,6 @@ def quarter_key(iso_date, quarter):
     return (iso_date, QUARTER_INDEX[quarter])
 
 
-def quarter_screen_id(iso_date, quarter):
-    return f"qc-{iso_date}-{quarter}"
-
-
 def daterange(start, end):
     d = start
     while d <= end:
@@ -805,20 +802,22 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
         rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Activities:</span> {esc(activity)}</div>')
 
     body = "".join(rows) if rows else '<div class="quarter-empty-hint">Nothing scheduled</div>'
-    # Three pieces (see render_nav() and timeline/shared.js): the bare
-    # month/day (e.g. "Aug 3"), shown first and smaller/secondary as
-    # supporting detail; the weekday name plus bare quarter name (e.g.
-    # "Monday Morning"), shown second and bold/prominent since that's
-    # what you actually scan for while scrolling — no time-range suffix
-    # here, unlike QUARTER_LABELS' own full value ("Morning · 6am–12pm"),
-    # which stays as-is for the jump-to-time dropdown's own link text.
+    # Two pieces (see render_nav() and timeline/shared.js): the abbreviated
+    # weekday+date (e.g. "Wed, Aug 5", from format_date_abbrev() — weekday
+    # always leads, this one-row control just doesn't have room for the
+    # full "Wednesday, August 5th" used elsewhere on the site), shown first
+    # and smaller/secondary as supporting detail; the bare quarter name
+    # (e.g. "Morning"), shown second and bold/prominent since that's what
+    # you actually scan for while scrolling — no time-range suffix here,
+    # unlike QUARTER_LABELS' own full value ("Morning · 6am–12pm"), which
+    # stays as-is for the jump-to-time dropdown's own link text.
     # quarter_name comes from QUARTER_NAMES, not QUARTER_LABELS — 00-06 is
     # "" there (see shared/trip.py), so this quarter screen's own
     # data-quarter-name attribute is empty and shared.js's live label
-    # renders just the weekday alone ("Monday"), never "Monday Night" —
-    # see requirements/public.md -> Terminology for why.
-    day_name = day.strftime("%A")
-    date_label = day.strftime("%b ") + str(day.day)
+    # renders just the weekday+date alone, no quarter suffix — never an
+    # invented "Wed, Aug 5 · Night" — see requirements/public.md ->
+    # Terminology for why.
+    date_label = format_date_abbrev(day)
     quarter_name = QUARTER_NAMES[quarter]
 
     # first-quarter-screen (see timeline/shared.css) overrides --prev-quarter-bg
@@ -830,7 +829,7 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
     # happened.
     first_quarter_class = " first-quarter-screen" if is_first else ""
     return f"""<section class="quarter-screen{first_quarter_class}" id="{quarter_screen_id(day.isoformat(), quarter)}" \
-data-day-name="{esc(day_name)}" data-date="{esc(date_label)}" data-quarter-name="{esc(quarter_name)}" data-quarter="{quarter}">
+data-date="{esc(date_label)}" data-quarter-name="{esc(quarter_name)}" data-quarter="{quarter}">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 {body}
@@ -861,7 +860,7 @@ def render_jump_panel(href_prefix=""):
     navigation handles those, no JS needed)."""
     groups = []
     for d in daterange(TRIP_START, TRIP_END):
-        day_label = d.strftime("%a, %b ") + str(d.day)
+        day_label = format_date_full(d)
         links = "".join(
             f'<a href="{href_prefix}#{quarter_screen_id(d.isoformat(), q)}">{QUARTER_LABELS[q]}</a>' for q in QUARTERS
         )
@@ -871,46 +870,6 @@ def render_jump_panel(href_prefix=""):
         )
 
     return "".join(groups)
-
-
-def render_folks_menu(travel, people_by_id):
-    """The Folks split control's travel.json-sourced panel content (see
-    shared/nav.py -> render_nav()) — used on the Home/Timeline views only
-    (Family Tree and Details pages use the people.json-sourced variant
-    instead — see family-tree/scripts/build.py's own render_folks_menu()).
-    Each entry shows the person's name (plain text, not itself a link)
-    plus two labeled links: "Timeline" jumps to their arrival's quarter
-    screen (every quarter screen always exists in the page — see
-    build_timeline_html() below — so this always lands exactly on their
-    arrival), or the very first quarter screen of the trip if they have
-    no arrival at all, and "Detail" goes to their own attendees page
-    (site/attendees/<id>.html, see attendees/scripts/build.py) instead —
-    see requirements/public.md -> Navigation. Bare entries, no
-    <details>/<summary> wrapper — render_nav() supplies that shell."""
-    entries = []
-    for entry in travel:
-        person = people_by_id.get(entry["person_id"])
-        if person is None:
-            continue
-        arrival = entry.get("arrival")
-        if arrival:
-            target_date, target_quarter = arrival["date"], arrival["quarter"]
-        else:
-            target_date, target_quarter = TRIP_START.isoformat(), QUARTERS[0]
-        entries.append((person["name"], person["id"], target_date, target_quarter))
-
-    if not entries:
-        return ""
-
-    entries.sort(key=lambda e: e[0])
-    return "".join(
-        f'<span class="jump-person">'
-        f'<span class="jump-person-name">{esc(name)}</span>'
-        f'<a href="#{quarter_screen_id(d, q)}">Timeline</a>'
-        f'<a href="attendees/{pid}.html" class="jump-person-details">Detail</a>'
-        f'</span>'
-        for name, pid, d, q in entries
-    )
 
 
 def render_transition_screen():
@@ -948,9 +907,8 @@ def build_timeline_html(people, travel, meals, activities, accommodation_structu
 
 
 def build_page_html(people, travel, meals, activities, structures, shared_base_css, shared_css, shared_nav_js, shared_js):
-    people_by_id = {p["id"]: p for p in people}
     jump_panel = render_jump_panel()
-    folks_menu = render_folks_menu(travel, people_by_id)
+    folks_menu = nav.render_folks_menu(people, travel, timeline_prefix="", attendees_prefix="attendees/")
     attending_people = [p for p in people if p.get("attending")]
     nav_row = nav.render_nav(
         mc26_href=f"#{INTRO_SCREEN_ID}",

@@ -88,4 +88,24 @@ document.addEventListener('DOMContentLoaded', function () {
       window.location.href = (folksRandom.dataset.attendeesPrefix || '') + person.id + '.html';
     });
   }
+
+  // Folks panel — freshly shuffled display order on every page load (see
+  // requirements/public.md -> Navigation -> Folks panel), so no single
+  // person is always first or last. A build-time order would be the same
+  // every time this static page loads, which isn't actually random — has
+  // to happen here instead. Fisher-Yates on the real DOM nodes, each
+  // person shuffled independently (not grouped by couple/family), then
+  // re-appended in the new order; re-appending an already-attached node
+  // moves it rather than duplicating it.
+  var folksList = document.querySelector('.folks-list');
+  if (folksList) {
+    var people = Array.prototype.slice.call(folksList.children);
+    for (var i = people.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = people[i];
+      people[i] = people[j];
+      people[j] = tmp;
+    }
+    people.forEach(function (el) { folksList.appendChild(el); });
+  }
 });

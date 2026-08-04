@@ -8,14 +8,21 @@
 /* Shared site-wide chrome — inlined into every page at build time (see
    technical.md -> Where CSS and JS changes go). Nav bar, color variables,
    and base typography, per brand-guidelines.md -> Visual Identity. */
+/* The one webfont this site loads (brand-guidelines.md -> Typography),
+   headlines only — must be the first rule in this stylesheet (a CSS
+   requirement for @import, not a style choice). display=swap means text
+   renders immediately in the h1/h2/h3 rule's own fallback stack below and
+   swaps to Limelight only once/if it arrives — a slow or dead connection
+   never blocks or shows invisible text, worst case is today's plain
+   system-sans look, unchanged. */
+@import url('https://fonts.googleapis.com/css2?family=Limelight&display=swap');
 :root {
   --primary: #1b4965;   /* deep tide blue */
   --secondary: #5fa8a0; /* sea glass */
-  --accent: #e8d9b5;    /* driftwood sand (= Afternoon, see timeline/shared.css) */
-  --bg: #faf8f4;        /* off-white — the fixed "paper card" color (structure/room boxes), never the atmosphere */
+  --accent: #e8d9b5;    /* driftwood sand — a status flag (Family Tree's "collecting facts" tint), not a background; independent of the day-quarter blues in timeline/shared.css */
+  --bg: #f2e9d6;        /* parchment — a warm pale tint of Accent, the fixed "paper card" color (structure/room boxes, Family Tree boxes, jump panels), never the atmosphere */
   --text: #23282b;      /* charcoal */
-  --mist: #edf1f2;      /* the one color that reads clearly on a DARK background (Night) */
-  --grove: #dde8d4;     /* soft sage green — background for anything that isn't a specific day/quarter: see body below */
+  --grove: #c9e2c0;     /* soft pastel green — background for anything that isn't a specific day/quarter: see body below */
   --border: #ddd6c4;
   --nav-height: 3.75rem;
 }
@@ -66,17 +73,17 @@ body {
      recomputing every scroll frame, so a CSS transition on top is
      redundant even where it doesn't misbehave.
 
-     --nav-text picks the one BEST-contrast text color for whatever
-     --quarter-bg currently is — default here is --primary, since every
-     background this ever falls back to (--grove, and three of the four
-     day-quarter colors) is light; timeline/shared.css overrides it to
-     --mist only for Night, the one dark background. Every nav item reads
-     this one variable (see the rule below, .cq-day/.cq-date just below,
-     and .run-toggle in timeline/shared.css) rather than
-     each picking its own color independently — that's what let three
-     items end up teal and two end up primary/bold with no visible logic
-     to it. Role (title vs. label vs. action) is expressed by weight and
-     size instead, not by a different hue. */
+     --nav-text is --primary always now — every background it's ever set
+     against (--grove and all four day-quarter blues) is light enough for
+     it to read cleanly, so there's no per-quarter override left in
+     timeline/shared.css. Kept as a variable (rather than every rule just
+     writing --primary directly) because every nav item reads this one
+     property (see the rule below, .cq-day/.cq-date just below, and
+     .run-toggle in timeline/shared.css) instead of each picking its own
+     color independently — that's what let three items end up teal and
+     two end up primary/bold with no visible logic to it. Role (title vs.
+     label vs. action) is expressed by weight and size instead, not by a
+     different hue. */
   --nav-text: var(--primary);
   background: var(--quarter-bg, var(--grove));
   z-index: 10;
@@ -85,20 +92,20 @@ body {
   color: var(--nav-text);
   font-weight: 600;
   font-size: 1.05rem;
+  text-decoration: none;
 }
-/* Every interactive nav item across every page is permanently underlined
-   — not just on hover — the one shared, site-wide "this is tappable" cue
-   (see below for .nav-split-label/.run-toggle, the <button> items that
-   need their own copy since a <button> isn't matched by "a"). Deliberately
-   not hover-only: hover doesn't exist on a touch device, and most family
-   will be checking this from a phone (see brand-guidelines.md ->
-   Audience) — a hover-only cue would leave every nav link on every page
-   looking identical to plain bold text until someone happened to tap it. */
-.site-nav a { text-decoration: underline; }
+/* No underline on nav items — bold weight + color + a fixed, always-same
+   position at the top of every page is the tappable cue instead. Used to
+   be a permanent underline on every item (the reasoning: no hover state
+   on a touch device, so the cue can't be hover-only) — dropped because a
+   short, fixed, same-4-items-every-time row reads as "the nav" on sight
+   without it, and the underline-on-everything was reading as visual
+   noise instead of a helpful cue. Unlike this row, an inline link inside
+   flowing text (a jump-panel link, a Family Tree person box) still needs
+   its own distinct affordance — see those rules for how each handles it. */
 /* The one deliberate exception: the site's fixed identity ("MC26"),
    always the nav's first item on every page — bolder than everything
-   else, but the SAME --nav-text color (not a separate hue), so it still
-   stays legible against Night without needing its own override. */
+   else, but the SAME --nav-text color (not a separate hue). */
 .site-nav > a:first-child {
   font-weight: 700;
 }
@@ -123,7 +130,7 @@ body {
   font-size: 1.05rem;
   color: var(--nav-text);
   cursor: pointer;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* The live "current day quarter" label — the Timeline split control's
@@ -132,13 +139,13 @@ body {
    show this same split control too, just with its static "Timeline"
    fallback text instead of a live value (see timeline/shared.js — only
    site/index.html's own IntersectionObserver ever overwrites it). Two
-   child spans, updated as you scroll on site/index.html: the bare
-   month/day (.cq-date, e.g. "Aug 3") smaller/secondary, supporting
-   detail, shown first; then the weekday plus bare quarter name (.cq-day,
-   e.g. "Monday Morning") prominent — shown second, its own leading " · "
-   baked into the text shared.js sets rather than static markup. .cq-day
-   defaults to the static word "Timeline" (see render_nav()) until
-   overwritten. */
+   child spans, updated as you scroll on site/index.html: the abbreviated,
+   weekday-first date (.cq-date, e.g. "Wed, Aug 5" — see shared/trip.py ->
+   format_date_abbrev()) smaller/secondary, supporting detail, shown
+   first; then the bare quarter name (.cq-day, e.g. "Morning") prominent —
+   shown second, its own leading " · " baked into the text shared.js sets
+   rather than static markup. .cq-day defaults to the static word
+   "Timeline" (see render_nav()) until overwritten. */
 .current-quarter-menu {
   flex: 1;
   min-width: 0;
@@ -193,6 +200,13 @@ body {
    panel overflow off-screen on narrow widths, since the trigger sits in
    the middle of the nav row, not at an edge. Spanning the full nav width
    instead always stays on-screen regardless of where the trigger falls. */
+/* Notched top corners — a small stepped clip, the one geometric "Art
+   Deco" motif this site uses (see brand-guidelines.md -> Signature
+   visual conventions), applied to the panel shell so it reads as a
+   ticket stub torn off the paper itinerary, not a generic dropdown.
+   Geometry only, no icon/illustration — a shape, not a picture, so it
+   stays inside the "no icons" rule (brand-guidelines.md -> Illustration
+   / Imagery Style). */
 .jump-panel {
   position: absolute;
   top: 100%;
@@ -204,51 +218,65 @@ body {
   padding: 0.75rem;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--bg);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  clip-path: polygon(0 10px, 10px 10px, 10px 0, calc(100% - 10px) 0, calc(100% - 10px) 10px, 100% 10px, 100% 100%, 0 100%);
 }
 .jump-links { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-/* A person entry within a jump-panel — a name plus one or more labeled
-   segments (links and/or plain status text), combined into one bordered
-   pill so the whole thing reads as one unit, each segment split by a
-   thin divider. The Timeline's "Folks ▾" uses name + two links
-   ("Timeline"/"Detail" — see timeline/scripts/build.py); the Family
-   Tree's own "Folks ▾" uses name + an optional plain-text status segment
-   (.jump-person-status, "Collecting facts" — see
-   family-tree/scripts/build.py -> render_folks_menu()) + one "Detail"
-   link, omitting the status segment entirely for the default/common
-   case (facts already collected), same "no extra treatment for the
-   expected case" convention as everywhere else on this site (see
-   requirements/public.md -> Family Tree -> Layout). */
+/* The Folks panel's own list — a single column, one person per row (see
+   requirements/public.md -> Navigation -> Folks panel), deliberately its
+   own class rather than reusing .jump-links above: that one stays a
+   wrapping row of short chips for the day/quarter jump list, a genuinely
+   different shape this shouldn't be coupled to. shared/nav.js shuffles
+   this list's actual DOM order fresh on every page load. */
+.folks-list { display: flex; flex-direction: column; }
+/* A person entry — plain name, then its two jump links, read as one
+   ruled line in a continuous list (closer to a printed itinerary's own
+   line items than a boxed UI component), each divider carrying a small
+   diamond ornament at its center (::after below) — the same geometric
+   Deco vocabulary as the panel's own notched corners, not a second,
+   unrelated decoration. One color throughout (Primary) for the name and
+   both links — matches the nav bar's own "weight and size carry
+   hierarchy, not hue" rule (see .site-nav a above); the two action
+   links are told apart from the plain-text name by case (small caps,
+   letter-spaced) rather than a color or an underline. */
 .jump-person {
-  display: inline-flex;
-  align-items: stretch;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.7rem 0.15rem;
+  border-bottom: 1px solid var(--border);
+}
+.jump-person:last-child { border-bottom: none; }
+.jump-person:not(:last-child)::after {
+  content: "◆";
+  position: absolute;
+  left: 50%;
+  bottom: -0.5em;
+  transform: translateX(-50%);
+  background: var(--bg);
+  color: var(--accent);
+  font-size: 0.6rem;
+  line-height: 1;
+  padding: 0 0.5rem;
 }
 .jump-person-name {
-  padding: 0.25rem 0.5rem;
   font-weight: 600;
+  color: var(--primary);
 }
-.jump-person a {
-  border: none;
-  border-radius: 0;
-  border-left: 1px solid var(--border);
-  padding: 0.25rem 0.5rem;
+.jump-person-actions { display: flex; align-items: center; flex-shrink: 0; }
+.jump-person-actions a {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  padding: 0.5rem;
 }
-.jump-person a.jump-person-details {
-  color: var(--secondary);
-}
-.jump-person-status {
-  padding: 0.25rem 0.5rem;
-  border-left: 1px solid var(--border);
-  color: var(--secondary);
-  font-size: 0.85rem;
-  font-style: italic;
-  align-self: center;
-  white-space: nowrap;
-}
+.jump-person-actions a + a { border-left: 1px solid var(--border); }
 /* The one caret component for "this is a disclosure trigger, tapping it
    expands a panel in place" — used by every .jump-menu summary (the
    Timeline's current-quarter-label and "Folks ▾", the Family Tree's own
@@ -265,7 +293,17 @@ body {
   margin-left: 0.2rem;
 }
 
-h1, h2, h3 { color: var(--primary); }
+/* Limelight only has one weight — font-weight:400 here is deliberate,
+   not an oversight, so a browser never synthetic-bolds it (see
+   brand-guidelines.md -> Typography -> Headlines); the face is already
+   high-contrast/heavy by design. Falls back to the plain system-sans
+   stack, unchanged from before this webfont existed, if Limelight
+   doesn't load. */
+h1, h2, h3 {
+  color: var(--primary);
+  font-family: 'Limelight', system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+}
 a { color: var(--secondary); }
 
 /* Attendees feature — inlined into site/attendees/*.html at build time.
@@ -277,13 +315,16 @@ a { color: var(--secondary); }
 
 /* One <h2 class="fact-day"> per distinct date (see render_person_page()
    in attendees/scripts/build.py), matching brand-guidelines.md ->
-   Typography -> Headlines' own "Day headings" spec (bold, Primary) —
-   every fact starting on that date (Arrival, Sleeping, Working from,
+   Typography -> Headlines' own "Day headings" spec (Limelight, Primary)
+   — every fact starting on that date (Arrival, Sleeping, Working from,
    Departure, Driving) is grouped underneath it as one or more
-   .fact-line rows, instead of each fact repeating its own full date. */
+   .fact-line rows, instead of each fact repeating its own full date.
+   No font-weight override here — shared/base.css's shared h1/h2/h3 rule
+   already pins this to Limelight's own single weight (400) deliberately,
+   and a 700 here would win the cascade (higher specificity) and force a
+   synthetic bold the font was never designed to render. */
 .fact-day {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 1.25rem;
   color: var(--primary);
   margin: 1.4rem 0 0.4rem;
 }
@@ -311,8 +352,15 @@ a { color: var(--secondary); }
   color: var(--primary);
   flex: 0 0 auto;
 }
+/* Uppercase + letter-spaced — the one label device used everywhere on
+   the site (see timeline/shared.css -> .quarter-row-label for the fuller
+   rationale), kept at this line's own inline size (not shrunk) since it
+   sits directly beside .fact-time/.fact-detail in one flowing sentence —
+   a smaller label word here would look broken mid-line, not "labelled". */
 .fact-label {
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--secondary);
   flex: 0 0 auto;
 }
@@ -328,21 +376,21 @@ a { color: var(--secondary); }
 <button type="button" id="timeline-jump" class="nav-split-label current-quarter-label" data-trip-start="2026-08-01" data-trip-end="2026-08-15" data-prefix="../index.html"><span class="cq-date" id="cq-date"></span><span class="cq-day" id="cq-day">Timeline</span></button>
 <details class="jump-menu">
 <summary><span class="nav-caret" id="timeline-caret">▾</span></summary>
-<div class="jump-panel"><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 1</span><div class="jump-links"><a href="../index.html#qc-2026-08-01-00-06">12am–6am</a><a href="../index.html#qc-2026-08-01-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-01-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-01-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 2</span><div class="jump-links"><a href="../index.html#qc-2026-08-02-00-06">12am–6am</a><a href="../index.html#qc-2026-08-02-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-02-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-02-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 3</span><div class="jump-links"><a href="../index.html#qc-2026-08-03-00-06">12am–6am</a><a href="../index.html#qc-2026-08-03-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-03-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-03-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 4</span><div class="jump-links"><a href="../index.html#qc-2026-08-04-00-06">12am–6am</a><a href="../index.html#qc-2026-08-04-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-04-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-04-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 5</span><div class="jump-links"><a href="../index.html#qc-2026-08-05-00-06">12am–6am</a><a href="../index.html#qc-2026-08-05-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-05-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-05-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 6</span><div class="jump-links"><a href="../index.html#qc-2026-08-06-00-06">12am–6am</a><a href="../index.html#qc-2026-08-06-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-06-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-06-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 7</span><div class="jump-links"><a href="../index.html#qc-2026-08-07-00-06">12am–6am</a><a href="../index.html#qc-2026-08-07-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-07-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-07-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 8</span><div class="jump-links"><a href="../index.html#qc-2026-08-08-00-06">12am–6am</a><a href="../index.html#qc-2026-08-08-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-08-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-08-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 9</span><div class="jump-links"><a href="../index.html#qc-2026-08-09-00-06">12am–6am</a><a href="../index.html#qc-2026-08-09-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-09-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-09-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 10</span><div class="jump-links"><a href="../index.html#qc-2026-08-10-00-06">12am–6am</a><a href="../index.html#qc-2026-08-10-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-10-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-10-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 11</span><div class="jump-links"><a href="../index.html#qc-2026-08-11-00-06">12am–6am</a><a href="../index.html#qc-2026-08-11-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-11-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-11-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 12</span><div class="jump-links"><a href="../index.html#qc-2026-08-12-00-06">12am–6am</a><a href="../index.html#qc-2026-08-12-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-12-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-12-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 13</span><div class="jump-links"><a href="../index.html#qc-2026-08-13-00-06">12am–6am</a><a href="../index.html#qc-2026-08-13-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-13-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-13-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 14</span><div class="jump-links"><a href="../index.html#qc-2026-08-14-00-06">12am–6am</a><a href="../index.html#qc-2026-08-14-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-14-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-14-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 15</span><div class="jump-links"><a href="../index.html#qc-2026-08-15-00-06">12am–6am</a><a href="../index.html#qc-2026-08-15-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-15-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-15-18-24">Evening · 6pm–12am</a></div></div></div>
+<div class="jump-panel"><div class="jump-day-group"><span class="jump-day-label">Saturday, August 1st</span><div class="jump-links"><a href="../index.html#qc-2026-08-01-00-06">12am–6am</a><a href="../index.html#qc-2026-08-01-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-01-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-01-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sunday, August 2nd</span><div class="jump-links"><a href="../index.html#qc-2026-08-02-00-06">12am–6am</a><a href="../index.html#qc-2026-08-02-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-02-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-02-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Monday, August 3rd</span><div class="jump-links"><a href="../index.html#qc-2026-08-03-00-06">12am–6am</a><a href="../index.html#qc-2026-08-03-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-03-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-03-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tuesday, August 4th</span><div class="jump-links"><a href="../index.html#qc-2026-08-04-00-06">12am–6am</a><a href="../index.html#qc-2026-08-04-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-04-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-04-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wednesday, August 5th</span><div class="jump-links"><a href="../index.html#qc-2026-08-05-00-06">12am–6am</a><a href="../index.html#qc-2026-08-05-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-05-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-05-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thursday, August 6th</span><div class="jump-links"><a href="../index.html#qc-2026-08-06-00-06">12am–6am</a><a href="../index.html#qc-2026-08-06-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-06-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-06-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Friday, August 7th</span><div class="jump-links"><a href="../index.html#qc-2026-08-07-00-06">12am–6am</a><a href="../index.html#qc-2026-08-07-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-07-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-07-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Saturday, August 8th</span><div class="jump-links"><a href="../index.html#qc-2026-08-08-00-06">12am–6am</a><a href="../index.html#qc-2026-08-08-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-08-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-08-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sunday, August 9th</span><div class="jump-links"><a href="../index.html#qc-2026-08-09-00-06">12am–6am</a><a href="../index.html#qc-2026-08-09-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-09-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-09-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Monday, August 10th</span><div class="jump-links"><a href="../index.html#qc-2026-08-10-00-06">12am–6am</a><a href="../index.html#qc-2026-08-10-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-10-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-10-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tuesday, August 11th</span><div class="jump-links"><a href="../index.html#qc-2026-08-11-00-06">12am–6am</a><a href="../index.html#qc-2026-08-11-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-11-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-11-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wednesday, August 12th</span><div class="jump-links"><a href="../index.html#qc-2026-08-12-00-06">12am–6am</a><a href="../index.html#qc-2026-08-12-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-12-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-12-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thursday, August 13th</span><div class="jump-links"><a href="../index.html#qc-2026-08-13-00-06">12am–6am</a><a href="../index.html#qc-2026-08-13-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-13-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-13-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Friday, August 14th</span><div class="jump-links"><a href="../index.html#qc-2026-08-14-00-06">12am–6am</a><a href="../index.html#qc-2026-08-14-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-14-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-14-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Saturday, August 15th</span><div class="jump-links"><a href="../index.html#qc-2026-08-15-00-06">12am–6am</a><a href="../index.html#qc-2026-08-15-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-15-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-15-18-24">Evening · 6pm–12am</a></div></div></div>
 </details>
 </span>
 <span class="nav-split">
 <button type="button" id="folks-random" class="nav-split-label" data-attendees-prefix="" data-people="[{&quot;id&quot;: 5, &quot;name&quot;: &quot;Jim S&quot;}, {&quot;id&quot;: 6, &quot;name&quot;: &quot;Helen S&quot;}, {&quot;id&quot;: 7, &quot;name&quot;: &quot;David S&quot;}, {&quot;id&quot;: 8, &quot;name&quot;: &quot;Rachel&quot;}, {&quot;id&quot;: 9, &quot;name&quot;: &quot;Susan&quot;}]">Folks</button>
 <details class="jump-menu">
 <summary><span class="nav-caret">▾</span></summary>
-<div class="jump-panel"><div class="jump-links"><span class="jump-person"><span class="jump-person-name">David S</span><span class="jump-person-status">Collecting facts</span><a class="jump-person-details" href="../attendees/7.html">Detail</a></span><span class="jump-person"><span class="jump-person-name">Helen S</span><a class="jump-person-details" href="../attendees/6.html">Detail</a></span><span class="jump-person"><span class="jump-person-name">Jim S</span><a class="jump-person-details" href="../attendees/5.html">Detail</a></span><span class="jump-person"><span class="jump-person-name">Rachel</span><span class="jump-person-status">Collecting facts</span><a class="jump-person-details" href="../attendees/8.html">Detail</a></span><span class="jump-person"><span class="jump-person-name">Susan</span><a class="jump-person-details" href="../attendees/9.html">Detail</a></span></div></div>
+<div class="jump-panel"><div class="folks-list"><span class="jump-person"><span class="jump-person-name">Jim S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-00-06">Timeline</a><a href="5.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Helen S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-00-06">Timeline</a><a href="6.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">David S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-18-24">Timeline</a><a href="7.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Rachel</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-18-24">Timeline</a><a href="8.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Susan</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-12-18">Timeline</a><a href="9.html">Detail</a></span></span></div></div>
 </details>
 </span>
 <a href="../family-tree/index.html">Tree</a>
 </nav>
 <h1 class="attendees-title">Jim S</h1>
 <main>
-<h2 class="fact-day">Saturday, Aug 1</h2><div class="fact-line"><span class="fact-label">Arrival</span> <span class="fact-detail">Already at the accommodation</span></div><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Cottage — Master Suite till Monday, Aug 3</span></div><h2 class="fact-day">Tuesday, Aug 4</h2><div class="fact-line"><span class="fact-time">5pm</span> <span class="fact-label">Departure</span> <span class="fact-detail">by 🚗 Car</span></div><h2 class="fact-day">Wednesday, Aug 5</h2><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Cottage — Master Suite till Thursday, Aug 13</span></div><div class="fact-line"><span class="fact-time">5:59pm</span> <span class="fact-label">Arrival</span> <span class="fact-detail">by 🚗 Car</span></div><h2 class="fact-day">Thursday, Aug 13</h2><div class="fact-line"><span class="fact-time">6am</span> <span class="fact-label">Departure</span> <span class="fact-detail">by 🚗 Car — With David · Vehicle TBD</span></div>
+<h2 class="fact-day">Saturday, August 1st</h2><div class="fact-line"><span class="fact-label">Arrival</span> <span class="fact-detail">Already at the accommodation</span></div><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Cottage — Master Suite till Monday, August 3rd</span></div><h2 class="fact-day">Tuesday, August 4th</h2><div class="fact-line"><span class="fact-time">5pm</span> <span class="fact-label">Departure</span> <span class="fact-detail">by 🚗 Car</span></div><h2 class="fact-day">Wednesday, August 5th</h2><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Cottage — Master Suite till Thursday, August 13th</span></div><div class="fact-line"><span class="fact-time">5:59pm</span> <span class="fact-label">Arrival</span> <span class="fact-detail">by 🚗 Car</span></div><h2 class="fact-day">Thursday, August 13th</h2><div class="fact-line"><span class="fact-time">6am</span> <span class="fact-label">Departure</span> <span class="fact-detail">by 🚗 Car — With David · Vehicle TBD</span></div>
 </main>
 <script>
 // Shared client-side nav logic — inlined into every page at build time
@@ -434,6 +482,26 @@ document.addEventListener('DOMContentLoaded', function () {
       var person = people[Math.floor(Math.random() * people.length)];
       window.location.href = (folksRandom.dataset.attendeesPrefix || '') + person.id + '.html';
     });
+  }
+
+  // Folks panel — freshly shuffled display order on every page load (see
+  // requirements/public.md -> Navigation -> Folks panel), so no single
+  // person is always first or last. A build-time order would be the same
+  // every time this static page loads, which isn't actually random — has
+  // to happen here instead. Fisher-Yates on the real DOM nodes, each
+  // person shuffled independently (not grouped by couple/family), then
+  // re-appended in the new order; re-appending an already-attached node
+  // moves it rather than duplicating it.
+  var folksList = document.querySelector('.folks-list');
+  if (folksList) {
+    var people = Array.prototype.slice.call(folksList.children);
+    for (var i = people.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = people[i];
+      people[i] = people[j];
+      people[j] = tmp;
+    }
+    people.forEach(function (el) { folksList.appendChild(el); });
   }
 });
 

@@ -2,6 +2,31 @@
    time. Generation-grouped layout: couples paired, children nested below. */
 .tree-title { margin-bottom: 0.25rem; }
 .tree-subtitle { color: var(--secondary); margin-top: 0; margin-bottom: 2rem; }
+/* The key explaining what a box's border/background/opacity means (see
+   family-tree/scripts/build.py -> render_legend()) — plain text and real
+   .person swatches, no icons, matching brand-guidelines.md's information-
+   layer rule (flat, legible, nothing ornamental). Each swatch is an empty
+   .person box wearing the real modifier class, sized down — not a
+   redrawn copy of the styling — so it can never drift from what the tree
+   itself actually shows. */
+.tree-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin-bottom: 2rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--secondary);
+}
+.legend-item { display: inline-flex; align-items: center; gap: 0.5rem; }
+.legend-swatch {
+  width: 1.1rem;
+  height: 1.1rem;
+  padding: 0;
+  vertical-align: middle;
+}
 
 .generation { margin-bottom: 1.5rem; }
 .family-unit { margin-bottom: 1rem; }
@@ -11,7 +36,7 @@
   padding: 0.4rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--bg);
 }
 /* An attending person's box is a link to their Attendees page — the sole
    entry point to that feature (see family-tree/scripts/build.py ->
@@ -51,11 +76,16 @@ a.person:hover, a.person:focus-visible {
 }
 .couple-joiner { color: var(--secondary); }
 .empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
+/* Stacked top to bottom, not side by side — siblings render in
+   birth_order (oldest first, see family-tree/scripts/build.py ->
+   sibling_sort_key()) and need to actually read that way top-to-bottom,
+   not left-to-right, or the oldest-first ordering the data already
+   computes correctly is invisible/backwards on screen. */
 .children {
   margin: 0.5rem 0 0 1.5rem;
   padding-left: 1rem;
   border-left: 2px solid var(--border);
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0.5rem;
 }

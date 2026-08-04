@@ -1,6 +1,7 @@
 [
   {
     "person_id": 9,
+    "pending": true,
     "arrival": { "date": "2026-08-04", "quarter": "12-18", "time_range": ["17:15", "17:15"], "mode": "car" },
     "departure": { "date": "2026-08-11", "quarter": "12-18", "mode": "car" },
     "room": "Cottage — Master Suite",
@@ -16,6 +17,7 @@
   },
   {
     "person_id": 5,
+    "pending": true,
     "room": "Cottage — Master Suite",
     "excursions": [
       {
@@ -27,6 +29,7 @@
   },
   {
     "person_id": 6,
+    "pending": true,
     "room": "Cottage — Master Suite",
     "excursions": [
       {

@@ -69,17 +69,18 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // Keeps the Timeline split control's own label showing which day
-  // quarter is currently in view, updated as you scroll — the bare
-  // month/day (.cq-date, smaller/secondary, e.g. "Aug 3") shown first,
-  // then the weekday plus bare quarter name (.cq-day, bold/prominent,
-  // e.g. "Monday Morning") shown second, as two separate spans rather
-  // than one flat string so CSS can style them differently (see
-  // shared/base.css) — cq-day's own leading " · " is part of its text
-  // content, not static markup, so nothing floats on its own before
-  // either span has actually been filled in. The middot (not a hyphen)
-  // matches the separator used everywhere else two related pieces of
-  // info sit together on this site (QUARTER_LABELS' own "Morning ·
-  // 6am–12pm", the Attendees page's "Aug 1 · 6pm") — see
+  // quarter is currently in view, updated as you scroll — the abbreviated
+  // weekday+date (.cq-date, smaller/secondary, e.g. "Wed, Aug 5", already
+  // weekday-first — see timeline/scripts/build.py -> render_quarter_
+  // screen() and shared/trip.py -> format_date_abbrev()) shown first,
+  // then the bare quarter name (.cq-day, bold/prominent, e.g. "Morning")
+  // shown second, as two separate spans rather than one flat string so
+  // CSS can style them differently (see shared/base.css) — cq-day's own
+  // leading " · " is part of its text content, not static markup, so
+  // nothing floats on its own before either span has actually been
+  // filled in. The middot (not a hyphen) matches the separator used
+  // everywhere else two related pieces of info sit together on this site
+  // (QUARTER_LABELS' own "Morning · 6am–12pm") — see
   // requirements/public.md -> Navigation.
   //
   // data-quarter-name is EMPTY for 00-06 (see QUARTER_NAMES in
@@ -87,10 +88,10 @@ document.addEventListener('DOMContentLoaded', function () {
   // timeline/scripts/build.py) — that quarter has no name of its own on
   // this site: night reads as the tail end of the day before it, not the
   // start of the one after, so scrolling into a new day's first quarter
-  // shows just the weekday alone ("Tuesday"), never an invented "Tuesday
-  // Night" — see requirements/public.md -> Terminology. The conditional
-  // below drops the joining space along with the name so this collapses
-  // to "· Tuesday", not "· Tuesday " with a trailing space.
+  // shows just the weekday+date alone ("Wed, Aug 5"), never an invented
+  // "Wed, Aug 5 · Night" — see requirements/public.md -> Terminology. The
+  // conditional below leaves cq-day empty entirely in that case, rather
+  // than a dangling "· " with nothing after it.
   //
   // Also sets data-quarter on the nav bar itself to match, so its
   // time-of-day background (timeline/shared.css -> .site-nav[data-quarter])
@@ -99,14 +100,14 @@ document.addEventListener('DOMContentLoaded', function () {
   var dayEl = document.getElementById('cq-day');
   var dateEl = document.getElementById('cq-date');
   var navEl = document.querySelector('.site-nav');
-  var screens = document.querySelectorAll('.quarter-screen[data-day-name]');
+  var screens = document.querySelectorAll('.quarter-screen[data-date]');
   if (dayEl && dateEl && screens.length && 'IntersectionObserver' in window) {
     var observer = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         if (entry.isIntersecting) {
           dateEl.textContent = entry.target.getAttribute('data-date');
           var quarterName = entry.target.getAttribute('data-quarter-name');
-          dayEl.textContent = ' · ' + entry.target.getAttribute('data-day-name') + (quarterName ? ' ' + quarterName : '');
+          dayEl.textContent = quarterName ? ' · ' + quarterName : '';
           if (navEl) {
             navEl.setAttribute('data-quarter', entry.target.getAttribute('data-quarter'));
           }

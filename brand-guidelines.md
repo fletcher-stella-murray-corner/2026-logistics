@@ -62,36 +62,38 @@ Precision in the information layer is what makes the site fast to scan — every
 
 ## Colours
 
-A Maritime coastal palette (tide, sea glass, sand) that's calm and legible rather than a designed brand palette — it should read as "the colors of the place," not "a logo system." Ten colors total, in two groups that do different jobs — not ten arbitrary picks, and not one blanket color reused everywhere regardless of what it's sitting on:
+Pastel art deco, 1970s-leaning — soft, tonal, nothing shouts. The four day-quarter backgrounds in particular read as one family now, not four unrelated picks: a single dusty blue, palest at Morning and darkest at Night, quietly deepening through the day rather than cycling through different hues. Ten colors total, in three groups that do different jobs:
 
 **Core — text, links, dividers:**
-* Primary — Deep tide blue `#1b4965` (headings, the brand/home link, the best-contrast text choice against any light background)
+* Primary — Deep tide blue `#1b4965` (headings, the brand/home link, the one text color used against every background on the site — see *Backgrounds* below)
 * Secondary — Sea glass `#5fa8a0` (muted/supporting text and dividers — captions, subtitles, room labels)
 * Text — Charcoal `#23282b` (default body copy)
-* Mist — Soft mist white `#edf1f2` (the one color that reads clearly against a *dark* background — see Night below)
 
-**Backgrounds — a family, each paired with whichever text color is genuinely its best contrast, not a single default applied everywhere:**
-* Background (paper) — Off-white `#faf8f4` — the fixed "paper card" color (the structure/room boxes on the Timeline), always the same regardless of time of day or page, since a card is a physical object, not part of the atmosphere. Pairs with Primary/Text.
-* Night `#16232e` — dark navy. Pairs with **Mist** — the one background dark enough to need it.
-* Morning `#e4f1f8` — pale sky blue. Pairs with Primary.
-* Afternoon `#e8d9b5` — driftwood sand (same value as Accent). Pairs with Primary.
-* Evening `#f0c9a8` — warm peach. Pairs with Primary.
-* Grove `#dde8d4` — soft sage green — the background for anything that *isn't* a specific day/quarter: the Home view (the intro screen, before you've scrolled into a day), the Family Tree page, and the Attendees pages. A fifth "place," not a time. Pairs with Primary.
+**Backgrounds — a family, all light enough for Primary/Text to read on directly. No background on the site is dark enough to need a separate light-on-dark text color anymore — one text treatment, not two:**
+* Background (paper) — Parchment `#f2e9d6`, a warm pale tint of Accent — the fixed "paper card" color (structure/room boxes, Family Tree boxes, the nav's own jump/Folks panels), always the same regardless of time of day or page, since a card is a physical object, not part of the atmosphere. Warmer than a neutral off-white on purpose — a flat near-white paper read as generic UI chrome rather than an actual paper card.
+* Morning `#e6f1f7` — palest pastel blue, the lightest of the four day-quarter tones.
+* Afternoon `#cbe1ec` — light pastel blue.
+* Evening `#b0cede` — medium pastel blue.
+* Night `#8fb0c7` — dustiest, darkest pastel blue — deliberately still light enough that Primary text reads on it cleanly, so the day quarters need no color exception at their darkest point, only their most saturated.
+* Grove `#c9e2c0` — soft pastel green, more visibly green than a gray-leaning sage — the background for anything that isn't a specific day/quarter: the Home view (the intro screen, before you've scrolled into a day), the Family Tree page, and the Attendees pages. A fifth "place," not a time.
 
-So in practice there are only two text treatments in play at once — Mist on Night, Primary everywhere else — because those are genuinely the best-contrast choices; there's no reason to invent a bespoke hue per background just to have one. Role and hierarchy (a title vs. a label vs. an action) come from weight and size, not from switching colors — see *Signature visual conventions* below for how this plays out in the Timeline's nav bar specifically.
+**Accent — a status flag, not a background:**
+* Accent — Driftwood sand `#e8d9b5` — used narrowly for one job: flagging an attending person whose travel facts haven't been entered yet (Family Tree, `.person.status-needed`), plus a couple of small decorative borders (the Timeline's room boxes). Deliberately outside the Backgrounds family above and no longer tied to Afternoon's color — it's the one warm color in an otherwise cool, tonal palette, which is what makes "needs attention" actually pop.
+
+Role and hierarchy (a title vs. a label vs. an action) come from weight and size, not from switching colors — see *Signature visual conventions* below for how this plays out in the Timeline's nav bar specifically.
 
 ## Typography
 
-System sans throughout — no webfont loading, since some family will read this on flaky airport wifi.
+System sans for everything read as data or body copy — arrival/departure/meal/sleeping lines, labels, the whole nav bar — since some family will read this on flaky airport wifi and it has to render instantly no matter what. One deliberate exception, scoped tightly: *Headlines* (below) load a single Art Deco display webfont, with the system stack as a same-meaning fallback and `font-display: swap` — so a connection too slow or broken to fetch it just shows today's plain system-sans look instead, never invisible text and never a layout shift. Nothing else on the site loads a webfont.
 
 ### Headlines
-`system-ui, -apple-system, sans-serif`, bold, Primary color. Day headings and the site title.
+**Limelight** (Google Fonts) — a high-contrast Art Deco display face, weight 400 (its only weight; never synthetic-bolded by the browser), Primary color, falling back to `system-ui, -apple-system, sans-serif` if it doesn't load. The site title, every page's own `<h1>`, and every day heading wherever one appears — the Attendees page's own (`<h2 class="fact-day">`) and the Timeline's jump-panel day groups (`.jump-day-label`) alike, not just one instance of the pattern. This is the site's one piece of genuine period character; everything else stays deliberately plain per *Materials / Design Language* above.
 
 ### Body Text
-Same system-sans stack, regular weight, Text color. Arrival/departure/meal/sleeping lines.
+System sans, regular weight, Text color. Arrival/departure/meal/sleeping lines.
 
 ### Labels / Small Text
-Same stack, smaller size, Secondary color — day quarter labels ("6am–12pm"), mode tags (plane/train/car).
+System sans, smaller size, uppercase, letter-spaced, Secondary or Primary color (whichever that label already used) — day quarter row labels ("Sleeping," "Arriving"), structure/room labels, Attendees fact labels ("Arrival," "Departure"), the Family Tree legend, and the Folks panel's own "Timeline"/"Detail" actions. One consistent typographic signature for "this word is a label, not data," used identically everywhere a label appears rather than varying by feature — see `shared/base.css` → `.jump-person-actions a` for the canonical values (0.08em letter-spacing; other instances use a slightly tighter 0.04–0.06em where the label sits inline within a sentence instead of standing alone). Mode tags (plane/train/car) are the one exception — left in mixed case since they're an inline tag mid-sentence, not a standalone label.
 
 ---
 
@@ -105,9 +107,10 @@ None. No icons beyond a small text/emoji tag for travel mode (✈️ / 🚆 / �
 
 - Every day quarter canvas, whether or not it has content, always shows the same five-part shape (arrivals, departures, sleeping, meal, activities), content pinned top-left, so the eye learns one layout and can skip straight to what's filled in.
 - The full trip (August 1–15) is always in the page. The page itself opens on Home, not "now" — but "now" (computed live from the visitor's own clock, not baked into the build) is always one deliberate choice away, at the transition screen right below Home or via the nav bar's "Timeline" item from anywhere — scrolling forward from there moves ahead through what's next, scrolling back moves through what's already happened. See `requirements/public.md` → *Home & Timeline* → *Always the full trip, "now" computed live*.
-- Each quarter screen carries a time-of-day background (dark navy for Night, pale sky blue for Morning, driftwood sand for Afternoon, warm peach for Evening) that transitions smoothly as you scroll from one quarter into the next, rather than cutting hard at the boundary — see `requirements/public.md` → *Home & Timeline* → *Time-of-day background*. This is the site's main "unique feel" device (see *Materials / Design Language* above) — the structure/room boxes stay paper-colored regardless, so the information itself is never harder to read on one quarter's background than another's.
-- The Timeline's nav bar shares whichever quarter color the canvas beneath it is showing, with its own text switching between Mist (on Night) and Primary (everywhere else) for best contrast — see *Colours* above. Every nav item (MC26, Timeline, Folks, Tree, and the Timeline panel's own trigger/Play/jump-list contents) uses that one color; only weight and size distinguish one from another, not a different hue per item — a deliberate, coherent system, not each item picking whatever felt closest at the time. See `requirements/public.md` → *Navigation* for the full item roster.
-- Anything that isn't a specific day/quarter — the Home view (the intro screen), the Family Tree page, the Attendees pages — shares one background, Grove (soft sage green), instead of a plain white default. A fifth "place" in the palette, not a time.
+- Each quarter screen carries a time-of-day background (palest pastel blue for Morning, light pastel blue for Afternoon, medium pastel blue for Evening, dustiest/darkest pastel blue for Night — one tonal family, not four different hues) that transitions smoothly as you scroll from one quarter into the next, rather than cutting hard at the boundary — see `requirements/public.md` → *Home & Timeline* → *Time-of-day background*. This is the site's main "unique feel" device (see *Materials / Design Language* above) — the structure/room boxes stay paper-colored regardless, so the information itself is never harder to read on one quarter's background than another's.
+- The Timeline's nav bar shares whichever quarter color the canvas beneath it is showing, with its own text staying Primary throughout — no per-quarter color switch needed, since none of the four quarter backgrounds are dark enough to require one (see *Colours* above). Every nav item (MC26, Timeline, Folks, Tree, and the Timeline panel's own trigger/Play/jump-list contents) uses that one color; only weight and size distinguish one from another, not a different hue per item — a deliberate, coherent system, not each item picking whatever felt closest at the time. See `requirements/public.md` → *Navigation* for the full item roster.
+- Anything that isn't a specific day/quarter — the Home view (the intro screen), the Family Tree page, the Attendees pages — shares one background, Grove (soft pastel green), instead of a plain white default. A fifth "place" in the palette, not a time.
+- **The nav's disclosure panels (the day/quarter jump list, the Folks panel) carry the site's one geometric ornament**: a small notched/stepped clip at the panel's own top corners (a ticket stub torn off the paper itinerary), and, in the Folks panel specifically, a small diamond (◆, Accent color) centered on the rule between each person. Both are pure geometry — shapes, not pictures — so they stay inside the site's "no icons/illustration" rule (see *Illustration / Imagery Style* below) while still giving the chrome layer a genuine Art Deco signature instead of being generically flat. Scoped to these two panels only, not applied to the information layer itself (structure/room boxes, fact lines) — restraint over decoration, per *Materials / Design Language* above.
 - **The night quarter (`00-06`) has no name in any text the site shows you.** Every other quarter is named in the nav's live label as you scroll ("Tuesday Morning," "Tuesday Afternoon," "Tuesday Evening") — night alone is just the day itself ("Tuesday"). This isn't an omission, it's a small piece of voice: night reads as the tail end of the day before it, not the start of the one after, so scrolling from Monday evening into the trip's next quarter and being told "Tuesday Night" would feel like the day hasn't actually turned over yet. Saying just "Tuesday" instead is what makes the day-by-day rhythm of scrolling feel like walking through an actual week at the cottage rather than reading labeled time slots off a schedule — see `requirements/public.md` → *Terminology* for exactly where this shows up (the nav's live label, the jump-to-time panel, the Attendees page). `00-06` still exists as data and is still called "Night" in this document's own color language (*Colours* above) — this is a rule about what the site says out loud, not about the quarter's identity.
 
 ---

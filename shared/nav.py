@@ -10,6 +10,8 @@ Navigation.
 """
 import json
 
+from trip import TRIP_START, QUARTERS, quarter_screen_id
+
 
 def esc(s):
     return str(s).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
@@ -23,6 +25,59 @@ def require(record, field, label):
     if field not in record:
         raise ValueError(f"{label} is missing required field {field!r}.")
     return record[field]
+
+
+def render_folks_menu(people, travel, *, timeline_prefix, attendees_prefix):
+    """The Folks split control's panel content — one shape, one roster,
+    used identically on every page (Home/Timeline, Family Tree, Details)
+    now, replacing what used to be two different implementations that had
+    to be kept in sync by hand (a travel.json-sourced list on Home/
+    Timeline, a people.json-sourced one everywhere else) — see
+    requirements/public.md -> Navigation -> Folks panel.
+
+    Every ATTENDING person in shared/data/people.json, no one left out for
+    lacking a travel.json entry yet. Each entry is a plain-text name plus
+    two links: "Timeline" jumps to their arrival's quarter screen, or the
+    trip's very first quarter screen if they have no arrival entry at all
+    (same fallback the old Home/Timeline variant already used for this
+    case); "Detail" goes to their own Attendees page. No status text
+    (no "Collecting facts") — that distinction now lives only on the
+    Family Tree box itself and the person's own Attendees page, not
+    narrated a second time here.
+
+    `timeline_prefix` is the same value the caller already passes to
+    render_nav() below ("" on site/index.html itself, e.g. "../index.html"
+    elsewhere) — a same-page anchor or a cross-page link to the exact same
+    target either way. Display order is NOT decided here: every entry
+    renders in whatever order `people` is passed in, and shared/nav.js
+    shuffles the actual DOM order fresh on every page load (see
+    requirements/public.md -> Navigation -> Folks panel) — a random order
+    baked in at build time would be the same every time this static page
+    is loaded, which isn't actually random."""
+    travel_by_person = {t["person_id"]: t for t in travel}
+    attending = [p for p in people if p.get("attending")]
+    if not attending:
+        return ""
+
+    entries = []
+    for person in attending:
+        entry = travel_by_person.get(person["id"])
+        arrival = entry.get("arrival") if entry else None
+        if arrival:
+            target_date, target_quarter = arrival["date"], arrival["quarter"]
+        else:
+            target_date, target_quarter = TRIP_START.isoformat(), QUARTERS[0]
+        timeline_href = f"{timeline_prefix}#{quarter_screen_id(target_date, target_quarter)}"
+        entries.append(
+            f'<span class="jump-person">'
+            f'<span class="jump-person-name">{esc(person["name"])}</span>'
+            f'<span class="jump-person-actions">'
+            f'<a href="{timeline_href}">Timeline</a>'
+            f'<a href="{attendees_prefix}{person["id"]}.html">Detail</a>'
+            f'</span>'
+            f'</span>'
+        )
+    return "".join(entries)
 
 
 def render_nav(*, mc26_href, timeline_prefix, tree_href, trip_start, trip_end,
@@ -41,9 +96,11 @@ def render_nav(*, mc26_href, timeline_prefix, tree_href, trip_start, trip_end,
     `timeline_prefix` — relative path to site/index.html: "" when this
     page IS index.html (shared/nav.js reads the empty data-prefix and
     scrolls in place instead of navigating), otherwise e.g. "../index.html".
-    `jump_panel_html` / `folks_panel_html` — pre-rendered panel contents
-    (the caller's own choice of source — see timeline/scripts/build.py's
-    render_jump_panel() and either feature's render_folks_menu()).
+    `jump_panel_html` / `folks_panel_html` — pre-rendered panel contents:
+    the day/quarter jump list is still feature-specific (see
+    timeline/scripts/build.py's render_jump_panel()), but the Folks panel
+    is now this same module's own render_folks_menu() above, called
+    identically by every feature.
     `attending_people` — the full attending roster as a list of dicts with
     at least 'id'/'name', for the Folks split control's random-click (the
     same roster regardless of which Folks panel variant is shown).
@@ -69,7 +126,7 @@ def render_nav(*, mc26_href, timeline_prefix, tree_href, trip_start, trip_end,
 <button type="button" id="folks-random" class="nav-split-label" data-attendees-prefix="{esc(attendees_prefix)}" data-people="{people_attr}">Folks</button>
 <details class="jump-menu">
 <summary><span class="nav-caret">▾</span></summary>
-<div class="jump-panel"><div class="jump-links">{folks_panel_html}</div></div>
+<div class="jump-panel"><div class="folks-list">{folks_panel_html}</div></div>
 </details>
 </span>"""
 

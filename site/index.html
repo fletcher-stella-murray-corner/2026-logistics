@@ -8,14 +8,21 @@
 /* Shared site-wide chrome — inlined into every page at build time (see
    technical.md -> Where CSS and JS changes go). Nav bar, color variables,
    and base typography, per brand-guidelines.md -> Visual Identity. */
+/* The one webfont this site loads (brand-guidelines.md -> Typography),
+   headlines only — must be the first rule in this stylesheet (a CSS
+   requirement for @import, not a style choice). display=swap means text
+   renders immediately in the h1/h2/h3 rule's own fallback stack below and
+   swaps to Limelight only once/if it arrives — a slow or dead connection
+   never blocks or shows invisible text, worst case is today's plain
+   system-sans look, unchanged. */
+@import url('https://fonts.googleapis.com/css2?family=Limelight&display=swap');
 :root {
   --primary: #1b4965;   /* deep tide blue */
   --secondary: #5fa8a0; /* sea glass */
-  --accent: #e8d9b5;    /* driftwood sand (= Afternoon, see timeline/shared.css) */
-  --bg: #faf8f4;        /* off-white — the fixed "paper card" color (structure/room boxes), never the atmosphere */
+  --accent: #e8d9b5;    /* driftwood sand — a status flag (Family Tree's "collecting facts" tint), not a background; independent of the day-quarter blues in timeline/shared.css */
+  --bg: #f2e9d6;        /* parchment — a warm pale tint of Accent, the fixed "paper card" color (structure/room boxes, Family Tree boxes, jump panels), never the atmosphere */
   --text: #23282b;      /* charcoal */
-  --mist: #edf1f2;      /* the one color that reads clearly on a DARK background (Night) */
-  --grove: #dde8d4;     /* soft sage green — background for anything that isn't a specific day/quarter: see body below */
+  --grove: #c9e2c0;     /* soft pastel green — background for anything that isn't a specific day/quarter: see body below */
   --border: #ddd6c4;
   --nav-height: 3.75rem;
 }
@@ -66,17 +73,17 @@ body {
      recomputing every scroll frame, so a CSS transition on top is
      redundant even where it doesn't misbehave.
 
-     --nav-text picks the one BEST-contrast text color for whatever
-     --quarter-bg currently is — default here is --primary, since every
-     background this ever falls back to (--grove, and three of the four
-     day-quarter colors) is light; timeline/shared.css overrides it to
-     --mist only for Night, the one dark background. Every nav item reads
-     this one variable (see the rule below, .cq-day/.cq-date just below,
-     and .run-toggle in timeline/shared.css) rather than
-     each picking its own color independently — that's what let three
-     items end up teal and two end up primary/bold with no visible logic
-     to it. Role (title vs. label vs. action) is expressed by weight and
-     size instead, not by a different hue. */
+     --nav-text is --primary always now — every background it's ever set
+     against (--grove and all four day-quarter blues) is light enough for
+     it to read cleanly, so there's no per-quarter override left in
+     timeline/shared.css. Kept as a variable (rather than every rule just
+     writing --primary directly) because every nav item reads this one
+     property (see the rule below, .cq-day/.cq-date just below, and
+     .run-toggle in timeline/shared.css) instead of each picking its own
+     color independently — that's what let three items end up teal and
+     two end up primary/bold with no visible logic to it. Role (title vs.
+     label vs. action) is expressed by weight and size instead, not by a
+     different hue. */
   --nav-text: var(--primary);
   background: var(--quarter-bg, var(--grove));
   z-index: 10;
@@ -85,20 +92,20 @@ body {
   color: var(--nav-text);
   font-weight: 600;
   font-size: 1.05rem;
+  text-decoration: none;
 }
-/* Every interactive nav item across every page is permanently underlined
-   — not just on hover — the one shared, site-wide "this is tappable" cue
-   (see below for .nav-split-label/.run-toggle, the <button> items that
-   need their own copy since a <button> isn't matched by "a"). Deliberately
-   not hover-only: hover doesn't exist on a touch device, and most family
-   will be checking this from a phone (see brand-guidelines.md ->
-   Audience) — a hover-only cue would leave every nav link on every page
-   looking identical to plain bold text until someone happened to tap it. */
-.site-nav a { text-decoration: underline; }
+/* No underline on nav items — bold weight + color + a fixed, always-same
+   position at the top of every page is the tappable cue instead. Used to
+   be a permanent underline on every item (the reasoning: no hover state
+   on a touch device, so the cue can't be hover-only) — dropped because a
+   short, fixed, same-4-items-every-time row reads as "the nav" on sight
+   without it, and the underline-on-everything was reading as visual
+   noise instead of a helpful cue. Unlike this row, an inline link inside
+   flowing text (a jump-panel link, a Family Tree person box) still needs
+   its own distinct affordance — see those rules for how each handles it. */
 /* The one deliberate exception: the site's fixed identity ("MC26"),
    always the nav's first item on every page — bolder than everything
-   else, but the SAME --nav-text color (not a separate hue), so it still
-   stays legible against Night without needing its own override. */
+   else, but the SAME --nav-text color (not a separate hue). */
 .site-nav > a:first-child {
   font-weight: 700;
 }
@@ -123,7 +130,7 @@ body {
   font-size: 1.05rem;
   color: var(--nav-text);
   cursor: pointer;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 /* The live "current day quarter" label — the Timeline split control's
@@ -132,13 +139,13 @@ body {
    show this same split control too, just with its static "Timeline"
    fallback text instead of a live value (see timeline/shared.js — only
    site/index.html's own IntersectionObserver ever overwrites it). Two
-   child spans, updated as you scroll on site/index.html: the bare
-   month/day (.cq-date, e.g. "Aug 3") smaller/secondary, supporting
-   detail, shown first; then the weekday plus bare quarter name (.cq-day,
-   e.g. "Monday Morning") prominent — shown second, its own leading " · "
-   baked into the text shared.js sets rather than static markup. .cq-day
-   defaults to the static word "Timeline" (see render_nav()) until
-   overwritten. */
+   child spans, updated as you scroll on site/index.html: the abbreviated,
+   weekday-first date (.cq-date, e.g. "Wed, Aug 5" — see shared/trip.py ->
+   format_date_abbrev()) smaller/secondary, supporting detail, shown
+   first; then the bare quarter name (.cq-day, e.g. "Morning") prominent —
+   shown second, its own leading " · " baked into the text shared.js sets
+   rather than static markup. .cq-day defaults to the static word
+   "Timeline" (see render_nav()) until overwritten. */
 .current-quarter-menu {
   flex: 1;
   min-width: 0;
@@ -193,6 +200,13 @@ body {
    panel overflow off-screen on narrow widths, since the trigger sits in
    the middle of the nav row, not at an edge. Spanning the full nav width
    instead always stays on-screen regardless of where the trigger falls. */
+/* Notched top corners — a small stepped clip, the one geometric "Art
+   Deco" motif this site uses (see brand-guidelines.md -> Signature
+   visual conventions), applied to the panel shell so it reads as a
+   ticket stub torn off the paper itinerary, not a generic dropdown.
+   Geometry only, no icon/illustration — a shape, not a picture, so it
+   stays inside the "no icons" rule (brand-guidelines.md -> Illustration
+   / Imagery Style). */
 .jump-panel {
   position: absolute;
   top: 100%;
@@ -204,51 +218,65 @@ body {
   padding: 0.75rem;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--bg);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  clip-path: polygon(0 10px, 10px 10px, 10px 0, calc(100% - 10px) 0, calc(100% - 10px) 10px, 100% 10px, 100% 100%, 0 100%);
 }
 .jump-links { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-/* A person entry within a jump-panel — a name plus one or more labeled
-   segments (links and/or plain status text), combined into one bordered
-   pill so the whole thing reads as one unit, each segment split by a
-   thin divider. The Timeline's "Folks ▾" uses name + two links
-   ("Timeline"/"Detail" — see timeline/scripts/build.py); the Family
-   Tree's own "Folks ▾" uses name + an optional plain-text status segment
-   (.jump-person-status, "Collecting facts" — see
-   family-tree/scripts/build.py -> render_folks_menu()) + one "Detail"
-   link, omitting the status segment entirely for the default/common
-   case (facts already collected), same "no extra treatment for the
-   expected case" convention as everywhere else on this site (see
-   requirements/public.md -> Family Tree -> Layout). */
+/* The Folks panel's own list — a single column, one person per row (see
+   requirements/public.md -> Navigation -> Folks panel), deliberately its
+   own class rather than reusing .jump-links above: that one stays a
+   wrapping row of short chips for the day/quarter jump list, a genuinely
+   different shape this shouldn't be coupled to. shared/nav.js shuffles
+   this list's actual DOM order fresh on every page load. */
+.folks-list { display: flex; flex-direction: column; }
+/* A person entry — plain name, then its two jump links, read as one
+   ruled line in a continuous list (closer to a printed itinerary's own
+   line items than a boxed UI component), each divider carrying a small
+   diamond ornament at its center (::after below) — the same geometric
+   Deco vocabulary as the panel's own notched corners, not a second,
+   unrelated decoration. One color throughout (Primary) for the name and
+   both links — matches the nav bar's own "weight and size carry
+   hierarchy, not hue" rule (see .site-nav a above); the two action
+   links are told apart from the plain-text name by case (small caps,
+   letter-spaced) rather than a color or an underline. */
 .jump-person {
-  display: inline-flex;
-  align-items: stretch;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.7rem 0.15rem;
+  border-bottom: 1px solid var(--border);
+}
+.jump-person:last-child { border-bottom: none; }
+.jump-person:not(:last-child)::after {
+  content: "◆";
+  position: absolute;
+  left: 50%;
+  bottom: -0.5em;
+  transform: translateX(-50%);
+  background: var(--bg);
+  color: var(--accent);
+  font-size: 0.6rem;
+  line-height: 1;
+  padding: 0 0.5rem;
 }
 .jump-person-name {
-  padding: 0.25rem 0.5rem;
   font-weight: 600;
+  color: var(--primary);
 }
-.jump-person a {
-  border: none;
-  border-radius: 0;
-  border-left: 1px solid var(--border);
-  padding: 0.25rem 0.5rem;
+.jump-person-actions { display: flex; align-items: center; flex-shrink: 0; }
+.jump-person-actions a {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  padding: 0.5rem;
 }
-.jump-person a.jump-person-details {
-  color: var(--secondary);
-}
-.jump-person-status {
-  padding: 0.25rem 0.5rem;
-  border-left: 1px solid var(--border);
-  color: var(--secondary);
-  font-size: 0.85rem;
-  font-style: italic;
-  align-self: center;
-  white-space: nowrap;
-}
+.jump-person-actions a + a { border-left: 1px solid var(--border); }
 /* The one caret component for "this is a disclosure trigger, tapping it
    expands a panel in place" — used by every .jump-menu summary (the
    Timeline's current-quarter-label and "Folks ▾", the Family Tree's own
@@ -265,7 +293,17 @@ body {
   margin-left: 0.2rem;
 }
 
-h1, h2, h3 { color: var(--primary); }
+/* Limelight only has one weight — font-weight:400 here is deliberate,
+   not an oversight, so a browser never synthetic-bolds it (see
+   brand-guidelines.md -> Typography -> Headlines); the face is already
+   high-contrast/heavy by design. Falls back to the plain system-sans
+   stack, unchanged from before this webfont existed, if Limelight
+   doesn't load. */
+h1, h2, h3 {
+  color: var(--primary);
+  font-family: 'Limelight', system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+}
 a { color: var(--secondary); }
 
 /* Timeline feature — inlined into site/index.html at build time. Full-screen
@@ -393,11 +431,20 @@ html.timeline-page.auto-scrolling {
    Timeline-specific: the day/time jump panel's own day-grouping markup
    and its plain-link styling (a bare <a>, not a .jump-person pill). */
 .jump-day-group { margin-bottom: 0.6rem; }
+/* A day heading, same as .fact-day on the Attendees page and every
+   page's own h1 — gets Limelight too (brand-guidelines.md -> Typography
+   -> Headlines), not just weight/color, for the same reason: "day
+   headings" is a named Headlines case in that doc, wherever one actually
+   appears. font-weight:400 is deliberate (Limelight's only weight —
+   see shared/base.css's h1/h2/h3 rule for why 600 here would force a
+   synthetic bold); size bumped slightly from a plain-text 0.85rem so the
+   display face has room to read cleanly at this scale. */
 .jump-day-label {
   display: block;
-  font-weight: 600;
+  font-family: 'Limelight', system-ui, -apple-system, sans-serif;
+  font-weight: 400;
   color: var(--primary);
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   margin-bottom: 0.3rem;
 }
 .jump-links a {
@@ -501,7 +548,21 @@ html.timeline-page.auto-scrolling {
 }
 
 .quarter-row { margin: 0.6rem 0; font-size: 1.05rem; }
-.quarter-row-label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 0.2rem; }
+/* Small caps, letter-spaced, uppercase — the one typographic device
+   used for every label on the site (see brand-guidelines.md ->
+   Typography -> Labels / Small Text), not just this row's own heading:
+   the same treatment appears on .fact-label (Attendees), .structure-
+   label/.room-label below, and the Folks panel's own action links, so
+   "this word is a label, not data" reads identically everywhere. */
+.quarter-row-label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary);
+  margin-bottom: 0.2rem;
+}
 .person-line { display: block; margin-left: 0.1rem; }
 .mode-tag { margin-right: 0.3rem; }
 .quarter-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
@@ -516,13 +577,15 @@ html.timeline-page.auto-scrolling {
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--bg);
 }
 .structure-box.unassigned-box { border-style: dashed; color: var(--secondary); }
 .structure-label {
   display: block;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--primary);
   margin-bottom: 0.3rem;
 }
@@ -535,8 +598,10 @@ html.timeline-page.auto-scrolling {
 }
 .room-label {
   display: block;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--secondary);
   margin-bottom: 0.15rem;
 }
@@ -554,10 +619,14 @@ html.timeline-page.auto-scrolling {
    render_quarter_screen()) rather than reusing the id, which also
    encodes the date. This is the site's atmosphere layer, not its
    information layer (see brand-guidelines.md -> Materials/Design
-   Language) — Afternoon reuses --accent (driftwood sand), already
-   documented there as the "day-card background tint". The structure/room
-   cards below keep their own always-white/paper background regardless of
-   quarter — only the surrounding canvas signals time of day.
+   Language) — all four are hardcoded literals here, not shared/base.css
+   root variables, since they're Timeline-specific (per technical.md ->
+   Where CSS and JS changes go); none of them reuse --accent any more —
+   that variable is now solely the family-tree "collecting facts" status
+   tint, unrelated to time of day (see brand-guidelines.md -> Colours).
+   The structure/room cards below keep their own always-white/paper
+   background regardless of quarter — only the surrounding canvas
+   signals time of day.
 
    A quarter screen at rest is ALWAYS this one flat --quarter-bg color —
    no gradient here at all. The blend into the *previous* quarter's color
@@ -598,10 +667,10 @@ html.timeline-page.auto-scrolling {
    leaving the flanking gutters and the sticky nav bar looking
    untouched). Both read the same custom property, so shared.js's single
    inline override on the section element repaints both at once. */
-.quarter-screen[data-quarter="00-06"] { --quarter-bg: #16232e; --prev-quarter-bg: #f0c9a8; }
-.quarter-screen[data-quarter="06-12"] { --quarter-bg: #e4f1f8; --prev-quarter-bg: #16232e; }
-.quarter-screen[data-quarter="12-18"] { --quarter-bg: var(--accent); --prev-quarter-bg: #e4f1f8; }
-.quarter-screen[data-quarter="18-24"] { --quarter-bg: #f0c9a8; --prev-quarter-bg: var(--accent); }
+.quarter-screen[data-quarter="00-06"] { --quarter-bg: #8fb0c7; --prev-quarter-bg: #b0cede; }
+.quarter-screen[data-quarter="06-12"] { --quarter-bg: #e6f1f7; --prev-quarter-bg: #8fb0c7; }
+.quarter-screen[data-quarter="12-18"] { --quarter-bg: #cbe1ec; --prev-quarter-bg: #e6f1f7; }
+.quarter-screen[data-quarter="18-24"] { --quarter-bg: #b0cede; --prev-quarter-bg: #cbe1ec; }
 .quarter-screen.first-quarter-screen { --prev-quarter-bg: var(--grove); }
 .quarter-screen[data-quarter] {
   position: relative;
@@ -619,32 +688,14 @@ html.timeline-page.auto-scrolling {
   background: var(--quarter-bg);
 }
 
-/* Night's background is dark enough that the default charcoal body text
-   and deep-blue row labels lose contrast — flip both to --mist, the same
-   best-contrast-on-dark color the nav uses (see shared/base.css ->
-   --nav-text), scoped to this one quarter. Morning/Afternoon/Evening are
-   light tints, so the existing dark text stays legible with no changes.
-   Row labels use --mist too now, not --secondary — a mid-tone teal has
-   real but mediocre contrast against dark navy, and --mist is the
-   genuinely best option, same reasoning as the nav; row-label's own
-   font-weight:600 (see .quarter-row-label below) is what keeps it
-   reading as a label rather than plain text, not a different hue. */
-.quarter-screen[data-quarter="00-06"] .quarter-canvas { color: var(--mist); }
-.quarter-screen[data-quarter="00-06"] .quarter-row-label { color: var(--mist); }
-.quarter-screen[data-quarter="00-06"] .quarter-empty-hint { color: #93a4ab; }
-/* Cards keep their own always-dark text on their own always-white/paper
-   background, regardless of the canvas's ambient color — without this
-   they'd inherit Night's light text above and go unreadable on white. */
-.structure-box { color: var(--text); }
-
 /* The sticky nav bar shares the same --quarter-bg color as whichever
    quarter screen is actually in view, but — unlike the quarter screens
    above, which get their color straight from a CSS attribute selector —
    the nav is one single element with no "position within a gradient" of
    its own, so a plain selector-driven swap can only ever be discrete
    (the .site-nav[data-quarter="X"] rules below are exactly that: a
-   fallback/default, and what actually drives the Night-only text-
-   contrast rules further down). What the nav VISUALLY shows is
+   fallback/default for whichever quarter's data-attribute is set).
+   What the nav VISUALLY shows is
    overridden continuously by timeline/shared.js's one blend function —
    the exact same function, same computed value, that also drives
    whichever quarter screen is currently entering the viewport (see
@@ -677,10 +728,10 @@ html.timeline-page.auto-scrolling {
   z-index: -1;
   background: var(--quarter-bg, var(--grove));
 }
-.site-nav[data-quarter="00-06"] { --quarter-bg: #16232e; --nav-text: var(--mist); }
-.site-nav[data-quarter="06-12"] { --quarter-bg: #e4f1f8; }
-.site-nav[data-quarter="12-18"] { --quarter-bg: var(--accent); }
-.site-nav[data-quarter="18-24"] { --quarter-bg: #f0c9a8; }
+.site-nav[data-quarter="00-06"] { --quarter-bg: #8fb0c7; }
+.site-nav[data-quarter="06-12"] { --quarter-bg: #e6f1f7; }
+.site-nav[data-quarter="12-18"] { --quarter-bg: #cbe1ec; }
+.site-nav[data-quarter="18-24"] { --quarter-bg: #b0cede; }
 
 </style>
 </head>
@@ -691,14 +742,14 @@ html.timeline-page.auto-scrolling {
 <button type="button" id="timeline-jump" class="nav-split-label current-quarter-label" data-trip-start="2026-08-01" data-trip-end="2026-08-15" data-prefix=""><span class="cq-date" id="cq-date"></span><span class="cq-day" id="cq-day">Timeline</span></button>
 <details class="jump-menu">
 <summary><span class="nav-caret" id="timeline-caret">▾</span></summary>
-<div class="jump-panel"><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 1</span><div class="jump-links"><a href="#qc-2026-08-01-00-06">12am–6am</a><a href="#qc-2026-08-01-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-01-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-01-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 2</span><div class="jump-links"><a href="#qc-2026-08-02-00-06">12am–6am</a><a href="#qc-2026-08-02-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-02-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-02-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 3</span><div class="jump-links"><a href="#qc-2026-08-03-00-06">12am–6am</a><a href="#qc-2026-08-03-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-03-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-03-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 4</span><div class="jump-links"><a href="#qc-2026-08-04-00-06">12am–6am</a><a href="#qc-2026-08-04-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-04-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-04-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 5</span><div class="jump-links"><a href="#qc-2026-08-05-00-06">12am–6am</a><a href="#qc-2026-08-05-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-05-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-05-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 6</span><div class="jump-links"><a href="#qc-2026-08-06-00-06">12am–6am</a><a href="#qc-2026-08-06-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-06-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-06-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 7</span><div class="jump-links"><a href="#qc-2026-08-07-00-06">12am–6am</a><a href="#qc-2026-08-07-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-07-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-07-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 8</span><div class="jump-links"><a href="#qc-2026-08-08-00-06">12am–6am</a><a href="#qc-2026-08-08-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-08-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-08-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 9</span><div class="jump-links"><a href="#qc-2026-08-09-00-06">12am–6am</a><a href="#qc-2026-08-09-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-09-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-09-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 10</span><div class="jump-links"><a href="#qc-2026-08-10-00-06">12am–6am</a><a href="#qc-2026-08-10-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-10-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-10-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 11</span><div class="jump-links"><a href="#qc-2026-08-11-00-06">12am–6am</a><a href="#qc-2026-08-11-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-11-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-11-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 12</span><div class="jump-links"><a href="#qc-2026-08-12-00-06">12am–6am</a><a href="#qc-2026-08-12-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-12-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-12-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 13</span><div class="jump-links"><a href="#qc-2026-08-13-00-06">12am–6am</a><a href="#qc-2026-08-13-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-13-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-13-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 14</span><div class="jump-links"><a href="#qc-2026-08-14-00-06">12am–6am</a><a href="#qc-2026-08-14-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-14-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-14-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 15</span><div class="jump-links"><a href="#qc-2026-08-15-00-06">12am–6am</a><a href="#qc-2026-08-15-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-15-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-15-18-24">Evening · 6pm–12am</a></div></div><button type="button" id="run-toggle" class="run-toggle" aria-label="Play">▶</button></div>
+<div class="jump-panel"><div class="jump-day-group"><span class="jump-day-label">Saturday, August 1st</span><div class="jump-links"><a href="#qc-2026-08-01-00-06">12am–6am</a><a href="#qc-2026-08-01-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-01-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-01-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sunday, August 2nd</span><div class="jump-links"><a href="#qc-2026-08-02-00-06">12am–6am</a><a href="#qc-2026-08-02-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-02-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-02-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Monday, August 3rd</span><div class="jump-links"><a href="#qc-2026-08-03-00-06">12am–6am</a><a href="#qc-2026-08-03-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-03-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-03-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tuesday, August 4th</span><div class="jump-links"><a href="#qc-2026-08-04-00-06">12am–6am</a><a href="#qc-2026-08-04-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-04-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-04-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wednesday, August 5th</span><div class="jump-links"><a href="#qc-2026-08-05-00-06">12am–6am</a><a href="#qc-2026-08-05-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-05-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-05-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thursday, August 6th</span><div class="jump-links"><a href="#qc-2026-08-06-00-06">12am–6am</a><a href="#qc-2026-08-06-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-06-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-06-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Friday, August 7th</span><div class="jump-links"><a href="#qc-2026-08-07-00-06">12am–6am</a><a href="#qc-2026-08-07-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-07-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-07-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Saturday, August 8th</span><div class="jump-links"><a href="#qc-2026-08-08-00-06">12am–6am</a><a href="#qc-2026-08-08-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-08-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-08-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sunday, August 9th</span><div class="jump-links"><a href="#qc-2026-08-09-00-06">12am–6am</a><a href="#qc-2026-08-09-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-09-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-09-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Monday, August 10th</span><div class="jump-links"><a href="#qc-2026-08-10-00-06">12am–6am</a><a href="#qc-2026-08-10-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-10-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-10-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tuesday, August 11th</span><div class="jump-links"><a href="#qc-2026-08-11-00-06">12am–6am</a><a href="#qc-2026-08-11-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-11-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-11-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wednesday, August 12th</span><div class="jump-links"><a href="#qc-2026-08-12-00-06">12am–6am</a><a href="#qc-2026-08-12-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-12-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-12-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thursday, August 13th</span><div class="jump-links"><a href="#qc-2026-08-13-00-06">12am–6am</a><a href="#qc-2026-08-13-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-13-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-13-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Friday, August 14th</span><div class="jump-links"><a href="#qc-2026-08-14-00-06">12am–6am</a><a href="#qc-2026-08-14-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-14-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-14-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Saturday, August 15th</span><div class="jump-links"><a href="#qc-2026-08-15-00-06">12am–6am</a><a href="#qc-2026-08-15-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-15-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-15-18-24">Evening · 6pm–12am</a></div></div><button type="button" id="run-toggle" class="run-toggle" aria-label="Play">▶</button></div>
 </details>
 </span>
 <span class="nav-split">
 <button type="button" id="folks-random" class="nav-split-label" data-attendees-prefix="attendees/" data-people="[{&quot;id&quot;: 5, &quot;name&quot;: &quot;Jim S&quot;}, {&quot;id&quot;: 6, &quot;name&quot;: &quot;Helen S&quot;}, {&quot;id&quot;: 7, &quot;name&quot;: &quot;David S&quot;}, {&quot;id&quot;: 8, &quot;name&quot;: &quot;Rachel&quot;}, {&quot;id&quot;: 9, &quot;name&quot;: &quot;Susan&quot;}]">Folks</button>
 <details class="jump-menu">
 <summary><span class="nav-caret">▾</span></summary>
-<div class="jump-panel"><div class="jump-links"><span class="jump-person"><span class="jump-person-name">David S</span><a href="#qc-2026-08-01-18-24">Timeline</a><a href="attendees/7.html" class="jump-person-details">Detail</a></span><span class="jump-person"><span class="jump-person-name">Helen S</span><a href="#qc-2026-08-01-00-06">Timeline</a><a href="attendees/6.html" class="jump-person-details">Detail</a></span><span class="jump-person"><span class="jump-person-name">Jim S</span><a href="#qc-2026-08-01-00-06">Timeline</a><a href="attendees/5.html" class="jump-person-details">Detail</a></span><span class="jump-person"><span class="jump-person-name">Rachel</span><a href="#qc-2026-08-01-18-24">Timeline</a><a href="attendees/8.html" class="jump-person-details">Detail</a></span><span class="jump-person"><span class="jump-person-name">Susan</span><a href="#qc-2026-08-04-12-18">Timeline</a><a href="attendees/9.html" class="jump-person-details">Detail</a></span></div></div>
+<div class="jump-panel"><div class="folks-list"><span class="jump-person"><span class="jump-person-name">Jim S</span><span class="jump-person-actions"><a href="#qc-2026-08-01-00-06">Timeline</a><a href="attendees/5.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Helen S</span><span class="jump-person-actions"><a href="#qc-2026-08-01-00-06">Timeline</a><a href="attendees/6.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">David S</span><span class="jump-person-actions"><a href="#qc-2026-08-01-18-24">Timeline</a><a href="attendees/7.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Rachel</span><span class="jump-person-actions"><a href="#qc-2026-08-01-18-24">Timeline</a><a href="attendees/8.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Susan</span><span class="jump-person-actions"><a href="#qc-2026-08-04-12-18">Timeline</a><a href="attendees/9.html">Detail</a></span></span></div></div>
 </details>
 </span>
 <a href="family-tree/index.html">Tree</a>
@@ -716,361 +767,361 @@ html.timeline-page.auto-scrolling {
 <a href="#qc-2026-08-01-00-06" id="transition-aug1" class="transition-choice">Aug 1st</a>
 </div>
 </section>
-<section class="quarter-screen first-quarter-screen" id="qc-2026-08-01-00-06" data-day-name="Saturday" data-date="Aug 1" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen first-quarter-screen" id="qc-2026-08-01-00-06" data-date="Sat, Aug 1" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-01-06-12" data-day-name="Saturday" data-date="Aug 1" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-01-06-12" data-date="Sat, Aug 1" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-01-12-18" data-day-name="Saturday" data-date="Aug 1" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-01-12-18" data-date="Sat, Aug 1" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-01-18-24" data-day-name="Saturday" data-date="Aug 1" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-01-18-24" data-date="Sat, Aug 1" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>David S — 6pm · White Toyota Camry</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Rachel — 6pm · White Toyota Camry</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-02-00-06" data-day-name="Sunday" data-date="Aug 2" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-02-00-06" data-date="Sun, Aug 2" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-02-06-12" data-day-name="Sunday" data-date="Aug 2" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-02-06-12" data-date="Sun, Aug 2" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-02-12-18" data-day-name="Sunday" data-date="Aug 2" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-02-12-18" data-date="Sun, Aug 2" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-02-18-24" data-day-name="Sunday" data-date="Aug 2" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-02-18-24" data-date="Sun, Aug 2" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-03-00-06" data-day-name="Monday" data-date="Aug 3" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-03-00-06" data-date="Mon, Aug 3" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-03-06-12" data-day-name="Monday" data-date="Aug 3" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-03-06-12" data-date="Mon, Aug 3" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-03-12-18" data-day-name="Monday" data-date="Aug 3" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-03-12-18" data-date="Mon, Aug 3" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-03-18-24" data-day-name="Monday" data-date="Aug 3" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-03-18-24" data-date="Mon, Aug 3" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-04-00-06" data-day-name="Tuesday" data-date="Aug 4" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-04-00-06" data-date="Tue, Aug 4" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-04-06-12" data-day-name="Tuesday" data-date="Aug 4" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-04-06-12" data-date="Tue, Aug 4" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-04-12-18" data-day-name="Tuesday" data-date="Aug 4" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-04-12-18" data-date="Tue, Aug 4" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Susan — 5:15pm</span></div><div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Jim S — 5pm</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Helen S — 5pm</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Susan</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-04-18-24" data-day-name="Tuesday" data-date="Aug 4" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-04-18-24" data-date="Tue, Aug 4" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Susan</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-05-00-06" data-day-name="Wednesday" data-date="Aug 5" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-05-00-06" data-date="Wed, Aug 5" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-05-06-12" data-day-name="Wednesday" data-date="Aug 5" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-05-06-12" data-date="Wed, Aug 5" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-05-12-18" data-day-name="Wednesday" data-date="Aug 5" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-05-12-18" data-date="Wed, Aug 5" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Jim S — 5:59pm</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Helen S — 5:59pm</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-05-18-24" data-day-name="Wednesday" data-date="Aug 5" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-05-18-24" data-date="Wed, Aug 5" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-06-00-06" data-day-name="Thursday" data-date="Aug 6" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-06-00-06" data-date="Thu, Aug 6" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-06-06-12" data-day-name="Thursday" data-date="Aug 6" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-06-06-12" data-date="Thu, Aug 6" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-06-12-18" data-day-name="Thursday" data-date="Aug 6" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-06-12-18" data-date="Thu, Aug 6" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-06-18-24" data-day-name="Thursday" data-date="Aug 6" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-06-18-24" data-date="Thu, Aug 6" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-07-00-06" data-day-name="Friday" data-date="Aug 7" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-07-00-06" data-date="Fri, Aug 7" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel, Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-07-06-12" data-day-name="Friday" data-date="Aug 7" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-07-06-12" data-date="Fri, Aug 7" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel, Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-07-12-18" data-day-name="Friday" data-date="Aug 7" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-07-12-18" data-date="Fri, Aug 7" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel, Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-07-18-24" data-day-name="Friday" data-date="Aug 7" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-07-18-24" data-date="Fri, Aug 7" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel, Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-08-00-06" data-day-name="Saturday" data-date="Aug 8" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-08-00-06" data-date="Sat, Aug 8" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-08-06-12" data-day-name="Saturday" data-date="Aug 8" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-08-06-12" data-date="Sat, Aug 8" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-08-12-18" data-day-name="Saturday" data-date="Aug 8" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-08-12-18" data-date="Sat, Aug 8" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-08-18-24" data-day-name="Saturday" data-date="Aug 8" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-08-18-24" data-date="Sat, Aug 8" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-09-00-06" data-day-name="Sunday" data-date="Aug 9" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-09-00-06" data-date="Sun, Aug 9" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">✈️ Plane</span>Rachel — Moncton Airport · 6am flight · Departing Cottage at 3am · David S driving</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-09-06-12" data-day-name="Sunday" data-date="Aug 9" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-09-06-12" data-date="Sun, Aug 9" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-09-12-18" data-day-name="Sunday" data-date="Aug 9" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-09-12-18" data-date="Sun, Aug 9" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-09-18-24" data-day-name="Sunday" data-date="Aug 9" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-09-18-24" data-date="Sun, Aug 9" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-10-00-06" data-day-name="Monday" data-date="Aug 10" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-10-00-06" data-date="Mon, Aug 10" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-10-06-12" data-day-name="Monday" data-date="Aug 10" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-10-06-12" data-date="Mon, Aug 10" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-10-12-18" data-day-name="Monday" data-date="Aug 10" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-10-12-18" data-date="Mon, Aug 10" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-10-18-24" data-day-name="Monday" data-date="Aug 10" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-10-18-24" data-date="Mon, Aug 10" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-11-00-06" data-day-name="Tuesday" data-date="Aug 11" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-11-00-06" data-date="Tue, Aug 11" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-11-06-12" data-day-name="Tuesday" data-date="Aug 11" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-11-06-12" data-date="Tue, Aug 11" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-11-12-18" data-day-name="Tuesday" data-date="Aug 11" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-11-12-18" data-date="Tue, Aug 11" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Susan — </span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-11-18-24" data-day-name="Tuesday" data-date="Aug 11" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-11-18-24" data-date="Tue, Aug 11" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-12-00-06" data-day-name="Wednesday" data-date="Aug 12" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-12-00-06" data-date="Wed, Aug 12" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-12-06-12" data-day-name="Wednesday" data-date="Aug 12" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-12-06-12" data-date="Wed, Aug 12" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-12-12-18" data-day-name="Wednesday" data-date="Aug 12" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-12-12-18" data-date="Wed, Aug 12" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-12-18-24" data-day-name="Wednesday" data-date="Aug 12" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-12-18-24" data-date="Wed, Aug 12" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-13-00-06" data-day-name="Thursday" data-date="Aug 13" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-13-00-06" data-date="Thu, Aug 13" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Tent</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-13-06-12" data-day-name="Thursday" data-date="Aug 13" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-13-06-12" data-date="Thu, Aug 13" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Jim S — 6am · With David · Vehicle TBD</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Helen S — 6am · With David · Vehicle TBD</span><span class="person-line"><span class="mode-tag">🚗 Car</span>David S — 6am · Vehicle TBD</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-13-12-18" data-day-name="Thursday" data-date="Aug 13" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-13-12-18" data-date="Thu, Aug 13" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-13-18-24" data-day-name="Thursday" data-date="Aug 13" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-13-18-24" data-date="Thu, Aug 13" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-14-00-06" data-day-name="Friday" data-date="Aug 14" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-14-00-06" data-date="Fri, Aug 14" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-14-06-12" data-day-name="Friday" data-date="Aug 14" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-14-06-12" data-date="Fri, Aug 14" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-14-12-18" data-day-name="Friday" data-date="Aug 14" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-14-12-18" data-date="Fri, Aug 14" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-14-18-24" data-day-name="Friday" data-date="Aug 14" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-14-18-24" data-date="Fri, Aug 14" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-15-00-06" data-day-name="Saturday" data-date="Aug 15" data-quarter-name="" data-quarter="00-06">
+<section class="quarter-screen" id="qc-2026-08-15-00-06" data-date="Sat, Aug 15" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-15-06-12" data-day-name="Saturday" data-date="Aug 15" data-quarter-name="Morning" data-quarter="06-12">
+<section class="quarter-screen" id="qc-2026-08-15-06-12" data-date="Sat, Aug 15" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-15-12-18" data-day-name="Saturday" data-date="Aug 15" data-quarter-name="Afternoon" data-quarter="12-18">
+<section class="quarter-screen" id="qc-2026-08-15-12-18" data-date="Sat, Aug 15" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
 </div>
 </section>
-<section class="quarter-screen" id="qc-2026-08-15-18-24" data-day-name="Saturday" data-date="Aug 15" data-quarter-name="Evening" data-quarter="18-24">
+<section class="quarter-screen" id="qc-2026-08-15-18-24" data-date="Sat, Aug 15" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
 <div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
@@ -1168,6 +1219,26 @@ document.addEventListener('DOMContentLoaded', function () {
       window.location.href = (folksRandom.dataset.attendeesPrefix || '') + person.id + '.html';
     });
   }
+
+  // Folks panel — freshly shuffled display order on every page load (see
+  // requirements/public.md -> Navigation -> Folks panel), so no single
+  // person is always first or last. A build-time order would be the same
+  // every time this static page loads, which isn't actually random — has
+  // to happen here instead. Fisher-Yates on the real DOM nodes, each
+  // person shuffled independently (not grouped by couple/family), then
+  // re-appended in the new order; re-appending an already-attached node
+  // moves it rather than duplicating it.
+  var folksList = document.querySelector('.folks-list');
+  if (folksList) {
+    var people = Array.prototype.slice.call(folksList.children);
+    for (var i = people.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = people[i];
+      people[i] = people[j];
+      people[j] = tmp;
+    }
+    people.forEach(function (el) { folksList.appendChild(el); });
+  }
 });
 
 // Timeline feature — inlined into site/index.html at build time, after
@@ -1241,17 +1312,18 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // Keeps the Timeline split control's own label showing which day
-  // quarter is currently in view, updated as you scroll — the bare
-  // month/day (.cq-date, smaller/secondary, e.g. "Aug 3") shown first,
-  // then the weekday plus bare quarter name (.cq-day, bold/prominent,
-  // e.g. "Monday Morning") shown second, as two separate spans rather
-  // than one flat string so CSS can style them differently (see
-  // shared/base.css) — cq-day's own leading " · " is part of its text
-  // content, not static markup, so nothing floats on its own before
-  // either span has actually been filled in. The middot (not a hyphen)
-  // matches the separator used everywhere else two related pieces of
-  // info sit together on this site (QUARTER_LABELS' own "Morning ·
-  // 6am–12pm", the Attendees page's "Aug 1 · 6pm") — see
+  // quarter is currently in view, updated as you scroll — the abbreviated
+  // weekday+date (.cq-date, smaller/secondary, e.g. "Wed, Aug 5", already
+  // weekday-first — see timeline/scripts/build.py -> render_quarter_
+  // screen() and shared/trip.py -> format_date_abbrev()) shown first,
+  // then the bare quarter name (.cq-day, bold/prominent, e.g. "Morning")
+  // shown second, as two separate spans rather than one flat string so
+  // CSS can style them differently (see shared/base.css) — cq-day's own
+  // leading " · " is part of its text content, not static markup, so
+  // nothing floats on its own before either span has actually been
+  // filled in. The middot (not a hyphen) matches the separator used
+  // everywhere else two related pieces of info sit together on this site
+  // (QUARTER_LABELS' own "Morning · 6am–12pm") — see
   // requirements/public.md -> Navigation.
   //
   // data-quarter-name is EMPTY for 00-06 (see QUARTER_NAMES in
@@ -1259,10 +1331,10 @@ document.addEventListener('DOMContentLoaded', function () {
   // timeline/scripts/build.py) — that quarter has no name of its own on
   // this site: night reads as the tail end of the day before it, not the
   // start of the one after, so scrolling into a new day's first quarter
-  // shows just the weekday alone ("Tuesday"), never an invented "Tuesday
-  // Night" — see requirements/public.md -> Terminology. The conditional
-  // below drops the joining space along with the name so this collapses
-  // to "· Tuesday", not "· Tuesday " with a trailing space.
+  // shows just the weekday+date alone ("Wed, Aug 5"), never an invented
+  // "Wed, Aug 5 · Night" — see requirements/public.md -> Terminology. The
+  // conditional below leaves cq-day empty entirely in that case, rather
+  // than a dangling "· " with nothing after it.
   //
   // Also sets data-quarter on the nav bar itself to match, so its
   // time-of-day background (timeline/shared.css -> .site-nav[data-quarter])
@@ -1271,14 +1343,14 @@ document.addEventListener('DOMContentLoaded', function () {
   var dayEl = document.getElementById('cq-day');
   var dateEl = document.getElementById('cq-date');
   var navEl = document.querySelector('.site-nav');
-  var screens = document.querySelectorAll('.quarter-screen[data-day-name]');
+  var screens = document.querySelectorAll('.quarter-screen[data-date]');
   if (dayEl && dateEl && screens.length && 'IntersectionObserver' in window) {
     var observer = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         if (entry.isIntersecting) {
           dateEl.textContent = entry.target.getAttribute('data-date');
           var quarterName = entry.target.getAttribute('data-quarter-name');
-          dayEl.textContent = ' · ' + entry.target.getAttribute('data-day-name') + (quarterName ? ' ' + quarterName : '');
+          dayEl.textContent = quarterName ? ' · ' + quarterName : '';
           if (navEl) {
             navEl.setAttribute('data-quarter', entry.target.getAttribute('data-quarter'));
           }

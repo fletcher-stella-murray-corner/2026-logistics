@@ -123,11 +123,20 @@ html.timeline-page.auto-scrolling {
    Timeline-specific: the day/time jump panel's own day-grouping markup
    and its plain-link styling (a bare <a>, not a .jump-person pill). */
 .jump-day-group { margin-bottom: 0.6rem; }
+/* A day heading, same as .fact-day on the Attendees page and every
+   page's own h1 — gets Limelight too (brand-guidelines.md -> Typography
+   -> Headlines), not just weight/color, for the same reason: "day
+   headings" is a named Headlines case in that doc, wherever one actually
+   appears. font-weight:400 is deliberate (Limelight's only weight —
+   see shared/base.css's h1/h2/h3 rule for why 600 here would force a
+   synthetic bold); size bumped slightly from a plain-text 0.85rem so the
+   display face has room to read cleanly at this scale. */
 .jump-day-label {
   display: block;
-  font-weight: 600;
+  font-family: 'Limelight', system-ui, -apple-system, sans-serif;
+  font-weight: 400;
   color: var(--primary);
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   margin-bottom: 0.3rem;
 }
 .jump-links a {
@@ -231,7 +240,21 @@ html.timeline-page.auto-scrolling {
 }
 
 .quarter-row { margin: 0.6rem 0; font-size: 1.05rem; }
-.quarter-row-label { display: block; font-weight: 600; color: var(--primary); margin-bottom: 0.2rem; }
+/* Small caps, letter-spaced, uppercase — the one typographic device
+   used for every label on the site (see brand-guidelines.md ->
+   Typography -> Labels / Small Text), not just this row's own heading:
+   the same treatment appears on .fact-label (Attendees), .structure-
+   label/.room-label below, and the Folks panel's own action links, so
+   "this word is a label, not data" reads identically everywhere. */
+.quarter-row-label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--primary);
+  margin-bottom: 0.2rem;
+}
 .person-line { display: block; margin-left: 0.1rem; }
 .mode-tag { margin-right: 0.3rem; }
 .quarter-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
@@ -246,13 +269,15 @@ html.timeline-page.auto-scrolling {
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--bg);
 }
 .structure-box.unassigned-box { border-style: dashed; color: var(--secondary); }
 .structure-label {
   display: block;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--primary);
   margin-bottom: 0.3rem;
 }
@@ -265,8 +290,10 @@ html.timeline-page.auto-scrolling {
 }
 .room-label {
   display: block;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--secondary);
   margin-bottom: 0.15rem;
 }
@@ -284,10 +311,14 @@ html.timeline-page.auto-scrolling {
    render_quarter_screen()) rather than reusing the id, which also
    encodes the date. This is the site's atmosphere layer, not its
    information layer (see brand-guidelines.md -> Materials/Design
-   Language) — Afternoon reuses --accent (driftwood sand), already
-   documented there as the "day-card background tint". The structure/room
-   cards below keep their own always-white/paper background regardless of
-   quarter — only the surrounding canvas signals time of day.
+   Language) — all four are hardcoded literals here, not shared/base.css
+   root variables, since they're Timeline-specific (per technical.md ->
+   Where CSS and JS changes go); none of them reuse --accent any more —
+   that variable is now solely the family-tree "collecting facts" status
+   tint, unrelated to time of day (see brand-guidelines.md -> Colours).
+   The structure/room cards below keep their own always-white/paper
+   background regardless of quarter — only the surrounding canvas
+   signals time of day.
 
    A quarter screen at rest is ALWAYS this one flat --quarter-bg color —
    no gradient here at all. The blend into the *previous* quarter's color
@@ -328,10 +359,10 @@ html.timeline-page.auto-scrolling {
    leaving the flanking gutters and the sticky nav bar looking
    untouched). Both read the same custom property, so shared.js's single
    inline override on the section element repaints both at once. */
-.quarter-screen[data-quarter="00-06"] { --quarter-bg: #16232e; --prev-quarter-bg: #f0c9a8; }
-.quarter-screen[data-quarter="06-12"] { --quarter-bg: #e4f1f8; --prev-quarter-bg: #16232e; }
-.quarter-screen[data-quarter="12-18"] { --quarter-bg: var(--accent); --prev-quarter-bg: #e4f1f8; }
-.quarter-screen[data-quarter="18-24"] { --quarter-bg: #f0c9a8; --prev-quarter-bg: var(--accent); }
+.quarter-screen[data-quarter="00-06"] { --quarter-bg: #8fb0c7; --prev-quarter-bg: #b0cede; }
+.quarter-screen[data-quarter="06-12"] { --quarter-bg: #e6f1f7; --prev-quarter-bg: #8fb0c7; }
+.quarter-screen[data-quarter="12-18"] { --quarter-bg: #cbe1ec; --prev-quarter-bg: #e6f1f7; }
+.quarter-screen[data-quarter="18-24"] { --quarter-bg: #b0cede; --prev-quarter-bg: #cbe1ec; }
 .quarter-screen.first-quarter-screen { --prev-quarter-bg: var(--grove); }
 .quarter-screen[data-quarter] {
   position: relative;
@@ -349,32 +380,14 @@ html.timeline-page.auto-scrolling {
   background: var(--quarter-bg);
 }
 
-/* Night's background is dark enough that the default charcoal body text
-   and deep-blue row labels lose contrast — flip both to --mist, the same
-   best-contrast-on-dark color the nav uses (see shared/base.css ->
-   --nav-text), scoped to this one quarter. Morning/Afternoon/Evening are
-   light tints, so the existing dark text stays legible with no changes.
-   Row labels use --mist too now, not --secondary — a mid-tone teal has
-   real but mediocre contrast against dark navy, and --mist is the
-   genuinely best option, same reasoning as the nav; row-label's own
-   font-weight:600 (see .quarter-row-label below) is what keeps it
-   reading as a label rather than plain text, not a different hue. */
-.quarter-screen[data-quarter="00-06"] .quarter-canvas { color: var(--mist); }
-.quarter-screen[data-quarter="00-06"] .quarter-row-label { color: var(--mist); }
-.quarter-screen[data-quarter="00-06"] .quarter-empty-hint { color: #93a4ab; }
-/* Cards keep their own always-dark text on their own always-white/paper
-   background, regardless of the canvas's ambient color — without this
-   they'd inherit Night's light text above and go unreadable on white. */
-.structure-box { color: var(--text); }
-
 /* The sticky nav bar shares the same --quarter-bg color as whichever
    quarter screen is actually in view, but — unlike the quarter screens
    above, which get their color straight from a CSS attribute selector —
    the nav is one single element with no "position within a gradient" of
    its own, so a plain selector-driven swap can only ever be discrete
    (the .site-nav[data-quarter="X"] rules below are exactly that: a
-   fallback/default, and what actually drives the Night-only text-
-   contrast rules further down). What the nav VISUALLY shows is
+   fallback/default for whichever quarter's data-attribute is set).
+   What the nav VISUALLY shows is
    overridden continuously by timeline/shared.js's one blend function —
    the exact same function, same computed value, that also drives
    whichever quarter screen is currently entering the viewport (see
@@ -407,7 +420,7 @@ html.timeline-page.auto-scrolling {
   z-index: -1;
   background: var(--quarter-bg, var(--grove));
 }
-.site-nav[data-quarter="00-06"] { --quarter-bg: #16232e; --nav-text: var(--mist); }
-.site-nav[data-quarter="06-12"] { --quarter-bg: #e4f1f8; }
-.site-nav[data-quarter="12-18"] { --quarter-bg: var(--accent); }
-.site-nav[data-quarter="18-24"] { --quarter-bg: #f0c9a8; }
+.site-nav[data-quarter="00-06"] { --quarter-bg: #8fb0c7; }
+.site-nav[data-quarter="06-12"] { --quarter-bg: #e6f1f7; }
+.site-nav[data-quarter="12-18"] { --quarter-bg: #cbe1ec; }
+.site-nav[data-quarter="18-24"] { --quarter-bg: #b0cede; }
