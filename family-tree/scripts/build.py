@@ -49,6 +49,14 @@ PROJECT_ROOT = ROOT.parent  # repo root — site/ and shared/ live here
 sys.path.insert(0, str(PROJECT_ROOT / "shared"))
 import nav  # noqa: E402
 
+# render_jump_panel() is timeline/scripts/build.py's — reused here rather
+# than reimplemented, so the day/quarter jump list shown in this page's
+# own "Timeline" split control can never drift from the Timeline's own
+# (see requirements/public.md -> Navigation -> Timeline's panel). Same
+# cross-import pattern scripts/report.py already established.
+sys.path.insert(0, str(PROJECT_ROOT / "timeline" / "scripts"))
+import build as timeline_build  # noqa: E402
+
 PAGE_TITLE = "Family Tree — Murray Corner 2026"
 TREE_SUBTITLE = "Where everyone fits"
 
@@ -329,33 +337,21 @@ def render_folks_menu(people, collected_ids):
     return "".join(entries)
 
 
-def render_nav(folks_menu):
-    """Custom nav, not shared/nav.py's render_row() — that helper only
-    renders a flat row of links, but this page's own "Folks ▾" (see
-    render_folks_menu() above) needs a <details> disclosure, the same
-    shape the Timeline's own nav items build directly in
-    timeline/scripts/build.py for the same reason (see shared/nav.py's
-    own module docstring). "Tree" stays the plain, non-linking active/
-    current-page indicator it always was — see requirements/public.md ->
-    Navigation."""
-    folks_html = (
-        '<details class="jump-menu">'
-        '<summary>Folks<span class="nav-caret">▾</span></summary>'
-        f'<div class="jump-panel"><div class="jump-links">{folks_menu}</div></div>'
-        "</details>"
-        if folks_menu
-        else ""
-    )
-    return f"""<nav class="site-nav">
-<a href="../index.html">Murray Corner 2026</a>
-<strong class="active">Tree</strong>
-{folks_html}
-</nav>"""
-
-
-def build_page_html(people, collected_ids, shared_base_css, shared_css):
+def build_page_html(people, collected_ids, shared_base_css, shared_css, shared_nav_js):
     folks_menu = render_folks_menu(people, collected_ids)
-    nav_row = render_nav(folks_menu)
+    attending_people = [p for p in people if p.get("attending")]
+    nav_row = nav.render_nav(
+        mc26_href="../index.html#trip-top",
+        timeline_prefix="../index.html",
+        tree_href="index.html",
+        trip_start=timeline_build.TRIP_START.isoformat(),
+        trip_end=timeline_build.TRIP_END.isoformat(),
+        jump_panel_html=timeline_build.render_jump_panel(href_prefix="../index.html"),
+        folks_panel_html=folks_menu,
+        attending_people=attending_people,
+        attendees_prefix="../attendees/",
+        include_play=False,
+    )
     tree_html = build_tree_html(people, collected_ids)
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -375,6 +371,9 @@ def build_page_html(people, collected_ids, shared_base_css, shared_css):
 <main>
 {tree_html}
 </main>
+<script>
+{shared_nav_js}
+</script>
 </body>
 </html>
 """
@@ -391,8 +390,9 @@ def main():
     collected_ids = collected_person_ids(travel)
     shared_base_css = (PROJECT_ROOT / "shared" / "base.css").read_text()
     shared_css = (ROOT / "shared.css").read_text()
+    shared_nav_js = (PROJECT_ROOT / "shared" / "nav.js").read_text()
 
-    html = build_page_html(people, collected_ids, shared_base_css, shared_css)
+    html = build_page_html(people, collected_ids, shared_base_css, shared_css, shared_nav_js)
     out_dir = PROJECT_ROOT / "site" / "family-tree"
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "index.html").write_text(html)

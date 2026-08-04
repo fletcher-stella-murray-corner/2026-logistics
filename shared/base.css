@@ -64,8 +64,8 @@ body {
      background this ever falls back to (--grove, and three of the four
      day-quarter colors) is light; timeline/shared.css overrides it to
      --mist only for Night, the one dark background. Every nav item reads
-     this one variable (see the rule below and .cq-day/.cq-date/
-     .jump-now-toggle/.run-toggle in timeline/shared.css) rather than
+     this one variable (see the rule below, .cq-day/.cq-date just below,
+     and .run-toggle in timeline/shared.css) rather than
      each picking its own color independently — that's what let three
      items end up teal and two end up primary/bold with no visible logic
      to it. Role (title vs. label vs. action) is expressed by weight and
@@ -74,57 +74,112 @@ body {
   background: var(--quarter-bg, var(--grove));
   z-index: 10;
 }
-.site-nav a, .site-nav strong {
+.site-nav a {
   color: var(--nav-text);
   font-weight: 600;
   font-size: 1.05rem;
 }
 /* Every interactive nav item across every page is permanently underlined
    — not just on hover — the one shared, site-wide "this is tappable" cue
-   (see timeline/shared.css for the Timeline-only items — the "Now"
-   button — that need their own copy of this rule since a <button> isn't
-   matched by "a"; the disclosure-trigger version of this same rule,
-   .jump-menu > summary, is just below, since a <summary> isn't matched by
-   "a" either). Deliberately not hover-only: hover doesn't exist on a
-   touch device, and most family will be checking this from a phone (see
-   brand-guidelines.md -> Audience) — a hover-only cue would leave every
-   nav link on every page looking identical to plain bold text until
-   someone happened to tap it. .site-nav strong (the active/current-page
-   indicator, e.g. "Tree" on the Family Tree page itself) stays
-   undecorated — it isn't a link, so underlining it would falsely promise
-   it's tappable. */
+   (see below for .nav-split-label/.run-toggle, the <button> items that
+   need their own copy since a <button> isn't matched by "a"). Deliberately
+   not hover-only: hover doesn't exist on a touch device, and most family
+   will be checking this from a phone (see brand-guidelines.md ->
+   Audience) — a hover-only cue would leave every nav link on every page
+   looking identical to plain bold text until someone happened to tap it. */
 .site-nav a { text-decoration: underline; }
-.site-nav strong { text-decoration: none; }
-/* The one deliberate exception: the site's brand/home link ("Murray
-   Corner 2026"), always the nav's first item on every page — bolder
-   than everything else, but the SAME --nav-text color (not a separate
-   hue), so it still stays legible against Night without needing its own
-   override. */
+/* The one deliberate exception: the site's fixed identity ("MC26"),
+   always the nav's first item on every page — bolder than everything
+   else, but the SAME --nav-text color (not a separate hue), so it still
+   stays legible against Night without needing its own override. */
 .site-nav > a:first-child {
   font-weight: 700;
 }
 
+/* A "split control" — two adjacent interactive pieces reading as one nav
+   item: .nav-split-label (a <button>, since its target depends on a
+   client-side computation — see shared/nav.js) does a direct default
+   action on click, while the sibling .jump-menu's own caret opens a
+   panel with more specific choices instead. Used by "Timeline" and
+   "Folks" — see requirements/public.md -> Navigation. flex-shrink:0 by
+   default, matching every other fixed-width nav item ("Tree"); the
+   Timeline instance overrides this via the additional .current-quarter-
+   menu class below, since its own label can grow long (the live day-
+   quarter text) and needs to flex/truncate instead. */
+.nav-split { display: inline-flex; align-items: center; gap: 0.15rem; flex-shrink: 0; }
+.nav-split-label {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--nav-text);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* The live "current day quarter" label — the Timeline split control's
+   own button content (see shared/nav.py -> render_nav()), reused here
+   (not timeline/shared.css) now that Family Tree and Attendees pages
+   show this same split control too, just with its static "Timeline"
+   fallback text instead of a live value (see timeline/shared.js — only
+   site/index.html's own IntersectionObserver ever overwrites it). Two
+   child spans, updated as you scroll on site/index.html: the bare
+   month/day (.cq-date, e.g. "Aug 3") smaller/secondary, supporting
+   detail, shown first; then the weekday plus bare quarter name (.cq-day,
+   e.g. "Monday Morning") prominent — shown second, its own leading " · "
+   baked into the text shared.js sets rather than static markup. .cq-day
+   defaults to the static word "Timeline" (see render_nav()) until
+   overwritten. */
+.current-quarter-menu {
+  flex: 1;
+  min-width: 0;
+  flex-shrink: 1;
+}
+.current-quarter-label {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.cq-day {
+  font-weight: 700;
+  color: var(--nav-text);
+  font-size: 1.05rem;
+}
+.cq-date {
+  font-weight: 500;
+  color: var(--nav-text);
+  font-size: 1.05rem;
+}
+
 /* The disclosure-dropdown system: a <details class="jump-menu"> trigger
-   plus its <div class="jump-panel">, used by the Timeline's jump-to-time
-   and "Folks ▾" (timeline/shared.js/timeline/scripts/build.py) and the
-   Family Tree's own "Folks ▾" (family-tree/scripts/build.py ->
-   render_folks_menu()) — genuinely shared across two features now, not
-   Timeline-only, so it lives here rather than being duplicated into both
-   features' own shared.css. Each feature still supplies its OWN panel
-   *content* markup (the Timeline's day-grouped time links in
+   plus its <div class="jump-panel">, sitting next to a .nav-split-label
+   as the "open a panel of more specific choices" half of the Timeline
+   and Folks split controls (see shared/nav.py -> render_nav()) — shared
+   across every page's nav bar, so it lives here rather than duplicated
+   per feature. Each caller still supplies its OWN panel *content*
+   markup (the Timeline's day-grouped time links in
    timeline/shared.css are one example) — what's here is only the
-   generic trigger/panel/person-pill shell every disclosure reuses as-is. */
+   generic trigger/panel/person-pill shell every disclosure reuses as-is.
+   The trigger itself is caret-only now — no label text inside the
+   <summary> (that lives in the sibling .nav-split-label button instead)
+   — so it's deliberately NOT underlined, the same "don't underline a
+   lone glyph" reasoning .run-toggle already used below. */
 .jump-menu {
   flex-shrink: 0;
 }
 .jump-menu > summary {
   cursor: pointer;
-  color: var(--nav-text);
-  font-weight: 600;
   list-style: none;
-  text-decoration: underline;
+  padding: 0.15rem;
 }
 .jump-menu > summary::-webkit-details-marker { display: none; }
+.jump-menu > summary:hover { opacity: 0.7; }
 /* Positioned against .site-nav (position: sticky above, which also
    establishes a containing block for absolute descendants), not against
    .jump-menu itself — anchoring to the trigger's own position let the

@@ -32,7 +32,7 @@ html.timeline-page.auto-scrolling {
   scroll-snap-type: none;
 }
 
-.intro-screen, .quarter-screen {
+.intro-screen, .transition-screen, .quarter-screen {
   /* svh (not dvh) deliberately: dvh recalculates live as a mobile browser's
      address bar collapses mid-scroll, which reflows box heights and makes
      scroll-snap re-target a second time once it settles — felt as a
@@ -58,10 +58,38 @@ html.timeline-page.auto-scrolling {
   border-bottom: none;
 }
 
-/* Intro has no canvas-padding split — just one centered block. */
-.intro-screen {
+/* Intro (Home) and the transition screen right after it have no
+   canvas-padding split — just one centered block each. */
+.intro-screen, .transition-screen {
   justify-content: center;
+  align-items: center;
+  text-align: center;
   padding: calc(var(--nav-height) + 1rem) 0 2rem;
+}
+
+/* The transition screen — between Home and the first quarter screen (see
+   requirements/public.md -> Home & Timeline -> Layout, and
+   render_transition_screen() in timeline/scripts/build.py): an explicit
+   choice of where to start scrolling into the trip from, replacing the
+   old auto-scroll-to-"now" behavior. Both choices styled like the
+   day/quarter jump-panel's own chip links (.jump-links a below) — a
+   recognizable "this is a destination to pick" shape, just sized up
+   since these are the two options on their own dedicated screen rather
+   than one of many packed into a dropdown. */
+.transition-prompt { color: var(--secondary); margin-bottom: 1rem; }
+.transition-choices { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+.transition-choice {
+  display: inline-block;
+  padding: 0.6rem 1.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--primary);
+  font: inherit;
+  font-weight: 600;
+  font-size: 1.05rem;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 /* The reserved clearance spacer — NOT the canvas, see file header. Fixed
@@ -111,131 +139,62 @@ html.timeline-page.auto-scrolling {
   color: var(--text);
 }
 
-/* "Murray Corner 2026" — permanent, unchanging nav item (see
-   render_nav() in timeline/scripts/build.py), unlike every other item in
-   this nav: a plain link back to the intro screen. Never shrinks/
-   truncates — it's the one fixed point in a nav bar where everything
-   else (the live label, "Now") reflects wherever you've scrolled to. No
-   color set here — shared/base.css's ".site-nav a" (a class+type
-   selector, more specific than this class alone) already wins that fight
-   and supplies --nav-text; only weight is this class's own job now, so
-   the color actually used isn't hidden in two places that could drift. */
+/* "MC26" — permanent, unchanging nav item (see shared/nav.py ->
+   render_nav()), a plain link to Home (the intro screen) on every page.
+   Never shrinks/truncates — it's the one fixed point in a nav bar where
+   everything else (the live label, the split controls) reflects wherever
+   you are. No color set here — shared/base.css's ".site-nav a" (a
+   class+type selector, more specific than this class alone) already wins
+   that fight and supplies --nav-text; only weight is this class's own
+   job now, so the color actually used isn't hidden in two places that
+   could drift. */
 .site-title {
   flex-shrink: 0;
   text-decoration: none;
   font-weight: 700;
 }
 
-/* Live "current day quarter" label — separate from "Murray Corner 2026"
-   above (it used to double as the site title before scrolling; no longer
-   does, now that the title is its own permanent item) — also the
-   jump-to-time trigger: click/tap it to expand every day/quarter as
-   links (the same .jump-panel content the old separate "Jump ▾" control
-   used to hold). render_nav() in timeline/scripts/build.py only wraps it
-   in a <details class="current-quarter-menu"> when there's actually
-   something to jump to — always true now that every quarter screen
-   always exists in the page, but still guarded for safety, so
-   .current-quarter-label may still appear as a plain non-interactive
-   <span>, same look either way. */
-.current-quarter-menu {
-  flex: 1;
-  min-width: 0;
-}
-/* Two child spans (see render_nav() and timeline/shared.js), updated as
-   you scroll, in this reading order: the bare month/day (.cq-date, e.g.
-   "Aug 3") smaller/secondary, supporting detail, shown first; then the
-   weekday plus bare quarter name (.cq-day, e.g. "Monday Morning")
-   prominent — that's what you actually scan for while scrolling —
-   shown second, its own leading " - " baked into the text shared.js
-   sets rather than static markup. Both start empty and stay that way
-   until shared.js's IntersectionObserver reports you've scrolled into a
-   quarter screen. */
-.current-quarter-label {
-  display: block;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-summary.current-quarter-label {
-  cursor: pointer;
-  list-style: none;
-}
-summary.current-quarter-label::-webkit-details-marker { display: none; }
-/* Same color (--nav-text — best-contrast for whatever quarter's active,
-   see shared/base.css) and size for both pieces — a weight-only
-   distinction, not the size+color jump this used to be. Sitting right
-   next to "Murray Corner 2026" (bold, its own distinct anchor — see
-   .site-title), a second big/bold segment right after a small one in a
-   DIFFERENT color read as three fighting fragments, not one phrase;
-   keeping the whole live label in one consistent color removes that
-   noise while still keeping the weekday+quarter part (the one you
-   actually scan for while scrolling) a touch more prominent than the
-   date, via weight alone. */
-.cq-day {
-  font-weight: 700;
-  color: var(--nav-text);
-  font-size: 1.05rem;
-}
-.cq-date {
-  font-weight: 500;
-  color: var(--nav-text);
-  font-size: 1.05rem;
-}
-/* .nav-caret (the shared "this expands" caret) and the shared permanent-
-   underline rule for disclosure triggers both moved to shared/base.css —
-   see that file — now that the Family Tree page's own "Folks ▾" needs
-   them too, not just the two disclosures here. */
+/* .current-quarter-menu/.current-quarter-label/.cq-day/.cq-date (the
+   Timeline split control's own live label, doubling as its "Timeline"
+   static fallback text) and .nav-caret/.jump-menu's shared underline
+   rule all moved to shared/base.css — see that file — now that Family
+   Tree and Attendees pages show the exact same split control too, just
+   with the static text instead of a live value. */
 
-/* "Now" — jumps to the visitor's own real-world current quarter (see
-   timeline/shared.js), computed client-side rather than baked into a
-   static href, so it's a <button>, not an <a> — styled to read as a
-   plain nav link all the same, same weight/color/underline as every
-   other text item in the row (shared/base.css -> .site-nav a).
-   Permanently underlined like every other text item (see the shared-
-   underline-rule comment above) rather than a color swap — a color
-   chosen for good contrast against the current --quarter-bg has no
-   guarantee of also looking good as a "highlight" shade against that
-   same background, and
-   underline sidesteps needing one at all. */
-.jump-now-toggle {
-  flex-shrink: 0;
-  border: none;
-  background: none;
-  padding: 0;
-  font: inherit;
-  font-weight: 600;
-  font-size: 1.05rem;
-  color: var(--nav-text);
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-/* Play/pause auto-advance toggle — icon-only (no text label, see
-   requirements/public.md -> Navigation), same weight/color look as
-   every other item (shared/base.css -> .site-nav a), not a boxed/
+/* Play/pause auto-advance toggle — now a row inside the Timeline split
+   control's own panel (shared/nav.py -> render_nav()), not a top-level
+   nav item, so it reads against the panel's white background (.jump-panel
+   in shared/base.css) rather than the nav bar's own time-of-day color —
+   --text, not --nav-text, matching every other piece of panel content
+   (e.g. .jump-links a already uses --text for the same reason). Icon-only
+   (no text label, see requirements/public.md -> Navigation), not a boxed/
    decorated button, per brand-guidelines.md's flat visual language. The
-   one deliberate exception to the shared underline-on-hover rule above:
-   it dims instead, since a line under a lone glyph reads as a stray
-   mark, not as the same "this is clickable text" cue underline gives
-   everywhere else. */
+   one deliberate exception to the shared underline rule every other panel
+   link gets: it dims on hover instead, since a line under a lone glyph
+   reads as a stray mark, not as "this is clickable text." Separated from
+   the day/quarter jump list above it by a thin rule, since it's a
+   different kind of choice (a mode, not a destination), not another chip
+   in the same grid. */
 .run-toggle {
-  flex-shrink: 0;
+  display: block;
   border: none;
+  border-top: 1px solid var(--border);
   background: none;
-  padding: 0;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0 0;
   font: inherit;
   font-weight: 600;
-  font-size: 1.05rem;
-  color: var(--nav-text);
+  font-size: 1.1rem;
+  text-align: left;
+  color: var(--text);
   cursor: pointer;
 }
 .run-toggle:hover { opacity: 0.7; }
 
-/* Six items now share one nav row (Murray Corner 2026, the live label,
-   Now, Play/Pause, Tree, Folks ▾ — Folks last, furthest right, see
-   render_nav() in timeline/scripts/build.py) — measured on an actual
+/* Every nav bar now shares the same shape (MC26, Timeline, Folks, Tree —
+   see shared/nav.py -> render_nav() and requirements/public.md ->
+   Navigation) — measured on an actual
    375px phone viewport, the five fixed-width items plus gaps alone came
    within a few px of the full row, squeezing the live label (the one
    item meant to flex/shrink) to 0 width — invisible, not just truncated.
@@ -252,12 +211,11 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
      wins on tag-selector specificity), silently keeping the larger size
      regardless of this media query matching. */
   .site-nav > a.site-title { font-size: 0.85rem; }
+  .nav-split-label,
   .jump-menu > summary,
-  .jump-now-toggle,
-  .run-toggle,
-  /* :last-of-type, not :last-child — Folks (a <details>, not an <a>) is
-     the actual last child now, so a plain :last-child here would match
-     nothing and silently stop sizing "Tree" at all on narrow phones. */
+  /* :last-of-type, not :last-child — Tree really is the last <a> child
+     now (MC26 is the only other one, and it's first), but naming it by
+     type rather than position stays correct even if that ever changes. */
   .site-nav > a:last-of-type {
     font-size: 0.9rem;
   }

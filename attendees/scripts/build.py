@@ -53,6 +53,7 @@ feature at once.
 
 site/attendees/*.html are pure build artifacts — edit this template, not the HTML.
 """
+import importlib.util
 import json
 import sys
 from datetime import date, timedelta
@@ -65,25 +66,35 @@ sys.path.insert(0, str(PROJECT_ROOT / "shared"))
 import nav  # noqa: E402
 from trip import TRIP_START, TRIP_END, QUARTER_NAMES, QUARTER_TIMES, MODE_TAGS, WORK_QUARTERS, format_time_range  # noqa: E402
 
+
+def _import_build_module(name, path):
+    """Load a sibling feature's build.py as a distinctly-named module —
+    render_jump_panel() is timeline/scripts/build.py's, render_folks_menu()/
+    collected_person_ids() are family-tree/scripts/build.py's, both reused
+    here rather than reimplemented so this page's nav bar (identical shape
+    to every other page's — see requirements/public.md -> Navigation) can
+    never drift from either. A plain `import build as X` (the pattern
+    scripts/report.py uses for a single such cross-import) breaks the
+    moment a script needs TWO different build.py files this way: Python's
+    import cache keys on the module's own name ("build" either time), so
+    the second `import build as ...` silently returns the first module
+    again instead of loading the second file at all. Loading each under
+    its own distinct name in sys.modules sidesteps that entirely."""
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+timeline_build = _import_build_module("timeline_build", PROJECT_ROOT / "timeline" / "scripts" / "build.py")
+family_tree_build = _import_build_module("family_tree_build", PROJECT_ROOT / "family-tree" / "scripts" / "build.py")
+
 TITLE_SUFFIX = " — Murray Corner 2026"
 
 
 def esc(s):
     return nav.esc(s)
-
-
-def nav_items_for_person():
-    # Plain two-item row — no third "Attendees" item, since there's no
-    # index/home page for this feature to link to or indicate as active
-    # (see module docstring). "Tree" is the natural way back, since
-    # that's where every person page is linked from. "Murray Corner 2026"
-    # is the site-wide permanent home link (see requirements/public.md ->
-    # Navigation), same label/href every page uses to get back to the
-    # Timeline.
-    return [
-        ("Murray Corner 2026", "../index.html", False),
-        ("Tree", "../family-tree/index.html", False),
-    ]
 
 
 def load_json(path):
@@ -338,9 +349,8 @@ def driving_assignments(person_id, travel, people_by_id):
     return assignments
 
 
-def render_person_page(person, entry, travel, people_by_id, shared_base_css, shared_css):
+def render_person_page(person, entry, travel, people_by_id, shared_base_css, shared_css, nav_row, shared_nav_js):
     title = f"{person['name']}{TITLE_SUFFIX}"
-    nav_row = nav.render_row(nav_items_for_person())
 
     # One flat list of (sort_date, html) across every kind of fact on this
     # page — Arrival/Sleeping/Departure/Working from/Driving — sorted into
@@ -473,6 +483,9 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
 <main>
 {body}
 </main>
+<script>
+{shared_nav_js}
+</script>
 </body>
 </html>
 """
@@ -487,6 +500,7 @@ def main():
     travel = load_json(PROJECT_ROOT / "timeline" / "data" / "travel.json")
     shared_base_css = (PROJECT_ROOT / "shared" / "base.css").read_text()
     shared_css = (ROOT / "shared.css").read_text()
+    shared_nav_js = (PROJECT_ROOT / "shared" / "nav.js").read_text()
 
     validate_required_fields(people, ["id", "name"], "shared/data/people.json")
     validate_required_fields(travel, ["person_id"], "timeline/data/travel.json")
@@ -500,9 +514,32 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     attending_people = [p for p in people if p.get("attending")]
+
+    # Same nav bar shape/content for every person's page — computed once,
+    # not per page (see requirements/public.md -> Navigation): the
+    # people.json-sourced Folks panel variant (same one Family Tree uses,
+    # with "Collecting facts" markers — a Details page has no quarter
+    # screens to jump a "Timeline" sub-link to, so the travel.json variant
+    # doesn't fit here) and the day/quarter jump list, both reused from
+    # their owning feature rather than reimplemented.
+    collected_ids = family_tree_build.collected_person_ids(travel)
+    folks_menu = family_tree_build.render_folks_menu(people, collected_ids)
+    nav_row = nav.render_nav(
+        mc26_href="../index.html#trip-top",
+        timeline_prefix="../index.html",
+        tree_href="../family-tree/index.html",
+        trip_start=timeline_build.TRIP_START.isoformat(),
+        trip_end=timeline_build.TRIP_END.isoformat(),
+        jump_panel_html=timeline_build.render_jump_panel(href_prefix="../index.html"),
+        folks_panel_html=folks_menu,
+        attending_people=attending_people,
+        attendees_prefix="",
+        include_play=False,
+    )
+
     for p in attending_people:
         entry = travel_by_person_id.get(p["id"])
-        html = render_person_page(p, entry, travel, people_by_id, shared_base_css, shared_css)
+        html = render_person_page(p, entry, travel, people_by_id, shared_base_css, shared_css, nav_row, shared_nav_js)
         (out_dir / f"{p['id']}.html").write_text(html)
 
     print(f"Updated site/attendees/ ({len(attending_people)} person page(s), no index — linked from the Family Tree)")

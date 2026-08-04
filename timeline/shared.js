@@ -1,4 +1,8 @@
-// Timeline feature — inlined into site/index.html at build time.
+// Timeline feature — inlined into site/index.html at build time, after
+// shared/nav.js (which supplies currentQuarterSectionId() — the single
+// "what quarter is it right now at the cottage" computation this file
+// reuses rather than duplicating, since shared/nav.js's own "Timeline"
+// split-control click needs the identical answer).
 document.addEventListener('DOMContentLoaded', function () {
   // Must match --nav-height in shared/base.css (3.75rem = 60px at the
   // default root font size) — hardcoded here since reading a CSS custom
@@ -8,90 +12,29 @@ document.addEventListener('DOMContentLoaded', function () {
   // currentSectionIndex()) so the two can't drift to different values.
   var NAV_HEIGHT_PX = 60;
 
-  // "Now" — the current day quarter AT THE COTTAGE (Murray Corner, New
-  // Brunswick — Atlantic Time), computed fresh from the visitor's device
-  // clock but read in the trip's own timezone, not whatever timezone the
-  // visitor's device happens to be set to (never baked in at build time —
-  // see timeline/scripts/build.py's module docstring) so the exact same
-  // static page stays accurate for the whole trip with no rebuild. This
-  // matters beyond just correctness: someone still at home checking "who
-  // else is landing around now" (see brand-guidelines.md -> The Story)
-  // needs that answered for the cottage's own clock — their own local
-  // hour is meaningless here, and could even fall on a different
-  // Atlantic-time calendar date entirely. TRIP_CONFIG is emitted by
-  // build_page_html() just before this script, from the same
-  // TRIP_START/TRIP_END shared/trip.py uses at build time — the trip
-  // window itself is still fixed data, only "which quarter is now" is a
-  // runtime, per-visitor question.
-  var TRIP_TIMEZONE = 'America/Moncton';
-  function quarterForHour(hour) {
-    if (hour < 6) return '00-06';
-    if (hour < 12) return '06-12';
-    if (hour < 18) return '12-18';
-    return '18-24';
+  // The transition screen's own two choices (see requirements/public.md
+  // -> Home & Timeline -> Layout) — reached by scrolling down from Home,
+  // not on load: this page no longer auto-scrolls anywhere on a hash-less
+  // load (see requirements/public.md -> Always the full trip, "now"
+  // computed live, for why that changed) — a fresh visit just opens on
+  // Home, same as any other page, and a `#qc-...` hash still lands the
+  // browser directly on that quarter screen via plain native anchor
+  // behavior, no JS needed for that case at all.
+  var transitionNow = document.getElementById('transition-now');
+  if (transitionNow) {
+    transitionNow.addEventListener('click', function () {
+      var id = currentQuarterSectionId(transitionNow.dataset.tripStart, transitionNow.dataset.tripEnd);
+      var target = document.getElementById(id);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
-  // Intl.DateTimeFormat with an explicit timeZone reads the wall-clock
-  // date/hour AT THE COTTAGE regardless of the visitor's own system
-  // timezone — hourCycle: 'h23' pins the hour to a plain 0-23 range
-  // (some engines otherwise return "24" for midnight with hour12: false
-  // alone, a known cross-browser quirk).
-  function tripLocalParts(d) {
-    var parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: TRIP_TIMEZONE,
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', hourCycle: 'h23'
-    }).formatToParts(d);
-    var map = {};
-    parts.forEach(function (p) { map[p.type] = p.value; });
-    return { iso: map.year + '-' + map.month + '-' + map.day, hour: parseInt(map.hour, 10) };
-  }
-  function currentQuarterSectionId() {
-    var now = tripLocalParts(new Date());
-    var iso = now.iso;
-    var quarter = quarterForHour(now.hour);
-    // Clamp into the trip window: before it starts snaps to the very
-    // first quarter; after it ends (the one edge case that matters —
-    // see requirements/public.md -> Navigation) snaps to the very last.
-    if (iso < TRIP_CONFIG.start) {
-      iso = TRIP_CONFIG.start;
-      quarter = '00-06';
-    } else if (iso > TRIP_CONFIG.end) {
-      iso = TRIP_CONFIG.end;
-      quarter = '18-24';
-    }
-    return 'qc-' + iso + '-' + quarter;
-  }
-
-  // Land on "now" on first load, unless the URL already points somewhere
-  // specific (a shared link to a particular quarter screen), which is
-  // left alone — instant, not smooth, so opening the page doesn't
-  // visibly fly through however many days have already passed. Scrolling
-  // down from here moves forward through the rest of the trip; scrolling
-  // back up moves backward, all the way past August 1 to the intro
-  // screen — nothing before "now" is hidden, unlike the old cutoff-based
-  // version (see requirements/public.md -> Homepage = Timeline).
-  if (!location.hash && typeof TRIP_CONFIG !== 'undefined') {
-    var nowTarget = document.getElementById(currentQuarterSectionId());
-    if (nowTarget) {
-      nowTarget.scrollIntoView({ behavior: 'instant', block: 'start' });
-    }
-  }
-
-  // The "Now" nav button (render_nav() in timeline/scripts/build.py) —
-  // same target as the auto-scroll above, but computed fresh at click
-  // time rather than reused from page load, in case the page has been
-  // open a while. A button, not a plain anchor link, since the target
-  // quarter depends on the visitor's own clock and can't be baked into a
-  // static href the way every other jump link's target can.
-  var nowButton = document.getElementById('jump-now-toggle');
-  if (nowButton && typeof TRIP_CONFIG !== 'undefined') {
-    nowButton.addEventListener('click', function () {
-      var target = document.getElementById(currentQuarterSectionId());
+  var transitionAug1 = document.getElementById('transition-aug1');
+  if (transitionAug1) {
+    transitionAug1.addEventListener('click', function (event) {
+      var target = document.getElementById(this.getAttribute('href').slice(1));
       if (target) {
+        event.preventDefault();
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        if (history.replaceState) {
-          history.replaceState(null, '', '#' + target.id);
-        }
       }
     });
   }
@@ -103,12 +46,10 @@ document.addEventListener('DOMContentLoaded', function () {
   // property — that property applies to ALL scrolling including native
   // scroll-snap settling, and pairing it with scroll-snap-type is a known
   // Safari/iOS bug (see timeline/shared.css). Scoping "smooth" to just
-  // this explicit, deliberate jump action avoids that entirely.
-  // Both the jump-to-time disclosure (the current-quarter label itself,
-  // see render_nav() in timeline/scripts/build.py) and "Folks ▾" share
-  // the .jump-menu/.jump-panel markup and need the same smooth-scroll-
-  // and-close behavior — this must stay a loop over ALL of them, not
-  // just the first match.
+  // this explicit, deliberate jump action avoids that entirely. Covers
+  // both split controls' own panels (the Timeline's day/quarter jump
+  // list and "Folks") — a loop over ALL .jump-menu elements, not just the
+  // first match.
   var menus = document.querySelectorAll('.jump-menu');
   menus.forEach(function (menu) {
     var links = menu.querySelectorAll('a');
@@ -127,14 +68,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // Keeps the nav bar's left-side label showing which day quarter is
-  // currently in view, updated as you scroll — the bare month/day
-  // (.cq-date, smaller/secondary, e.g. "Aug 3") shown first, then the
-  // weekday plus bare quarter name (.cq-day, bold/prominent, e.g.
-  // "Monday Morning") shown second, as two separate spans rather than
-  // one flat string so CSS can style them differently (see
-  // timeline/shared.css) — cq-day's own leading " · " is part of its
-  // text content, not static markup, so nothing floats on its own before
+  // Keeps the Timeline split control's own label showing which day
+  // quarter is currently in view, updated as you scroll — the bare
+  // month/day (.cq-date, smaller/secondary, e.g. "Aug 3") shown first,
+  // then the weekday plus bare quarter name (.cq-day, bold/prominent,
+  // e.g. "Monday Morning") shown second, as two separate spans rather
+  // than one flat string so CSS can style them differently (see
+  // shared/base.css) — cq-day's own leading " · " is part of its text
+  // content, not static markup, so nothing floats on its own before
   // either span has actually been filled in. The middot (not a hyphen)
   // matches the separator used everywhere else two related pieces of
   // info sit together on this site (QUARTER_LABELS' own "Morning ·
@@ -272,11 +213,14 @@ document.addEventListener('DOMContentLoaded', function () {
     updateQuarterBlend();
   }
 
-  // Play/pause auto-advance — steps through every screen one at a time:
-  // jump to the next screen, pause PAUSE_MS so there's time to actually
-  // read it, jump to the next, pause, and so on — not a continuous scroll.
-  // PAUSE_MS is the one knob to retune the rhythm (longer to linger on
-  // each day quarter, shorter to move briskly).
+  // Play/pause auto-advance — steps through every QUARTER screen one at a
+  // time (deliberately excludes Home and the transition screen — nothing
+  // there to auto-advance through, and interactive choice buttons aren't
+  // a screen to "read"): jump to the next screen, pause PAUSE_MS so
+  // there's time to actually read it, jump to the next, pause, and so on
+  // — not a continuous scroll. PAUSE_MS is the one knob to retune the
+  // rhythm (longer to linger on each day quarter, shorter to move
+  // briskly).
   //
   // Jumps use scrollIntoView({behavior: 'smooth'}), same as the Jump/
   // People links above, but ONLY while the `.auto-scrolling` class is on
@@ -295,10 +239,16 @@ document.addEventListener('DOMContentLoaded', function () {
   // moment the user scrolls or swipes manually (listened on 'wheel'/
   // 'touchmove', real user gestures, not 'scroll', which also fires for
   // the scrollIntoView calls below and would cancel itself), or once it
-  // reaches the last screen.
+  // reaches the last screen. While running, the Timeline split control's
+  // own caret also swaps to "⏸" (see requirements/public.md ->
+  // Navigation -> Timeline's panel) so the running state stays visible
+  // even with the panel closed — Play now lives inside that panel, not
+  // as its own top-level nav item, so without this the running state
+  // would otherwise be invisible until reopening the panel.
   var runButton = document.getElementById('run-toggle');
+  var timelineCaret = document.getElementById('timeline-caret');
   var scrollRoot = document.documentElement;
-  var runSections = document.querySelectorAll('main > section');
+  var runSections = document.querySelectorAll('.quarter-screen');
   if (runButton && runSections.length) {
     var PAUSE_MS = 1800;
     var runTimerId = null;
@@ -329,6 +279,7 @@ document.addEventListener('DOMContentLoaded', function () {
       scrollRoot.classList.remove('auto-scrolling');
       runButton.textContent = '▶';
       runButton.setAttribute('aria-label', 'Play');
+      if (timelineCaret) timelineCaret.textContent = '▾';
       window.removeEventListener('wheel', stopRun);
       window.removeEventListener('touchmove', stopRun);
     }
@@ -348,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function () {
       runIndex = currentSectionIndex();
       runButton.textContent = '⏸';
       runButton.setAttribute('aria-label', 'Pause');
+      if (timelineCaret) timelineCaret.textContent = '⏸';
       window.addEventListener('wheel', stopRun, { passive: true });
       window.addEventListener('touchmove', stopRun, { passive: true });
       advanceRun();

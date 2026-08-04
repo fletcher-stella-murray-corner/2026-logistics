@@ -71,8 +71,8 @@ body {
      background this ever falls back to (--grove, and three of the four
      day-quarter colors) is light; timeline/shared.css overrides it to
      --mist only for Night, the one dark background. Every nav item reads
-     this one variable (see the rule below and .cq-day/.cq-date/
-     .jump-now-toggle/.run-toggle in timeline/shared.css) rather than
+     this one variable (see the rule below, .cq-day/.cq-date just below,
+     and .run-toggle in timeline/shared.css) rather than
      each picking its own color independently — that's what let three
      items end up teal and two end up primary/bold with no visible logic
      to it. Role (title vs. label vs. action) is expressed by weight and
@@ -81,57 +81,112 @@ body {
   background: var(--quarter-bg, var(--grove));
   z-index: 10;
 }
-.site-nav a, .site-nav strong {
+.site-nav a {
   color: var(--nav-text);
   font-weight: 600;
   font-size: 1.05rem;
 }
 /* Every interactive nav item across every page is permanently underlined
    — not just on hover — the one shared, site-wide "this is tappable" cue
-   (see timeline/shared.css for the Timeline-only items — the "Now"
-   button — that need their own copy of this rule since a <button> isn't
-   matched by "a"; the disclosure-trigger version of this same rule,
-   .jump-menu > summary, is just below, since a <summary> isn't matched by
-   "a" either). Deliberately not hover-only: hover doesn't exist on a
-   touch device, and most family will be checking this from a phone (see
-   brand-guidelines.md -> Audience) — a hover-only cue would leave every
-   nav link on every page looking identical to plain bold text until
-   someone happened to tap it. .site-nav strong (the active/current-page
-   indicator, e.g. "Tree" on the Family Tree page itself) stays
-   undecorated — it isn't a link, so underlining it would falsely promise
-   it's tappable. */
+   (see below for .nav-split-label/.run-toggle, the <button> items that
+   need their own copy since a <button> isn't matched by "a"). Deliberately
+   not hover-only: hover doesn't exist on a touch device, and most family
+   will be checking this from a phone (see brand-guidelines.md ->
+   Audience) — a hover-only cue would leave every nav link on every page
+   looking identical to plain bold text until someone happened to tap it. */
 .site-nav a { text-decoration: underline; }
-.site-nav strong { text-decoration: none; }
-/* The one deliberate exception: the site's brand/home link ("Murray
-   Corner 2026"), always the nav's first item on every page — bolder
-   than everything else, but the SAME --nav-text color (not a separate
-   hue), so it still stays legible against Night without needing its own
-   override. */
+/* The one deliberate exception: the site's fixed identity ("MC26"),
+   always the nav's first item on every page — bolder than everything
+   else, but the SAME --nav-text color (not a separate hue), so it still
+   stays legible against Night without needing its own override. */
 .site-nav > a:first-child {
   font-weight: 700;
 }
 
+/* A "split control" — two adjacent interactive pieces reading as one nav
+   item: .nav-split-label (a <button>, since its target depends on a
+   client-side computation — see shared/nav.js) does a direct default
+   action on click, while the sibling .jump-menu's own caret opens a
+   panel with more specific choices instead. Used by "Timeline" and
+   "Folks" — see requirements/public.md -> Navigation. flex-shrink:0 by
+   default, matching every other fixed-width nav item ("Tree"); the
+   Timeline instance overrides this via the additional .current-quarter-
+   menu class below, since its own label can grow long (the live day-
+   quarter text) and needs to flex/truncate instead. */
+.nav-split { display: inline-flex; align-items: center; gap: 0.15rem; flex-shrink: 0; }
+.nav-split-label {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--nav-text);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* The live "current day quarter" label — the Timeline split control's
+   own button content (see shared/nav.py -> render_nav()), reused here
+   (not timeline/shared.css) now that Family Tree and Attendees pages
+   show this same split control too, just with its static "Timeline"
+   fallback text instead of a live value (see timeline/shared.js — only
+   site/index.html's own IntersectionObserver ever overwrites it). Two
+   child spans, updated as you scroll on site/index.html: the bare
+   month/day (.cq-date, e.g. "Aug 3") smaller/secondary, supporting
+   detail, shown first; then the weekday plus bare quarter name (.cq-day,
+   e.g. "Monday Morning") prominent — shown second, its own leading " · "
+   baked into the text shared.js sets rather than static markup. .cq-day
+   defaults to the static word "Timeline" (see render_nav()) until
+   overwritten. */
+.current-quarter-menu {
+  flex: 1;
+  min-width: 0;
+  flex-shrink: 1;
+}
+.current-quarter-label {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.cq-day {
+  font-weight: 700;
+  color: var(--nav-text);
+  font-size: 1.05rem;
+}
+.cq-date {
+  font-weight: 500;
+  color: var(--nav-text);
+  font-size: 1.05rem;
+}
+
 /* The disclosure-dropdown system: a <details class="jump-menu"> trigger
-   plus its <div class="jump-panel">, used by the Timeline's jump-to-time
-   and "Folks ▾" (timeline/shared.js/timeline/scripts/build.py) and the
-   Family Tree's own "Folks ▾" (family-tree/scripts/build.py ->
-   render_folks_menu()) — genuinely shared across two features now, not
-   Timeline-only, so it lives here rather than being duplicated into both
-   features' own shared.css. Each feature still supplies its OWN panel
-   *content* markup (the Timeline's day-grouped time links in
+   plus its <div class="jump-panel">, sitting next to a .nav-split-label
+   as the "open a panel of more specific choices" half of the Timeline
+   and Folks split controls (see shared/nav.py -> render_nav()) — shared
+   across every page's nav bar, so it lives here rather than duplicated
+   per feature. Each caller still supplies its OWN panel *content*
+   markup (the Timeline's day-grouped time links in
    timeline/shared.css are one example) — what's here is only the
-   generic trigger/panel/person-pill shell every disclosure reuses as-is. */
+   generic trigger/panel/person-pill shell every disclosure reuses as-is.
+   The trigger itself is caret-only now — no label text inside the
+   <summary> (that lives in the sibling .nav-split-label button instead)
+   — so it's deliberately NOT underlined, the same "don't underline a
+   lone glyph" reasoning .run-toggle already used below. */
 .jump-menu {
   flex-shrink: 0;
 }
 .jump-menu > summary {
   cursor: pointer;
-  color: var(--nav-text);
-  font-weight: 600;
   list-style: none;
-  text-decoration: underline;
+  padding: 0.15rem;
 }
 .jump-menu > summary::-webkit-details-marker { display: none; }
+.jump-menu > summary:hover { opacity: 0.7; }
 /* Positioned against .site-nav (position: sticky above, which also
    establishes a containing block for absolute descendants), not against
    .jump-menu itself — anchoring to the trigger's own position let the
@@ -247,7 +302,7 @@ html.timeline-page.auto-scrolling {
   scroll-snap-type: none;
 }
 
-.intro-screen, .quarter-screen {
+.intro-screen, .transition-screen, .quarter-screen {
   /* svh (not dvh) deliberately: dvh recalculates live as a mobile browser's
      address bar collapses mid-scroll, which reflows box heights and makes
      scroll-snap re-target a second time once it settles — felt as a
@@ -273,10 +328,38 @@ html.timeline-page.auto-scrolling {
   border-bottom: none;
 }
 
-/* Intro has no canvas-padding split — just one centered block. */
-.intro-screen {
+/* Intro (Home) and the transition screen right after it have no
+   canvas-padding split — just one centered block each. */
+.intro-screen, .transition-screen {
   justify-content: center;
+  align-items: center;
+  text-align: center;
   padding: calc(var(--nav-height) + 1rem) 0 2rem;
+}
+
+/* The transition screen — between Home and the first quarter screen (see
+   requirements/public.md -> Home & Timeline -> Layout, and
+   render_transition_screen() in timeline/scripts/build.py): an explicit
+   choice of where to start scrolling into the trip from, replacing the
+   old auto-scroll-to-"now" behavior. Both choices styled like the
+   day/quarter jump-panel's own chip links (.jump-links a below) — a
+   recognizable "this is a destination to pick" shape, just sized up
+   since these are the two options on their own dedicated screen rather
+   than one of many packed into a dropdown. */
+.transition-prompt { color: var(--secondary); margin-bottom: 1rem; }
+.transition-choices { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+.transition-choice {
+  display: inline-block;
+  padding: 0.6rem 1.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--primary);
+  font: inherit;
+  font-weight: 600;
+  font-size: 1.05rem;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 /* The reserved clearance spacer — NOT the canvas, see file header. Fixed
@@ -326,131 +409,62 @@ html.timeline-page.auto-scrolling {
   color: var(--text);
 }
 
-/* "Murray Corner 2026" — permanent, unchanging nav item (see
-   render_nav() in timeline/scripts/build.py), unlike every other item in
-   this nav: a plain link back to the intro screen. Never shrinks/
-   truncates — it's the one fixed point in a nav bar where everything
-   else (the live label, "Now") reflects wherever you've scrolled to. No
-   color set here — shared/base.css's ".site-nav a" (a class+type
-   selector, more specific than this class alone) already wins that fight
-   and supplies --nav-text; only weight is this class's own job now, so
-   the color actually used isn't hidden in two places that could drift. */
+/* "MC26" — permanent, unchanging nav item (see shared/nav.py ->
+   render_nav()), a plain link to Home (the intro screen) on every page.
+   Never shrinks/truncates — it's the one fixed point in a nav bar where
+   everything else (the live label, the split controls) reflects wherever
+   you are. No color set here — shared/base.css's ".site-nav a" (a
+   class+type selector, more specific than this class alone) already wins
+   that fight and supplies --nav-text; only weight is this class's own
+   job now, so the color actually used isn't hidden in two places that
+   could drift. */
 .site-title {
   flex-shrink: 0;
   text-decoration: none;
   font-weight: 700;
 }
 
-/* Live "current day quarter" label — separate from "Murray Corner 2026"
-   above (it used to double as the site title before scrolling; no longer
-   does, now that the title is its own permanent item) — also the
-   jump-to-time trigger: click/tap it to expand every day/quarter as
-   links (the same .jump-panel content the old separate "Jump ▾" control
-   used to hold). render_nav() in timeline/scripts/build.py only wraps it
-   in a <details class="current-quarter-menu"> when there's actually
-   something to jump to — always true now that every quarter screen
-   always exists in the page, but still guarded for safety, so
-   .current-quarter-label may still appear as a plain non-interactive
-   <span>, same look either way. */
-.current-quarter-menu {
-  flex: 1;
-  min-width: 0;
-}
-/* Two child spans (see render_nav() and timeline/shared.js), updated as
-   you scroll, in this reading order: the bare month/day (.cq-date, e.g.
-   "Aug 3") smaller/secondary, supporting detail, shown first; then the
-   weekday plus bare quarter name (.cq-day, e.g. "Monday Morning")
-   prominent — that's what you actually scan for while scrolling —
-   shown second, its own leading " - " baked into the text shared.js
-   sets rather than static markup. Both start empty and stay that way
-   until shared.js's IntersectionObserver reports you've scrolled into a
-   quarter screen. */
-.current-quarter-label {
-  display: block;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-summary.current-quarter-label {
-  cursor: pointer;
-  list-style: none;
-}
-summary.current-quarter-label::-webkit-details-marker { display: none; }
-/* Same color (--nav-text — best-contrast for whatever quarter's active,
-   see shared/base.css) and size for both pieces — a weight-only
-   distinction, not the size+color jump this used to be. Sitting right
-   next to "Murray Corner 2026" (bold, its own distinct anchor — see
-   .site-title), a second big/bold segment right after a small one in a
-   DIFFERENT color read as three fighting fragments, not one phrase;
-   keeping the whole live label in one consistent color removes that
-   noise while still keeping the weekday+quarter part (the one you
-   actually scan for while scrolling) a touch more prominent than the
-   date, via weight alone. */
-.cq-day {
-  font-weight: 700;
-  color: var(--nav-text);
-  font-size: 1.05rem;
-}
-.cq-date {
-  font-weight: 500;
-  color: var(--nav-text);
-  font-size: 1.05rem;
-}
-/* .nav-caret (the shared "this expands" caret) and the shared permanent-
-   underline rule for disclosure triggers both moved to shared/base.css —
-   see that file — now that the Family Tree page's own "Folks ▾" needs
-   them too, not just the two disclosures here. */
+/* .current-quarter-menu/.current-quarter-label/.cq-day/.cq-date (the
+   Timeline split control's own live label, doubling as its "Timeline"
+   static fallback text) and .nav-caret/.jump-menu's shared underline
+   rule all moved to shared/base.css — see that file — now that Family
+   Tree and Attendees pages show the exact same split control too, just
+   with the static text instead of a live value. */
 
-/* "Now" — jumps to the visitor's own real-world current quarter (see
-   timeline/shared.js), computed client-side rather than baked into a
-   static href, so it's a <button>, not an <a> — styled to read as a
-   plain nav link all the same, same weight/color/underline as every
-   other text item in the row (shared/base.css -> .site-nav a).
-   Permanently underlined like every other text item (see the shared-
-   underline-rule comment above) rather than a color swap — a color
-   chosen for good contrast against the current --quarter-bg has no
-   guarantee of also looking good as a "highlight" shade against that
-   same background, and
-   underline sidesteps needing one at all. */
-.jump-now-toggle {
-  flex-shrink: 0;
-  border: none;
-  background: none;
-  padding: 0;
-  font: inherit;
-  font-weight: 600;
-  font-size: 1.05rem;
-  color: var(--nav-text);
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-/* Play/pause auto-advance toggle — icon-only (no text label, see
-   requirements/public.md -> Navigation), same weight/color look as
-   every other item (shared/base.css -> .site-nav a), not a boxed/
+/* Play/pause auto-advance toggle — now a row inside the Timeline split
+   control's own panel (shared/nav.py -> render_nav()), not a top-level
+   nav item, so it reads against the panel's white background (.jump-panel
+   in shared/base.css) rather than the nav bar's own time-of-day color —
+   --text, not --nav-text, matching every other piece of panel content
+   (e.g. .jump-links a already uses --text for the same reason). Icon-only
+   (no text label, see requirements/public.md -> Navigation), not a boxed/
    decorated button, per brand-guidelines.md's flat visual language. The
-   one deliberate exception to the shared underline-on-hover rule above:
-   it dims instead, since a line under a lone glyph reads as a stray
-   mark, not as the same "this is clickable text" cue underline gives
-   everywhere else. */
+   one deliberate exception to the shared underline rule every other panel
+   link gets: it dims on hover instead, since a line under a lone glyph
+   reads as a stray mark, not as "this is clickable text." Separated from
+   the day/quarter jump list above it by a thin rule, since it's a
+   different kind of choice (a mode, not a destination), not another chip
+   in the same grid. */
 .run-toggle {
-  flex-shrink: 0;
+  display: block;
   border: none;
+  border-top: 1px solid var(--border);
   background: none;
-  padding: 0;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0 0;
   font: inherit;
   font-weight: 600;
-  font-size: 1.05rem;
-  color: var(--nav-text);
+  font-size: 1.1rem;
+  text-align: left;
+  color: var(--text);
   cursor: pointer;
 }
 .run-toggle:hover { opacity: 0.7; }
 
-/* Six items now share one nav row (Murray Corner 2026, the live label,
-   Now, Play/Pause, Tree, Folks ▾ — Folks last, furthest right, see
-   render_nav() in timeline/scripts/build.py) — measured on an actual
+/* Every nav bar now shares the same shape (MC26, Timeline, Folks, Tree —
+   see shared/nav.py -> render_nav() and requirements/public.md ->
+   Navigation) — measured on an actual
    375px phone viewport, the five fixed-width items plus gaps alone came
    within a few px of the full row, squeezing the live label (the one
    item meant to flex/shrink) to 0 width — invisible, not just truncated.
@@ -467,12 +481,11 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
      wins on tag-selector specificity), silently keeping the larger size
      regardless of this media query matching. */
   .site-nav > a.site-title { font-size: 0.85rem; }
+  .nav-split-label,
   .jump-menu > summary,
-  .jump-now-toggle,
-  .run-toggle,
-  /* :last-of-type, not :last-child — Folks (a <details>, not an <a>) is
-     the actual last child now, so a plain :last-child here would match
-     nothing and silently stop sizing "Tree" at all on narrow phones. */
+  /* :last-of-type, not :last-child — Tree really is the last <a> child
+     now (MC26 is the only other one, and it's first), but naming it by
+     type rather than position stays correct even if that ever changes. */
   .site-nav > a:last-of-type {
     font-size: 0.9rem;
   }
@@ -673,21 +686,35 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 </head>
 <body>
 <nav class="site-nav">
-<a href="#trip-top" class="site-title">Murray Corner 2026</a>
-<details class="jump-menu current-quarter-menu"><summary class="current-quarter-label" id="current-quarter-label"><span class="cq-date" id="cq-date"></span><span class="cq-day" id="cq-day"></span><span class="nav-caret">▾</span></summary><div class="jump-panel"><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 1</span><div class="jump-links"><a href="#qc-2026-08-01-00-06">12am–6am</a><a href="#qc-2026-08-01-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-01-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-01-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 2</span><div class="jump-links"><a href="#qc-2026-08-02-00-06">12am–6am</a><a href="#qc-2026-08-02-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-02-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-02-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 3</span><div class="jump-links"><a href="#qc-2026-08-03-00-06">12am–6am</a><a href="#qc-2026-08-03-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-03-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-03-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 4</span><div class="jump-links"><a href="#qc-2026-08-04-00-06">12am–6am</a><a href="#qc-2026-08-04-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-04-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-04-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 5</span><div class="jump-links"><a href="#qc-2026-08-05-00-06">12am–6am</a><a href="#qc-2026-08-05-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-05-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-05-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 6</span><div class="jump-links"><a href="#qc-2026-08-06-00-06">12am–6am</a><a href="#qc-2026-08-06-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-06-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-06-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 7</span><div class="jump-links"><a href="#qc-2026-08-07-00-06">12am–6am</a><a href="#qc-2026-08-07-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-07-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-07-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 8</span><div class="jump-links"><a href="#qc-2026-08-08-00-06">12am–6am</a><a href="#qc-2026-08-08-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-08-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-08-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 9</span><div class="jump-links"><a href="#qc-2026-08-09-00-06">12am–6am</a><a href="#qc-2026-08-09-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-09-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-09-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 10</span><div class="jump-links"><a href="#qc-2026-08-10-00-06">12am–6am</a><a href="#qc-2026-08-10-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-10-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-10-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 11</span><div class="jump-links"><a href="#qc-2026-08-11-00-06">12am–6am</a><a href="#qc-2026-08-11-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-11-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-11-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 12</span><div class="jump-links"><a href="#qc-2026-08-12-00-06">12am–6am</a><a href="#qc-2026-08-12-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-12-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-12-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 13</span><div class="jump-links"><a href="#qc-2026-08-13-00-06">12am–6am</a><a href="#qc-2026-08-13-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-13-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-13-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 14</span><div class="jump-links"><a href="#qc-2026-08-14-00-06">12am–6am</a><a href="#qc-2026-08-14-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-14-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-14-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 15</span><div class="jump-links"><a href="#qc-2026-08-15-00-06">12am–6am</a><a href="#qc-2026-08-15-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-15-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-15-18-24">Evening · 6pm–12am</a></div></div></div></details>
-<button type="button" id="jump-now-toggle" class="jump-now-toggle">Now</button>
-<button type="button" id="run-toggle" class="run-toggle" aria-label="Play">▶</button>
-<a href="family-tree/index.html">Tree</a>
+<a href="#trip-top" class="site-title">MC26</a>
+<span class="nav-split current-quarter-menu">
+<button type="button" id="timeline-jump" class="nav-split-label current-quarter-label" data-trip-start="2026-08-01" data-trip-end="2026-08-15" data-prefix=""><span class="cq-date" id="cq-date"></span><span class="cq-day" id="cq-day">Timeline</span></button>
 <details class="jump-menu">
-<summary>Folks<span class="nav-caret">▾</span></summary>
+<summary><span class="nav-caret" id="timeline-caret">▾</span></summary>
+<div class="jump-panel"><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 1</span><div class="jump-links"><a href="#qc-2026-08-01-00-06">12am–6am</a><a href="#qc-2026-08-01-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-01-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-01-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 2</span><div class="jump-links"><a href="#qc-2026-08-02-00-06">12am–6am</a><a href="#qc-2026-08-02-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-02-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-02-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 3</span><div class="jump-links"><a href="#qc-2026-08-03-00-06">12am–6am</a><a href="#qc-2026-08-03-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-03-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-03-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 4</span><div class="jump-links"><a href="#qc-2026-08-04-00-06">12am–6am</a><a href="#qc-2026-08-04-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-04-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-04-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 5</span><div class="jump-links"><a href="#qc-2026-08-05-00-06">12am–6am</a><a href="#qc-2026-08-05-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-05-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-05-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 6</span><div class="jump-links"><a href="#qc-2026-08-06-00-06">12am–6am</a><a href="#qc-2026-08-06-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-06-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-06-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 7</span><div class="jump-links"><a href="#qc-2026-08-07-00-06">12am–6am</a><a href="#qc-2026-08-07-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-07-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-07-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 8</span><div class="jump-links"><a href="#qc-2026-08-08-00-06">12am–6am</a><a href="#qc-2026-08-08-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-08-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-08-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sun, Aug 9</span><div class="jump-links"><a href="#qc-2026-08-09-00-06">12am–6am</a><a href="#qc-2026-08-09-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-09-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-09-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Mon, Aug 10</span><div class="jump-links"><a href="#qc-2026-08-10-00-06">12am–6am</a><a href="#qc-2026-08-10-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-10-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-10-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tue, Aug 11</span><div class="jump-links"><a href="#qc-2026-08-11-00-06">12am–6am</a><a href="#qc-2026-08-11-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-11-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-11-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wed, Aug 12</span><div class="jump-links"><a href="#qc-2026-08-12-00-06">12am–6am</a><a href="#qc-2026-08-12-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-12-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-12-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thu, Aug 13</span><div class="jump-links"><a href="#qc-2026-08-13-00-06">12am–6am</a><a href="#qc-2026-08-13-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-13-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-13-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Fri, Aug 14</span><div class="jump-links"><a href="#qc-2026-08-14-00-06">12am–6am</a><a href="#qc-2026-08-14-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-14-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-14-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sat, Aug 15</span><div class="jump-links"><a href="#qc-2026-08-15-00-06">12am–6am</a><a href="#qc-2026-08-15-06-12">Morning · 6am–12pm</a><a href="#qc-2026-08-15-12-18">Afternoon · 12pm–6pm</a><a href="#qc-2026-08-15-18-24">Evening · 6pm–12am</a></div></div><button type="button" id="run-toggle" class="run-toggle" aria-label="Play">▶</button></div>
+</details>
+</span>
+<span class="nav-split">
+<button type="button" id="folks-random" class="nav-split-label" data-attendees-prefix="attendees/" data-people="[{&quot;id&quot;: 5, &quot;name&quot;: &quot;Jim S&quot;}, {&quot;id&quot;: 6, &quot;name&quot;: &quot;Helen S&quot;}, {&quot;id&quot;: 7, &quot;name&quot;: &quot;David S&quot;}, {&quot;id&quot;: 8, &quot;name&quot;: &quot;Rachel&quot;}, {&quot;id&quot;: 9, &quot;name&quot;: &quot;Susan&quot;}]">Folks</button>
+<details class="jump-menu">
+<summary><span class="nav-caret">▾</span></summary>
 <div class="jump-panel"><div class="jump-links"><span class="jump-person"><span class="jump-person-name">David S</span><a href="#qc-2026-08-01-18-24">Timeline</a><a href="attendees/7.html" class="jump-person-details">Detail</a></span><span class="jump-person"><span class="jump-person-name">Helen S</span><a href="#qc-2026-08-01-00-06">Timeline</a><a href="attendees/6.html" class="jump-person-details">Detail</a></span><span class="jump-person"><span class="jump-person-name">Jim S</span><a href="#qc-2026-08-01-00-06">Timeline</a><a href="attendees/5.html" class="jump-person-details">Detail</a></span><span class="jump-person"><span class="jump-person-name">Rachel</span><a href="#qc-2026-08-01-18-24">Timeline</a><a href="attendees/8.html" class="jump-person-details">Detail</a></span><span class="jump-person"><span class="jump-person-name">Susan</span><a href="#qc-2026-08-04-12-18">Timeline</a><a href="attendees/9.html" class="jump-person-details">Detail</a></span></div></div>
 </details>
+</span>
+<a href="family-tree/index.html">Tree</a>
 </nav>
 <main>
 <section class="intro-screen" id="trip-top">
 <h1 class="trip-title">Murray Corner 2026</h1>
 <p class="trip-subtitle">Murray Corner, New Brunswick · August 1–15, 2026</p>
 <p class="scroll-hint">Scroll or swipe down to start ↓</p>
+</section>
+<section class="transition-screen" id="trip-transition">
+<p class="transition-prompt">Where would you like to start?</p>
+<div class="transition-choices">
+<button type="button" id="transition-now" class="transition-choice" data-trip-start="2026-08-01" data-trip-end="2026-08-15">Jump to now</button>
+<a href="#qc-2026-08-01-00-06" id="transition-aug1" class="transition-choice">Aug 1st</a>
+</div>
 </section>
 <section class="quarter-screen first-quarter-screen" id="qc-2026-08-01-00-06" data-day-name="Saturday" data-date="Aug 1" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
@@ -1051,8 +1078,103 @@ summary.current-quarter-label::-webkit-details-marker { display: none; }
 </section>
 </main>
 <script>
-var TRIP_CONFIG = {"start": "2026-08-01", "end": "2026-08-15"};
-// Timeline feature — inlined into site/index.html at build time.
+// Shared client-side nav logic — inlined into every page at build time
+// (see technical.md -> Where CSS and JS changes go). currentQuarterSectionId()
+// is a plain top-level function (not wrapped in DOMContentLoaded), so it's
+// available immediately once this script tag runs, before timeline/shared.js
+// (site/index.html only, loaded after this file) needs to reuse it for its
+// own Play/pause and transition-screen wiring — one computation, not two
+// copies that could drift on "what quarter is it right now at the cottage."
+//
+// The DOMContentLoaded block below wires the "Timeline" and "Folks" split
+// controls' own default-click behavior (see requirements/public.md ->
+// Navigation) — the two items every page's nav bar has, including Family
+// Tree and Attendees pages, which have no other JS of their own to hang
+// this off.
+
+var NAV_TRIP_TIMEZONE = 'America/Moncton';
+
+function navQuarterForHour(hour) {
+  if (hour < 6) return '00-06';
+  if (hour < 12) return '06-12';
+  if (hour < 18) return '12-18';
+  return '18-24';
+}
+
+// Intl.DateTimeFormat with an explicit timeZone reads the wall-clock
+// date/hour AT THE COTTAGE regardless of the visitor's own system timezone
+// — hourCycle: 'h23' pins the hour to a plain 0-23 range (some engines
+// otherwise return "24" for midnight with hour12: false alone).
+function navTripLocalParts(d) {
+  var parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: NAV_TRIP_TIMEZONE,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', hourCycle: 'h23'
+  }).formatToParts(d);
+  var map = {};
+  parts.forEach(function (p) { map[p.type] = p.value; });
+  return { iso: map.year + '-' + map.month + '-' + map.day, hour: parseInt(map.hour, 10) };
+}
+
+// tripStart/tripEnd are ISO date strings ("2026-08-01") read off whichever
+// element triggered the call (its own data-trip-start/data-trip-end), not
+// a single shared global — this same function works identically whether
+// called from site/index.html or a page two directory levels away from it.
+function currentQuarterSectionId(tripStart, tripEnd) {
+  var now = navTripLocalParts(new Date());
+  var iso = now.iso;
+  var quarter = navQuarterForHour(now.hour);
+  // Clamp into the trip window: before it starts snaps to the very first
+  // quarter; after it ends snaps to the very last.
+  if (iso < tripStart) {
+    iso = tripStart;
+    quarter = '00-06';
+  } else if (iso > tripEnd) {
+    iso = tripEnd;
+    quarter = '18-24';
+  }
+  return 'qc-' + iso + '-' + quarter;
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  // "Timeline" nav item's own click (see requirements/public.md ->
+  // Navigation) — jumps to "now": scrolls in place when already on
+  // site/index.html (data-prefix empty), or navigates there when on
+  // Family Tree/a Details page (data-prefix e.g. "../index.html").
+  var timelineJump = document.getElementById('timeline-jump');
+  if (timelineJump) {
+    timelineJump.addEventListener('click', function () {
+      var id = currentQuarterSectionId(timelineJump.dataset.tripStart, timelineJump.dataset.tripEnd);
+      var prefix = timelineJump.dataset.prefix || '';
+      if (prefix) {
+        window.location.href = prefix + '#' + id;
+      } else {
+        var target = document.getElementById(id);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
+
+  // "Folks" nav item's own click — jumps to a random attending person's
+  // Details page, computed fresh each time. data-people is the full
+  // attending roster ([{id, name}, ...], JSON-encoded); data-attendees-
+  // prefix the page-relative path to site/attendees/.
+  var folksRandom = document.getElementById('folks-random');
+  if (folksRandom) {
+    folksRandom.addEventListener('click', function () {
+      var people = JSON.parse(folksRandom.dataset.people || '[]');
+      if (!people.length) return;
+      var person = people[Math.floor(Math.random() * people.length)];
+      window.location.href = (folksRandom.dataset.attendeesPrefix || '') + person.id + '.html';
+    });
+  }
+});
+
+// Timeline feature — inlined into site/index.html at build time, after
+// shared/nav.js (which supplies currentQuarterSectionId() — the single
+// "what quarter is it right now at the cottage" computation this file
+// reuses rather than duplicating, since shared/nav.js's own "Timeline"
+// split-control click needs the identical answer).
 document.addEventListener('DOMContentLoaded', function () {
   // Must match --nav-height in shared/base.css (3.75rem = 60px at the
   // default root font size) — hardcoded here since reading a CSS custom
@@ -1062,90 +1184,29 @@ document.addEventListener('DOMContentLoaded', function () {
   // currentSectionIndex()) so the two can't drift to different values.
   var NAV_HEIGHT_PX = 60;
 
-  // "Now" — the current day quarter AT THE COTTAGE (Murray Corner, New
-  // Brunswick — Atlantic Time), computed fresh from the visitor's device
-  // clock but read in the trip's own timezone, not whatever timezone the
-  // visitor's device happens to be set to (never baked in at build time —
-  // see timeline/scripts/build.py's module docstring) so the exact same
-  // static page stays accurate for the whole trip with no rebuild. This
-  // matters beyond just correctness: someone still at home checking "who
-  // else is landing around now" (see brand-guidelines.md -> The Story)
-  // needs that answered for the cottage's own clock — their own local
-  // hour is meaningless here, and could even fall on a different
-  // Atlantic-time calendar date entirely. TRIP_CONFIG is emitted by
-  // build_page_html() just before this script, from the same
-  // TRIP_START/TRIP_END shared/trip.py uses at build time — the trip
-  // window itself is still fixed data, only "which quarter is now" is a
-  // runtime, per-visitor question.
-  var TRIP_TIMEZONE = 'America/Moncton';
-  function quarterForHour(hour) {
-    if (hour < 6) return '00-06';
-    if (hour < 12) return '06-12';
-    if (hour < 18) return '12-18';
-    return '18-24';
+  // The transition screen's own two choices (see requirements/public.md
+  // -> Home & Timeline -> Layout) — reached by scrolling down from Home,
+  // not on load: this page no longer auto-scrolls anywhere on a hash-less
+  // load (see requirements/public.md -> Always the full trip, "now"
+  // computed live, for why that changed) — a fresh visit just opens on
+  // Home, same as any other page, and a `#qc-...` hash still lands the
+  // browser directly on that quarter screen via plain native anchor
+  // behavior, no JS needed for that case at all.
+  var transitionNow = document.getElementById('transition-now');
+  if (transitionNow) {
+    transitionNow.addEventListener('click', function () {
+      var id = currentQuarterSectionId(transitionNow.dataset.tripStart, transitionNow.dataset.tripEnd);
+      var target = document.getElementById(id);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
-  // Intl.DateTimeFormat with an explicit timeZone reads the wall-clock
-  // date/hour AT THE COTTAGE regardless of the visitor's own system
-  // timezone — hourCycle: 'h23' pins the hour to a plain 0-23 range
-  // (some engines otherwise return "24" for midnight with hour12: false
-  // alone, a known cross-browser quirk).
-  function tripLocalParts(d) {
-    var parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: TRIP_TIMEZONE,
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', hourCycle: 'h23'
-    }).formatToParts(d);
-    var map = {};
-    parts.forEach(function (p) { map[p.type] = p.value; });
-    return { iso: map.year + '-' + map.month + '-' + map.day, hour: parseInt(map.hour, 10) };
-  }
-  function currentQuarterSectionId() {
-    var now = tripLocalParts(new Date());
-    var iso = now.iso;
-    var quarter = quarterForHour(now.hour);
-    // Clamp into the trip window: before it starts snaps to the very
-    // first quarter; after it ends (the one edge case that matters —
-    // see requirements/public.md -> Navigation) snaps to the very last.
-    if (iso < TRIP_CONFIG.start) {
-      iso = TRIP_CONFIG.start;
-      quarter = '00-06';
-    } else if (iso > TRIP_CONFIG.end) {
-      iso = TRIP_CONFIG.end;
-      quarter = '18-24';
-    }
-    return 'qc-' + iso + '-' + quarter;
-  }
-
-  // Land on "now" on first load, unless the URL already points somewhere
-  // specific (a shared link to a particular quarter screen), which is
-  // left alone — instant, not smooth, so opening the page doesn't
-  // visibly fly through however many days have already passed. Scrolling
-  // down from here moves forward through the rest of the trip; scrolling
-  // back up moves backward, all the way past August 1 to the intro
-  // screen — nothing before "now" is hidden, unlike the old cutoff-based
-  // version (see requirements/public.md -> Homepage = Timeline).
-  if (!location.hash && typeof TRIP_CONFIG !== 'undefined') {
-    var nowTarget = document.getElementById(currentQuarterSectionId());
-    if (nowTarget) {
-      nowTarget.scrollIntoView({ behavior: 'instant', block: 'start' });
-    }
-  }
-
-  // The "Now" nav button (render_nav() in timeline/scripts/build.py) —
-  // same target as the auto-scroll above, but computed fresh at click
-  // time rather than reused from page load, in case the page has been
-  // open a while. A button, not a plain anchor link, since the target
-  // quarter depends on the visitor's own clock and can't be baked into a
-  // static href the way every other jump link's target can.
-  var nowButton = document.getElementById('jump-now-toggle');
-  if (nowButton && typeof TRIP_CONFIG !== 'undefined') {
-    nowButton.addEventListener('click', function () {
-      var target = document.getElementById(currentQuarterSectionId());
+  var transitionAug1 = document.getElementById('transition-aug1');
+  if (transitionAug1) {
+    transitionAug1.addEventListener('click', function (event) {
+      var target = document.getElementById(this.getAttribute('href').slice(1));
       if (target) {
+        event.preventDefault();
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        if (history.replaceState) {
-          history.replaceState(null, '', '#' + target.id);
-        }
       }
     });
   }
@@ -1157,12 +1218,10 @@ document.addEventListener('DOMContentLoaded', function () {
   // property — that property applies to ALL scrolling including native
   // scroll-snap settling, and pairing it with scroll-snap-type is a known
   // Safari/iOS bug (see timeline/shared.css). Scoping "smooth" to just
-  // this explicit, deliberate jump action avoids that entirely.
-  // Both the jump-to-time disclosure (the current-quarter label itself,
-  // see render_nav() in timeline/scripts/build.py) and "Folks ▾" share
-  // the .jump-menu/.jump-panel markup and need the same smooth-scroll-
-  // and-close behavior — this must stay a loop over ALL of them, not
-  // just the first match.
+  // this explicit, deliberate jump action avoids that entirely. Covers
+  // both split controls' own panels (the Timeline's day/quarter jump
+  // list and "Folks") — a loop over ALL .jump-menu elements, not just the
+  // first match.
   var menus = document.querySelectorAll('.jump-menu');
   menus.forEach(function (menu) {
     var links = menu.querySelectorAll('a');
@@ -1181,14 +1240,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // Keeps the nav bar's left-side label showing which day quarter is
-  // currently in view, updated as you scroll — the bare month/day
-  // (.cq-date, smaller/secondary, e.g. "Aug 3") shown first, then the
-  // weekday plus bare quarter name (.cq-day, bold/prominent, e.g.
-  // "Monday Morning") shown second, as two separate spans rather than
-  // one flat string so CSS can style them differently (see
-  // timeline/shared.css) — cq-day's own leading " · " is part of its
-  // text content, not static markup, so nothing floats on its own before
+  // Keeps the Timeline split control's own label showing which day
+  // quarter is currently in view, updated as you scroll — the bare
+  // month/day (.cq-date, smaller/secondary, e.g. "Aug 3") shown first,
+  // then the weekday plus bare quarter name (.cq-day, bold/prominent,
+  // e.g. "Monday Morning") shown second, as two separate spans rather
+  // than one flat string so CSS can style them differently (see
+  // shared/base.css) — cq-day's own leading " · " is part of its text
+  // content, not static markup, so nothing floats on its own before
   // either span has actually been filled in. The middot (not a hyphen)
   // matches the separator used everywhere else two related pieces of
   // info sit together on this site (QUARTER_LABELS' own "Morning ·
@@ -1326,11 +1385,14 @@ document.addEventListener('DOMContentLoaded', function () {
     updateQuarterBlend();
   }
 
-  // Play/pause auto-advance — steps through every screen one at a time:
-  // jump to the next screen, pause PAUSE_MS so there's time to actually
-  // read it, jump to the next, pause, and so on — not a continuous scroll.
-  // PAUSE_MS is the one knob to retune the rhythm (longer to linger on
-  // each day quarter, shorter to move briskly).
+  // Play/pause auto-advance — steps through every QUARTER screen one at a
+  // time (deliberately excludes Home and the transition screen — nothing
+  // there to auto-advance through, and interactive choice buttons aren't
+  // a screen to "read"): jump to the next screen, pause PAUSE_MS so
+  // there's time to actually read it, jump to the next, pause, and so on
+  // — not a continuous scroll. PAUSE_MS is the one knob to retune the
+  // rhythm (longer to linger on each day quarter, shorter to move
+  // briskly).
   //
   // Jumps use scrollIntoView({behavior: 'smooth'}), same as the Jump/
   // People links above, but ONLY while the `.auto-scrolling` class is on
@@ -1349,10 +1411,16 @@ document.addEventListener('DOMContentLoaded', function () {
   // moment the user scrolls or swipes manually (listened on 'wheel'/
   // 'touchmove', real user gestures, not 'scroll', which also fires for
   // the scrollIntoView calls below and would cancel itself), or once it
-  // reaches the last screen.
+  // reaches the last screen. While running, the Timeline split control's
+  // own caret also swaps to "⏸" (see requirements/public.md ->
+  // Navigation -> Timeline's panel) so the running state stays visible
+  // even with the panel closed — Play now lives inside that panel, not
+  // as its own top-level nav item, so without this the running state
+  // would otherwise be invisible until reopening the panel.
   var runButton = document.getElementById('run-toggle');
+  var timelineCaret = document.getElementById('timeline-caret');
   var scrollRoot = document.documentElement;
-  var runSections = document.querySelectorAll('main > section');
+  var runSections = document.querySelectorAll('.quarter-screen');
   if (runButton && runSections.length) {
     var PAUSE_MS = 1800;
     var runTimerId = null;
@@ -1383,6 +1451,7 @@ document.addEventListener('DOMContentLoaded', function () {
       scrollRoot.classList.remove('auto-scrolling');
       runButton.textContent = '▶';
       runButton.setAttribute('aria-label', 'Play');
+      if (timelineCaret) timelineCaret.textContent = '▾';
       window.removeEventListener('wheel', stopRun);
       window.removeEventListener('touchmove', stopRun);
     }
@@ -1402,6 +1471,7 @@ document.addEventListener('DOMContentLoaded', function () {
       runIndex = currentSectionIndex();
       runButton.textContent = '⏸';
       runButton.setAttribute('aria-label', 'Pause');
+      if (timelineCaret) timelineCaret.textContent = '⏸';
       window.addEventListener('wheel', stopRun, { passive: true });
       window.addEventListener('touchmove', stopRun, { passive: true });
       advanceRun();
