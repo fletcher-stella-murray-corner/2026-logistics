@@ -23,7 +23,7 @@
   --bg: #f2e9d6;        /* parchment — a warm pale tint of Accent, the fixed "paper card" color (structure/room boxes, Family Tree boxes, jump panels), never the atmosphere */
   --text: #23282b;      /* charcoal */
   --grove: #c9e2c0;     /* soft pastel green — background for anything that isn't a specific day/quarter: see body below */
-  --border: #ddd6c4;
+  --border: #ddd6c4;    /* plain structural neutral — see brand-guidelines.md -> Colours -> Utility */
   --nav-height: 3.75rem;
 }
 * { box-sizing: border-box; }
@@ -146,15 +146,27 @@ body {
    shown second, its own leading " · " baked into the text shared.js sets
    rather than static markup. .cq-day defaults to the static word
    "Timeline" (see render_nav()) until overwritten. */
+/* No flex-grow on either rule below (deliberately dropped — see
+   requirements/public.md -> Navigation -> Closing a panel's sibling note
+   on the caret always sitting next to its label): giving the LABEL its
+   own flex:1 used to make its clickable box stretch to fill whatever
+   width .current-quarter-menu itself grew into, which on a wide viewport
+   left the caret sitting at the far right of that grown box — a big
+   empty gap between the visible label text and its own caret, reading as
+   "the caret is for something else entirely." Dropping flex-grow from
+   both means the label+caret pair always sizes to its own content and
+   sits snugly together, while flex-shrink:1 (kept on both) still lets
+   the label truncate via its own ellipsis rule below if the live date+
+   quarter text ever can't fit alongside "Folks"/"Tree" on a narrow
+   phone — the one thing flex:1 was ever actually needed for. */
 .current-quarter-menu {
-  flex: 1;
   min-width: 0;
   flex-shrink: 1;
 }
 .current-quarter-label {
   display: block;
-  flex: 1;
   min-width: 0;
+  flex-shrink: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -206,23 +218,27 @@ body {
    ticket stub torn off the paper itinerary, not a generic dropdown.
    Geometry only, no icon/illustration — a shape, not a picture, so it
    stays inside the "no icons" rule (brand-guidelines.md -> Illustration
-   / Imagery Style). */
+   / Imagery Style). The notch depth (6px) is deliberately smaller than
+   this panel's own padding below — it has to stay less than the padding
+   or the notch cuts into the first row's actual content instead of just
+   the panel's empty margin around it; shrunk from an earlier 10px
+   alongside the padding reduction below, for the same reason. */
 .jump-panel {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
-  margin-top: 0.5rem;
+  margin-top: 0.3rem;
   max-height: 60vh;
   overflow-y: auto;
-  padding: 0.75rem;
+  padding: 0.5rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  clip-path: polygon(0 10px, 10px 10px, 10px 0, calc(100% - 10px) 0, calc(100% - 10px) 10px, 100% 10px, 100% 100%, 0 100%);
+  clip-path: polygon(0 6px, 6px 6px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 6px, 100% 6px, 100% 100%, 0 100%);
 }
-.jump-links { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.jump-links { display: flex; flex-wrap: wrap; gap: 0.25rem; }
 /* The Folks panel's own list — a single column, one person per row (see
    requirements/public.md -> Navigation -> Folks panel), deliberately its
    own class rather than reusing .jump-links above: that one stays a
@@ -284,13 +300,15 @@ body {
    into a summary's own text. Two different-looking carets for the same
    meaning was the actual bug a past design pass left behind — see
    requirements/public.md -> Navigation for the one-system rule this
-   exists to satisfy. Deliberately smaller (0.85rem) and set off with its
-   own margin rather than sized to match the label text next to it — a
-   quieter, secondary mark, not competing with the word it's attached to. */
+   exists to satisfy. Sized up from an earlier, easy-to-miss 0.85rem —
+   still set off with its own margin rather than matched to the label
+   text's own size, so it stays a distinct mark rather than reading as
+   more label text, but large enough now to register as its own tappable
+   thing at a glance instead of a stray punctuation mark. */
 .nav-caret {
   color: var(--nav-text);
-  font-size: 0.85rem;
-  margin-left: 0.2rem;
+  font-size: 1.3rem;
+  margin-left: 0.25rem;
 }
 
 /* Limelight only has one weight — font-weight:400 here is deliberate,
@@ -376,7 +394,7 @@ a { color: var(--secondary); }
 <button type="button" id="timeline-jump" class="nav-split-label current-quarter-label" data-trip-start="2026-08-01" data-trip-end="2026-08-15" data-prefix="../index.html"><span class="cq-date" id="cq-date"></span><span class="cq-day" id="cq-day">Timeline</span></button>
 <details class="jump-menu">
 <summary><span class="nav-caret" id="timeline-caret">▾</span></summary>
-<div class="jump-panel"><div class="jump-day-group"><span class="jump-day-label">Saturday, August 1st</span><div class="jump-links"><a href="../index.html#qc-2026-08-01-00-06">12am–6am</a><a href="../index.html#qc-2026-08-01-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-01-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-01-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sunday, August 2nd</span><div class="jump-links"><a href="../index.html#qc-2026-08-02-00-06">12am–6am</a><a href="../index.html#qc-2026-08-02-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-02-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-02-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Monday, August 3rd</span><div class="jump-links"><a href="../index.html#qc-2026-08-03-00-06">12am–6am</a><a href="../index.html#qc-2026-08-03-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-03-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-03-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tuesday, August 4th</span><div class="jump-links"><a href="../index.html#qc-2026-08-04-00-06">12am–6am</a><a href="../index.html#qc-2026-08-04-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-04-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-04-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wednesday, August 5th</span><div class="jump-links"><a href="../index.html#qc-2026-08-05-00-06">12am–6am</a><a href="../index.html#qc-2026-08-05-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-05-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-05-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thursday, August 6th</span><div class="jump-links"><a href="../index.html#qc-2026-08-06-00-06">12am–6am</a><a href="../index.html#qc-2026-08-06-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-06-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-06-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Friday, August 7th</span><div class="jump-links"><a href="../index.html#qc-2026-08-07-00-06">12am–6am</a><a href="../index.html#qc-2026-08-07-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-07-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-07-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Saturday, August 8th</span><div class="jump-links"><a href="../index.html#qc-2026-08-08-00-06">12am–6am</a><a href="../index.html#qc-2026-08-08-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-08-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-08-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Sunday, August 9th</span><div class="jump-links"><a href="../index.html#qc-2026-08-09-00-06">12am–6am</a><a href="../index.html#qc-2026-08-09-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-09-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-09-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Monday, August 10th</span><div class="jump-links"><a href="../index.html#qc-2026-08-10-00-06">12am–6am</a><a href="../index.html#qc-2026-08-10-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-10-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-10-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Tuesday, August 11th</span><div class="jump-links"><a href="../index.html#qc-2026-08-11-00-06">12am–6am</a><a href="../index.html#qc-2026-08-11-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-11-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-11-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Wednesday, August 12th</span><div class="jump-links"><a href="../index.html#qc-2026-08-12-00-06">12am–6am</a><a href="../index.html#qc-2026-08-12-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-12-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-12-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Thursday, August 13th</span><div class="jump-links"><a href="../index.html#qc-2026-08-13-00-06">12am–6am</a><a href="../index.html#qc-2026-08-13-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-13-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-13-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Friday, August 14th</span><div class="jump-links"><a href="../index.html#qc-2026-08-14-00-06">12am–6am</a><a href="../index.html#qc-2026-08-14-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-14-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-14-18-24">Evening · 6pm–12am</a></div></div><div class="jump-day-group"><span class="jump-day-label">Saturday, August 15th</span><div class="jump-links"><a href="../index.html#qc-2026-08-15-00-06">12am–6am</a><a href="../index.html#qc-2026-08-15-06-12">Morning · 6am–12pm</a><a href="../index.html#qc-2026-08-15-12-18">Afternoon · 12pm–6pm</a><a href="../index.html#qc-2026-08-15-18-24">Evening · 6pm–12am</a></div></div></div>
+<div class="jump-panel"><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-01-00-06" data-quarter="00-06" class="jump-link jump-link-date">Sat, Aug 1st</a><a href="../index.html#qc-2026-08-01-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-01-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-01-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-02-00-06" data-quarter="00-06" class="jump-link jump-link-date">Sun, Aug 2nd</a><a href="../index.html#qc-2026-08-02-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-02-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-02-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-03-00-06" data-quarter="00-06" class="jump-link jump-link-date">Mon, Aug 3rd</a><a href="../index.html#qc-2026-08-03-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-03-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-03-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-04-00-06" data-quarter="00-06" class="jump-link jump-link-date">Tue, Aug 4th</a><a href="../index.html#qc-2026-08-04-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-04-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-04-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-05-00-06" data-quarter="00-06" class="jump-link jump-link-date">Wed, Aug 5th</a><a href="../index.html#qc-2026-08-05-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-05-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-05-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-06-00-06" data-quarter="00-06" class="jump-link jump-link-date">Thu, Aug 6th</a><a href="../index.html#qc-2026-08-06-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-06-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-06-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-07-00-06" data-quarter="00-06" class="jump-link jump-link-date">Fri, Aug 7th</a><a href="../index.html#qc-2026-08-07-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-07-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-07-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-08-00-06" data-quarter="00-06" class="jump-link jump-link-date">Sat, Aug 8th</a><a href="../index.html#qc-2026-08-08-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-08-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-08-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-09-00-06" data-quarter="00-06" class="jump-link jump-link-date">Sun, Aug 9th</a><a href="../index.html#qc-2026-08-09-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-09-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-09-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-10-00-06" data-quarter="00-06" class="jump-link jump-link-date">Mon, Aug 10th</a><a href="../index.html#qc-2026-08-10-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-10-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-10-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-11-00-06" data-quarter="00-06" class="jump-link jump-link-date">Tue, Aug 11th</a><a href="../index.html#qc-2026-08-11-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-11-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-11-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-12-00-06" data-quarter="00-06" class="jump-link jump-link-date">Wed, Aug 12th</a><a href="../index.html#qc-2026-08-12-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-12-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-12-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-13-00-06" data-quarter="00-06" class="jump-link jump-link-date">Thu, Aug 13th</a><a href="../index.html#qc-2026-08-13-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-13-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-13-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-14-00-06" data-quarter="00-06" class="jump-link jump-link-date">Fri, Aug 14th</a><a href="../index.html#qc-2026-08-14-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-14-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-14-18-24" data-quarter="18-24" class="jump-link">Evening</a></div><div class="jump-links jump-day-links"><a href="../index.html#qc-2026-08-15-00-06" data-quarter="00-06" class="jump-link jump-link-date">Sat, Aug 15th</a><a href="../index.html#qc-2026-08-15-06-12" data-quarter="06-12" class="jump-link">Morning</a><a href="../index.html#qc-2026-08-15-12-18" data-quarter="12-18" class="jump-link">Afternoon</a><a href="../index.html#qc-2026-08-15-18-24" data-quarter="18-24" class="jump-link">Evening</a></div></div>
 </details>
 </span>
 <span class="nav-split">
@@ -390,7 +408,7 @@ a { color: var(--secondary); }
 </nav>
 <h1 class="attendees-title">David S</h1>
 <main>
-<h2 class="fact-day">Saturday, August 1st</h2><div class="fact-line"><span class="fact-time">6pm</span> <span class="fact-label">Arrival</span> <span class="fact-detail">by 🚗 Car — White Toyota Camry</span></div><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Cottage — Blue Room till Friday, August 7th</span></div><h2 class="fact-day">Tuesday, August 4th</h2><div class="fact-line"><span class="fact-label">Working from</span> <span class="fact-detail">Red Shed, mornings &amp; afternoons, till Thursday, August 6th</span></div><h2 class="fact-day">Saturday, August 8th</h2><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Tent — Rachel's camping tent</span></div><h2 class="fact-day">Sunday, August 9th</h2><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Tent — old worn out tent till Thursday, August 13th</span></div><div class="fact-line"><span class="fact-time">12am–6am</span> <span class="fact-label">Driving</span> <span class="fact-detail">Rachel’s departure — ✈️ Plane — Moncton Airport — 6am flight · Departing Cottage at 3am — David S driving</span></div><h2 class="fact-day">Tuesday, August 11th</h2><div class="fact-line"><span class="fact-label">Working from</span> <span class="fact-detail">Red Shed, mornings &amp; afternoons, till Wednesday, August 12th</span></div><h2 class="fact-day">Thursday, August 13th</h2><div class="fact-line"><span class="fact-time">6am</span> <span class="fact-label">Departure</span> <span class="fact-detail">by 🚗 Car — Vehicle TBD</span></div>
+<h2 class="fact-day">Saturday, Aug 1st</h2><div class="fact-line"><span class="fact-time">6pm</span> <span class="fact-label">Arrival</span> <span class="fact-detail">by 🚗 Car — White Toyota Camry</span></div><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Cottage — Blue Room till Friday, Aug 7th</span></div><h2 class="fact-day">Tuesday, Aug 4th</h2><div class="fact-line"><span class="fact-label">Working from</span> <span class="fact-detail">Red Shed, mornings &amp; afternoons</span></div><h2 class="fact-day">Wednesday, Aug 5th</h2><div class="fact-line"><span class="fact-label">Working from</span> <span class="fact-detail">Red Shed, mornings &amp; afternoons</span></div><h2 class="fact-day">Thursday, Aug 6th</h2><div class="fact-line"><span class="fact-label">Working from</span> <span class="fact-detail">Red Shed, mornings &amp; afternoons</span></div><h2 class="fact-day">Saturday, Aug 8th</h2><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">The Field — Rachel's camping tent</span></div><h2 class="fact-day">Sunday, Aug 9th</h2><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">The Field — old worn out tent till Thursday, Aug 13th</span></div><div class="fact-line"><span class="fact-time">12am–6am</span> <span class="fact-label">Driving</span> <span class="fact-detail">Rachel’s departure — ✈️ Plane — Moncton Airport — 6am flight · Departing Cottage at 3am — David S driving</span></div><h2 class="fact-day">Tuesday, Aug 11th</h2><div class="fact-line"><span class="fact-label">Working from</span> <span class="fact-detail">Red Shed, mornings &amp; afternoons</span></div><h2 class="fact-day">Wednesday, Aug 12th</h2><div class="fact-line"><span class="fact-label">Working from</span> <span class="fact-detail">Red Shed, mornings &amp; afternoons</span></div><h2 class="fact-day">Thursday, Aug 13th</h2><div class="fact-line"><span class="fact-time">6am</span> <span class="fact-label">Departure</span> <span class="fact-detail">by 🚗 Car — Vehicle TBD</span></div>
 </main>
 <script>
 // Shared client-side nav logic — inlined into every page at build time
@@ -402,10 +420,11 @@ a { color: var(--secondary); }
 // copies that could drift on "what quarter is it right now at the cottage."
 //
 // The DOMContentLoaded block below wires the "Timeline" and "Folks" split
-// controls' own default-click behavior (see requirements/public.md ->
-// Navigation) — the two items every page's nav bar has, including Family
-// Tree and Attendees pages, which have no other JS of their own to hang
-// this off.
+// controls' own default-click behavior, and the shared close-a-panel
+// behavior every .jump-menu disclosure needs (see requirements/public.md
+// -> Navigation -> Closing a panel) — every page's nav bar has these,
+// including Family Tree and Attendees pages, which have no other JS of
+// their own to hang this off.
 
 var NAV_TRIP_TIMEZONE = 'America/Moncton';
 
@@ -502,6 +521,48 @@ document.addEventListener('DOMContentLoaded', function () {
       people[j] = tmp;
     }
     people.forEach(function (el) { folksList.appendChild(el); });
+  }
+
+  // Closing a split control's panel (see requirements/public.md ->
+  // Navigation -> Closing a panel) — a plain <details> does neither of
+  // these two on its own: opening one leaves any other already-open panel
+  // (Timeline's and Folks') sitting open too, overlapping on screen, and
+  // clicking anywhere outside an open panel does nothing at all — the
+  // only way to close it is clicking the exact same tiny caret again.
+  // Both read as "hard to close." Lives here (not timeline/shared.js) so
+  // it applies on every page with one of these panels, including Family
+  // Tree and Details pages, which have no other JS of their own.
+  var jumpMenus = document.querySelectorAll('.jump-menu');
+  if (jumpMenus.length) {
+    // Opening a panel closes any other open one first — 'toggle' fires
+    // whenever a <details>'s own open state changes, native or scripted,
+    // so this also catches a menu opened programmatically (e.g. a future
+    // change), not just a direct click on its own caret.
+    jumpMenus.forEach(function (menu) {
+      menu.addEventListener('toggle', function () {
+        if (!menu.open) return;
+        jumpMenus.forEach(function (other) {
+          if (other !== menu) other.open = false;
+        });
+      });
+    });
+    // A click anywhere outside every open panel closes it — checked via
+    // .contains() so a click on the panel's own trigger or a link inside
+    // it is correctly left alone (the trigger's native toggle, or
+    // timeline/shared.js's own close-after-acting logic, handle those).
+    document.addEventListener('click', function (event) {
+      jumpMenus.forEach(function (menu) {
+        if (menu.open && !menu.contains(event.target)) {
+          menu.open = false;
+        }
+      });
+    });
+    // Escape closes whatever's open — the keyboard equivalent of
+    // clicking away, for anyone not using touch/mouse.
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') return;
+      jumpMenus.forEach(function (menu) { menu.open = false; });
+    });
   }
 });
 

@@ -82,15 +82,22 @@ def ordinal(n):
 
 
 def format_date_full(d):
-    """Full weekday, full month, ordinal day — "Wednesday, August 5th".
-    The natural-speech date format, for anywhere with room to say the
-    whole thing: the Attendees page's day headings and inline "till..."
-    mentions, and the Timeline's jump-to-time panel day groups. NOT the
-    Timeline's own live nav label — that's a single-row control sharing
-    space with three other nav items on a phone, so it uses
-    format_date_abbrev() below instead (see requirements/public.md ->
-    Navigation)."""
-    return d.strftime("%A, %B ") + ordinal(d.day)
+    """Full weekday, ABBREVIATED month, ordinal day — "Wednesday, Aug
+    5th". The Attendees page's own date format: every day heading and
+    every inline "till..." mention (see attendees/scripts/build.py ->
+    format_date_label()). Weekday stays spelled out (that's the piece
+    someone checking their own facts actually scans for — "which day is
+    this"), but the month shortens to match the site's other abbreviated
+    date spots (shared/trip.py -> format_date_abbrev()/format_date_jump()
+    below) — "August" read as unnecessary length once every other date on
+    the site was already abbreviating it; full weekday + short month
+    reads faster without losing which day it is, per
+    requirements/public.md -> Attendees -> Layout. NOT the Timeline's own
+    live nav label or its jump-to-time panel — those abbreviate the
+    weekday too (format_date_abbrev()/format_date_jump() below), since
+    they're single-row/dropdown-chip contexts genuinely tight on space,
+    unlike this page."""
+    return d.strftime("%A, %b ") + ordinal(d.day)
 
 
 def quarter_screen_id(iso_date, quarter):
@@ -103,11 +110,27 @@ def quarter_screen_id(iso_date, quarter):
 
 
 def format_date_abbrev(d):
-    """Weekday-first, abbreviated — "Wed, Aug 5". Used only where nav-bar
-    space is tight (the Timeline's own live current-quarter label, see
+    """Weekday-first, abbreviated — "Wed, Aug 5". Used where nav-bar space
+    is tight (the Timeline's own live current-quarter label, see
     timeline/scripts/build.py -> render_quarter_screen() and
-    timeline/shared.js) — everywhere else on the site with room to spare
-    uses format_date_full() above instead. Weekday-first either way: the
-    order bug this replaced ("Aug 5 · Monday Morning") was never about
-    abbreviation, only about which piece came first."""
+    timeline/shared.js) and the jump-to-time panel's own date chip (see
+    format_date_jump() below for why that one keeps the ordinal suffix
+    instead of reusing this bare form as-is) — everywhere else on the
+    site with room to spare uses format_date_full() above instead.
+    Weekday-first either way: the order bug this replaced ("Aug 5 ·
+    Monday Morning") was never about abbreviation, only about which piece
+    came first."""
     return d.strftime("%a, %b ") + str(d.day)
+
+
+def format_date_jump(d):
+    """Weekday-first, abbreviated, WITH the ordinal suffix — "Sat, Aug
+    1st". The jump-to-time panel's own date chip (see
+    timeline/scripts/build.py -> render_jump_panel()) needs this
+    abbreviated, not the fuller format_date_full() form, once that chip
+    is folded into a same-row button next to three short quarter-name
+    chips (see requirements/public.md -> Navigation -> Timeline's panel)
+    — but it keeps the ordinal suffix format_date_abbrev() above drops,
+    since a bare day number read oddly plain next to "1st/2nd/3rd" being
+    the norm everywhere else a date's spelled out on this site."""
+    return d.strftime("%a, %b ") + ordinal(d.day)

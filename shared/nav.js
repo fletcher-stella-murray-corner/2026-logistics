@@ -7,10 +7,11 @@
 // copies that could drift on "what quarter is it right now at the cottage."
 //
 // The DOMContentLoaded block below wires the "Timeline" and "Folks" split
-// controls' own default-click behavior (see requirements/public.md ->
-// Navigation) — the two items every page's nav bar has, including Family
-// Tree and Attendees pages, which have no other JS of their own to hang
-// this off.
+// controls' own default-click behavior, and the shared close-a-panel
+// behavior every .jump-menu disclosure needs (see requirements/public.md
+// -> Navigation -> Closing a panel) — every page's nav bar has these,
+// including Family Tree and Attendees pages, which have no other JS of
+// their own to hang this off.
 
 var NAV_TRIP_TIMEZONE = 'America/Moncton';
 
@@ -107,5 +108,47 @@ document.addEventListener('DOMContentLoaded', function () {
       people[j] = tmp;
     }
     people.forEach(function (el) { folksList.appendChild(el); });
+  }
+
+  // Closing a split control's panel (see requirements/public.md ->
+  // Navigation -> Closing a panel) — a plain <details> does neither of
+  // these two on its own: opening one leaves any other already-open panel
+  // (Timeline's and Folks') sitting open too, overlapping on screen, and
+  // clicking anywhere outside an open panel does nothing at all — the
+  // only way to close it is clicking the exact same tiny caret again.
+  // Both read as "hard to close." Lives here (not timeline/shared.js) so
+  // it applies on every page with one of these panels, including Family
+  // Tree and Details pages, which have no other JS of their own.
+  var jumpMenus = document.querySelectorAll('.jump-menu');
+  if (jumpMenus.length) {
+    // Opening a panel closes any other open one first — 'toggle' fires
+    // whenever a <details>'s own open state changes, native or scripted,
+    // so this also catches a menu opened programmatically (e.g. a future
+    // change), not just a direct click on its own caret.
+    jumpMenus.forEach(function (menu) {
+      menu.addEventListener('toggle', function () {
+        if (!menu.open) return;
+        jumpMenus.forEach(function (other) {
+          if (other !== menu) other.open = false;
+        });
+      });
+    });
+    // A click anywhere outside every open panel closes it — checked via
+    // .contains() so a click on the panel's own trigger or a link inside
+    // it is correctly left alone (the trigger's native toggle, or
+    // timeline/shared.js's own close-after-acting logic, handle those).
+    document.addEventListener('click', function (event) {
+      jumpMenus.forEach(function (menu) {
+        if (menu.open && !menu.contains(event.target)) {
+          menu.open = false;
+        }
+      });
+    });
+    // Escape closes whatever's open — the keyboard equivalent of
+    // clicking away, for anyone not using touch/mouse.
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') return;
+      jumpMenus.forEach(function (menu) { menu.open = false; });
+    });
   }
 });

@@ -4,10 +4,16 @@ attending person summarizing their own travel/room facts as a single
 chronological timeline, grouped under one day heading per distinct date —
 not a night-by-night listing, and not grouped by kind of fact either (see
 render_person_page() below): Arrival, Sleeping stretches, Working from
-stretches, Departure, and Driving obligations are all sorted together by
-date first, then bucketed under whichever day each one starts on, a
-ranged fact (Sleeping/Working from) grouped under the FIRST date of its
-range. No index page and no nav link of its own — a person's page is
+days, Departure, and Driving obligations are all sorted together by date
+first, then bucketed under whichever day each one falls on. Sleeping is
+the only RANGED fact — grouped under the FIRST date of its range, with
+the line itself stating a "till <end day>" clause. Working from is
+deliberately NOT ranged this way despite its data also being a date
+range: it's a fact about one specific day, true or not true that day, so
+it renders as its own line under EVERY day it covers, one line per
+calendar date, never summarized into a single range line (see
+working_line() below). No index page and no nav link of its own — a
+person's page is
 reached by clicking them in the Family Tree (see
 family-tree/scripts/build.py's render_person(), which links an attending
 person's box straight to their site/attendees/<id>.html). People marked
@@ -25,11 +31,11 @@ facts-collected/collecting-facts distinction (whether a travel.json entry
 exists and isn't marked "pending": true) is computed and shown on the
 Family Tree page, not here — this script doesn't need it.
 
-Also renders one "Working from" line per `working_from` block on the page
-owner's own entry (see working_line() below and
-requirements/public.md -> Data -> travel.json -> working_from) — sourced
-straight from that entry, same single-source-of-truth guarantee as
-Arrival/Sleeping/Departure above, just another kind of fact on it, and
+Also renders one "Working from" line per DAY covered by each
+`working_from` block on the page owner's own entry (see working_line()
+below and requirements/public.md -> Data -> travel.json -> working_from)
+— sourced straight from that entry, same single-source-of-truth guarantee
+as Arrival/Sleeping/Departure above, just another kind of fact on it, and
 merged into the same date-grouped timeline as everything else.
 
 Also renders a "Driving" line for every OTHER person's leg where this
@@ -177,14 +183,14 @@ def format_leg_body(leg, people_by_id, lead_with_by=False):
 
 
 def format_date_label(d):
-    """Full natural-speech date — "Wednesday, August 5th" — this page has
-    the room for it (see shared/trip.py -> format_date_full(), and
+    """Natural-speech date, full weekday + abbreviated month — "Wednesday,
+    Aug 5th" (see shared/trip.py -> format_date_full(), and
     requirements/public.md -> Navigation for why the Timeline's own nav
-    label stays abbreviated instead). Critical that the weekday is never
-    dropped on this page specifically, even inline mid-sentence: a family
-    member checking their own facts needs the day of the week, not just
-    the calendar date (see requirements/public.md -> Attendees ->
-    Layout)."""
+    label abbreviates the weekday too instead). Critical that the weekday
+    is never dropped on this page specifically, even inline mid-sentence:
+    a family member checking their own facts needs the day of the week,
+    not just the calendar date (see requirements/public.md -> Attendees
+    -> Layout)."""
     return format_date_full(d)
 
 
@@ -193,6 +199,21 @@ def format_work_quarters(quarters):
     if set(quarters) == set(WORK_QUARTERS):
         return "mornings & afternoons"
     return " & ".join(labels[q] for q in WORK_QUARTERS if q in quarters)
+
+
+FACT_RANK = {"Arrival": 0, "Sleeping": 1, "Working from": 2, "Departure": 3, "Driving": 4}
+"""The tie-break order for two facts landing on the exact same date (see
+requirements/public.md -> Attendees -> Layout) — a causal order, not an
+arbitrary one: you can't be asleep/working somewhere before the Arrival
+that puts you there, and a still-running Sleeping/Working from stretch
+always precedes the Departure that ends it. Used as an explicit sort key
+below rather than relying on `items`' own append order, because append
+order alone gets this wrong for an excursion's `return` (an Arrival) or
+`depart` (a Departure) — those are appended in their own excursions loop,
+which runs AFTER the Sleeping-milestones loop, so a same-date tie between
+an excursion return and a Sleeping milestone starting that same day would
+stable-sort with Sleeping first purely because of loop order, not because
+that's the correct story (you arrive back, THEN that's where you sleep)."""
 
 
 def fact_line(time_text, label, detail_html):
@@ -227,14 +248,16 @@ def sleeping_line(room, range_start, range_end):
 
 def working_line(block):
     """A Working from fact's own line — the structure, the quarters
-    ("mornings & afternoons"), plus a "till <end day>" clause when the
-    block spans more than one day (omitted for a single-day block)."""
-    start = date.fromisoformat(block["start_date"])
-    end = date.fromisoformat(block["end_date"])
+    ("mornings & afternoons"). No "till <end day>" clause, ever — unlike
+    Sleeping, a Working from block never renders as one summarized range
+    line (see requirements/public.md -> Attendees -> Layout): working from
+    a structure is true or not true on a given day, the same as any other
+    daily fact, not a location that holds until it changes. The caller
+    (render_person_page() below) renders this same line once per calendar
+    date the block covers, so there's no date range to describe here at
+    all — just the block's own fixed facts."""
     quarters = block.get("quarters", list(WORK_QUARTERS))
     detail = f"{esc(block['structure'])}, {esc(format_work_quarters(quarters))}"
-    if end != start:
-        detail += f", till {esc(format_date_label(end))}"
     return fact_line(None, "Working from", detail)
 
 
@@ -351,13 +374,19 @@ def driving_assignments(person_id, travel, people_by_id):
 def render_person_page(person, entry, travel, people_by_id, shared_base_css, shared_css, nav_row, shared_nav_js):
     title = f"{person['name']}{TITLE_SUFFIX}"
 
-    # One flat list of (sort_date, html) across every kind of fact on this
-    # page — Arrival/Sleeping/Departure/Working from/Driving — sorted into
-    # a single true timeline instead of one block per kind (grouping them
-    # by kind put a same-week Driving or Working from entry after a much
-    # later Departure, reading out of order). sort_date is always the
-    # FIRST date of a range for a ranged fact (a Sleeping/Working from
-    # stretch) — see requirements/public.md -> Attendees -> Layout.
+    # One flat list of (sort_date, rank, html) across every kind of fact on
+    # this page — Arrival/Sleeping/Departure/Working from/Driving — sorted
+    # into a single true timeline instead of one block per kind (grouping
+    # them by kind put a same-week Driving or Working from entry after a
+    # much later Departure, reading out of order). sort_date is the FIRST
+    # date of a range for the one ranged fact (a Sleeping stretch), but is
+    # its OWN calendar date for every other fact — including Working
+    # from, which gets one item per day it covers, not one item for its
+    # whole range (see working_line() below for why). rank is
+    # FACT_RANK[label] — an explicit same-date tie-break, not the order
+    # these get appended below, since append order alone doesn't match the
+    # causal order the doc requires (see FACT_RANK's own comment above) —
+    # see requirements/public.md -> Attendees -> Layout.
     items = []
 
     if entry is not None:
@@ -366,13 +395,20 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
 
         if arrival:
             items.append((
-                arrival["date"],
+                arrival["date"], FACT_RANK["Arrival"],
                 fact_line(time_label(arrival), "Arrival", format_leg_body(arrival, people_by_id, lead_with_by=True)),
             ))
         else:
+            # An entry's own arrival_note (see requirements/public.md ->
+            # Data -> travel.json -> arrival_note), if set, replaces the
+            # generic default text below with something specific to this
+            # person's actual story (e.g. Jim's "Never left") — only
+            # reachable here, since arrival_note has no effect once a real
+            # `arrival` leg exists (the branch above always wins then).
+            no_arrival_text = entry.get("arrival_note") or "Already at the accommodation"
             items.append((
-                TRIP_START.isoformat(),
-                fact_line(None, "Arrival", "Already at the accommodation"),
+                TRIP_START.isoformat(), FACT_RANK["Arrival"],
+                fact_line(None, "Arrival", esc(no_arrival_text)),
             ))
 
         # Sleeping milestones — arrive, then one "Sleeping" line per
@@ -381,38 +417,52 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
         start_date = date.fromisoformat(arrival["date"]) if arrival else TRIP_START
         end_date = sleeping_end_date(departure)
         for room, range_start, range_end in room_milestones(entry, start_date, end_date):
-            items.append((range_start.isoformat(), sleeping_line(room, range_start, range_end)))
+            items.append((range_start.isoformat(), FACT_RANK["Sleeping"], sleeping_line(room, range_start, range_end)))
 
-        # One line per working_from block, keyed by its own start date — not
-        # merged or re-split like the Sleeping milestones above, since a
-        # block is already exactly the range the editor intended (see
-        # requirements/public.md -> Attendees -> Layout).
+        # One line per DAY a working_from block covers, not one line per
+        # block — deliberately different from the Sleeping milestones
+        # above, which collapse a stretch into a single range-with-"till"
+        # line. Working from a structure is a fact about one specific day,
+        # true or not true that day, not a location that holds until it
+        # changes, so the same identical line repeats under every day
+        # heading the block spans (see requirements/public.md -> Attendees
+        # -> Layout).
         for block in entry.get("working_from", []):
-            items.append((block["start_date"], working_line(block)))
+            block_start = date.fromisoformat(block["start_date"])
+            block_end = date.fromisoformat(block["end_date"])
+            line_html = working_line(block)
+            d = block_start
+            while d <= block_end:
+                items.append((d.isoformat(), FACT_RANK["Working from"], line_html))
+                d += timedelta(days=1)
 
         # Excursion legs — a mid-stay round trip (see requirements/public.md
         # -> Data -> travel.json -> excursions) — render exactly like the
         # bookend legs, just sorted into the middle of the timeline by
-        # their own dates instead of always being first/last.
+        # their own dates instead of always being first/last. Each still
+        # gets the same FACT_RANK as its bookend counterpart (a `return` is
+        # an Arrival, a `depart` is a Departure) so a same-date tie against
+        # a Sleeping/Working from fact resolves the same causal way either
+        # time — see FACT_RANK's own comment above.
         for exc in entry.get("excursions", []):
             depart, ret = exc["depart"], exc["return"]
             items.append((
-                depart["date"],
+                depart["date"], FACT_RANK["Departure"],
                 fact_line(time_label(depart), "Departure", format_leg_body(depart, people_by_id, lead_with_by=True)),
             ))
             items.append((
-                ret["date"],
+                ret["date"], FACT_RANK["Arrival"],
                 fact_line(time_label(ret), "Arrival", format_leg_body(ret, people_by_id, lead_with_by=True)),
             ))
 
         if departure:
             items.append((
-                departure["date"],
+                departure["date"], FACT_RANK["Departure"],
                 fact_line(time_label(departure), "Departure", format_leg_body(departure, people_by_id, lead_with_by=True)),
             ))
         else:
             items.append((
-                TRIP_END.isoformat(),
+                TRIP_END.isoformat(), FACT_RANK["Departure"],
                 fact_line(None, "Departure", "Staying past this date"),
             ))
 
@@ -422,7 +472,7 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
     # leg's own date, so it lands in the same timeline as everything else.
     for traveler, field, leg in driving_assignments(person["id"], travel, people_by_id):
         detail_html = f"{esc(traveler['name'])}’s {field} — {format_leg_body(leg, people_by_id)}"
-        items.append((leg["date"], fact_line(time_label(leg), "Driving", detail_html)))
+        items.append((leg["date"], FACT_RANK["Driving"], fact_line(time_label(leg), "Driving", detail_html)))
 
     if entry is None and not items:
         body = (
@@ -430,11 +480,14 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
             '— check back soon, or let the organizers know your plans.</p>'
         )
     else:
-        # Stable sort: items built in a sensible default order above
-        # (Arrival, Sleeping, Working from, Departure, then Driving), so a
-        # same-date tie keeps that relative order rather than an arbitrary
-        # one — preserved by grouping below, since Python's sort is stable.
-        items.sort(key=lambda item: item[0])
+        # Sort by (date, FACT_RANK) — a same-date tie resolves by the
+        # explicit causal rank, not by append order (see FACT_RANK's own
+        # comment above for why append order alone isn't reliable: an
+        # excursion's `return`/`depart` are appended well after the
+        # Sleeping-milestones loop, so relying on stable-sort-of-append-
+        # order would put a same-date Sleeping milestone before an
+        # excursion Arrival that actually started it).
+        items.sort(key=lambda item: (item[0], item[1]))
 
         # Group into one <h2> day heading per distinct date (see
         # requirements/public.md -> Attendees -> Layout) — sort_date is
@@ -445,7 +498,7 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
         day_blocks = []
         current_date = None
         current_lines = []
-        for sort_date, line_html in items:
+        for sort_date, _rank, line_html in items:
             if sort_date != current_date:
                 if current_lines:
                     day_blocks.append((current_date, current_lines))

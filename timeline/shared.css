@@ -72,7 +72,7 @@ html.timeline-page.auto-scrolling {
    render_transition_screen() in timeline/scripts/build.py): an explicit
    choice of where to start scrolling into the trip from, replacing the
    old auto-scroll-to-"now" behavior. Both choices styled like the
-   day/quarter jump-panel's own chip links (.jump-links a below) — a
+   day/quarter jump-panel's own chip links (.jump-link below) — a
    recognizable "this is a destination to pick" shape, just sized up
    since these are the two options on their own dedicated screen rather
    than one of many packed into a dropdown. */
@@ -115,38 +115,64 @@ html.timeline-page.auto-scrolling {
 
 /* Jump menu lives directly in the single-row nav (shared/base.css ->
    .site-nav) as a dropdown, not a second sticky bar. The generic
-   disclosure machinery (.jump-menu/.jump-panel/.jump-links/.jump-person*/
-   .nav-caret, plus the shared hover rule) now lives in shared/base.css,
+   disclosure machinery (.jump-menu, .jump-panel, .jump-links,
+   .jump-person and its sub-elements, .nav-caret, plus the shared hover
+   rule) now lives in shared/base.css,
    not here — the Family Tree page grew its own "Folks ▾" dropdown (see
    family-tree/scripts/build.py -> render_folks_menu()) that reuses all of
    it, so it stopped being Timeline-only. What's left here is genuinely
-   Timeline-specific: the day/time jump panel's own day-grouping markup
-   and its plain-link styling (a bare <a>, not a .jump-person pill). */
-.jump-day-group { margin-bottom: 0.6rem; }
-/* A day heading, same as .fact-day on the Attendees page and every
-   page's own h1 — gets Limelight too (brand-guidelines.md -> Typography
-   -> Headlines), not just weight/color, for the same reason: "day
-   headings" is a named Headlines case in that doc, wherever one actually
-   appears. font-weight:400 is deliberate (Limelight's only weight —
-   see shared/base.css's h1/h2/h3 rule for why 600 here would force a
-   synthetic bold); size bumped slightly from a plain-text 0.85rem so the
-   display face has room to read cleanly at this scale. */
-.jump-day-label {
-  display: block;
-  font-family: 'Limelight', system-ui, -apple-system, sans-serif;
+   Timeline-specific: the day/time jump panel's own per-day row of four
+   chips and its plain-link styling (a bare <a>, not a .jump-person pill).
+
+   Each day is ONE row of four chips now, not a heading line plus a row
+   below it (see render_jump_panel() in timeline/scripts/build.py and
+   requirements/public.md -> Navigation -> Timeline's panel) — the
+   .jump-day-links modifier below only adds the between-day spacing
+   .jump-day-group used to own; the shared flex/gap layout itself still
+   comes from .jump-links in shared/base.css, since the Folks panel's
+   own single-column list needs that base rule too. */
+.jump-day-links { margin-bottom: 0.3rem; }
+/* "a.jump-link", not just ".jump-link" — these chips live inside
+   .site-nav (the jump panel is nested in the Timeline split control,
+   which is part of the nav bar), so shared/base.css's own ".site-nav a"
+   rule (class+element, one specificity notch above a lone class
+   selector) was silently winning over a plain ".jump-link" for anything
+   both rules set — font-size, font-weight, text-decoration — regardless
+   of which stylesheet came second. Matching its specificity here (also
+   class+element) and coming later in the combined stylesheet is what
+   actually lets these values win. */
+a.jump-link {
+  font-size: 0.72rem;
   font-weight: 400;
-  color: var(--primary);
-  font-size: 0.95rem;
-  margin-bottom: 0.3rem;
-}
-.jump-links a {
-  font-size: 0.85rem;
-  padding: 0.25rem 0.5rem;
+  padding: 0.1rem 0.3rem;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 3px;
   text-decoration: none;
   color: var(--text);
 }
+/* Each chip tinted its own quarter's color — the same Morning/Afternoon/
+   Evening/Night family the quarter screens and nav bar already use (see
+   .quarter-screen[data-quarter] and .site-nav[data-quarter] below), so
+   the panel visually previews which time of day you're about to jump to
+   before you even tap it, not just four identically-styled links. */
+a.jump-link[data-quarter="00-06"] { background: #8fb0c7; }
+a.jump-link[data-quarter="06-12"] { background: #e6f1f7; }
+a.jump-link[data-quarter="12-18"] { background: #cbe1ec; }
+a.jump-link[data-quarter="18-24"] { background: #b0cede; }
+/* The first chip of each day's row — still the 00-06 quarter's own link
+   (same Night background as the rule above), just carrying that day's
+   date as its label instead of a bare time range, folding what used to
+   be a separate day heading into this one chip (see render_jump_panel()).
+   Deliberately NOT given its own font treatment (an earlier pass tried
+   Limelight here, matching .fact-day's "day headings get Limelight" rule
+   — see brand-guidelines.md -> Typography -> Headlines) — four chips in
+   one row all needing to read as the same kind of thing, one of them in
+   a different display face read as messy/inconsistent rather than
+   "special," so this row is the deliberate exception: color (Night's
+   background) is what marks this chip as different, not typeface. The
+   class stays on the markup (render_jump_panel()) purely to identify
+   which chip is the date one, even though it carries no CSS of its own
+   right now. */
 
 /* "MC26" — permanent, unchanging nav item (see shared/nav.py ->
    render_nav()), a plain link to Home (the intro screen) on every page.
@@ -175,7 +201,7 @@ html.timeline-page.auto-scrolling {
    nav item, so it reads against the panel's white background (.jump-panel
    in shared/base.css) rather than the nav bar's own time-of-day color —
    --text, not --nav-text, matching every other piece of panel content
-   (e.g. .jump-links a already uses --text for the same reason). Icon-only
+   (e.g. .jump-link already uses --text for the same reason). Icon-only
    (no text label, see requirements/public.md -> Navigation), not a boxed/
    decorated button, per brand-guidelines.md's flat visual language. The
    one deliberate exception to the shared underline rule every other panel
@@ -298,12 +324,14 @@ html.timeline-page.auto-scrolling {
   margin-bottom: 0.15rem;
 }
 .room-people { font-size: 0.95rem; }
-/* Working sub-box — same room-box shape, but dashed (the site's existing
-   "different category" signal, also used for .unassigned-box and the
-   Family Tree's married-in boxes) so a name here reads as clearly
-   different from someone actually sleeping in this structure, without
-   introducing a new icon or color per brand-guidelines.md. */
-.room-box.working-box { border-style: dashed; }
+/* Working and Kitchen sub-boxes — same room-box shape, but dashed (the
+   site's existing "different category" signal, also used for
+   .unassigned-box and the Family Tree's married-in boxes) so a name (or,
+   for Kitchen, a meal note) here reads as clearly different from someone
+   actually sleeping in this structure, without introducing a new icon or
+   color per brand-guidelines.md. See requirements/public.md -> Structures
+   -> Nested box display. */
+.room-box.working-box, .room-box.kitchen-box { border-style: dashed; }
 
 /* Time-of-day background — a tint per day quarter (see
    requirements/public.md -> Homepage = Timeline -> Time-of-day

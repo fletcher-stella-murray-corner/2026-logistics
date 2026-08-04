@@ -29,19 +29,25 @@ initial disambiguation convention would otherwise be silently forgettable
 during bulk entry, and a collision makes two people indistinguishable
 everywhere a bare name is shown); every `room`/`room_by_date`/`hub` value in travel.json against
 shared/data/structures.json — including, for a structure with a fixed
-`rooms` list (e.g. Cottage) or a validated `instances` list (e.g. Tent),
+`rooms` list (e.g. Cottage) or a validated `instances` list (e.g. The Field),
 that the room detail is one of the declared names, not arbitrary free
 text (the two lists differ only in whether the structure always shows in
 the Structures row — see requirements/public.md -> Structures — and are
 mutually exclusive on a single structure); a structure's optional
 `always_shown` is a boolean when present (the same always-shown behavior
 `rooms` grants, for a structure with no fixed sub-rooms to declare, e.g.
-Red Shed); an entry's optional `working_from` blocks (someone working
-from a structure during the day, independent of where they're sleeping —
-see requirements/public.md -> Data -> travel.json -> working_from) each
-reference a real structure, have valid non-inverted ISO start/end dates,
-and only use `06-12`/`12-18` quarters (working from a structure isn't
-tracked overnight); an entry's optional `excursions` blocks (a mid-stay
+Red Shed); a structure's optional `spaces` list (see requirements/public.md
+-> Structures -> spaces) has only valid, non-repeated `kind` values
+(`"kitchen"`/`"working"` today); an entry's optional `working_from` blocks
+(someone working from a structure during the day, independent of where
+they're sleeping — see requirements/public.md -> Data -> travel.json ->
+working_from) each reference a structure that actually declares a
+`"working"` space (not just any structure name), have valid non-inverted
+ISO start/end dates, and only use `06-12`/`12-18` quarters (working from a
+structure isn't tracked overnight); every `meals.json` entry is an object
+with a non-empty `note` and an optional `structure` that, if set, must
+reference a structure declaring a `"kitchen"` space (see
+requirements/public.md -> Data -> meals.json); an entry's optional `excursions` blocks (a mid-stay
 round trip — see requirements/public.md -> Data -> travel.json ->
 excursions) each have valid `depart`/`return` legs, in order, within the
 entry's own arrival/departure window, and non-overlapping with each other; every `vehicle` value against
@@ -125,7 +131,7 @@ PROJECT_ROOT = ROOT.parent  # repo root — site/ and shared/ live here
 
 sys.path.insert(0, str(PROJECT_ROOT / "shared"))
 import nav  # noqa: E402
-from trip import TRIP_START, TRIP_END, QUARTERS, QUARTER_LABELS, QUARTER_NAMES, MODE_TAGS, WORK_QUARTERS, format_time_range, format_date_full, format_date_abbrev, quarter_screen_id  # noqa: E402
+from trip import TRIP_START, TRIP_END, QUARTERS, QUARTER_LABELS, QUARTER_NAMES, MODE_TAGS, WORK_QUARTERS, format_time_range, format_date_abbrev, format_date_jump, quarter_screen_id  # noqa: E402
 
 PAGE_TITLE = "Murray Corner 2026"
 TRIP_SUBTITLE = "Murray Corner, New Brunswick · August 1–15, 2026"
@@ -161,6 +167,21 @@ def load_json(path):
 
 def structure_names(structures, category):
     return {s["name"] for s in structures if s["category"] == category}
+
+
+# The allowed `kind` values for a structure's `spaces` list (see
+# validate_structures_file() below and requirements/public.md -> Structures
+# -> spaces) — extensible by adding a new string here, not a new field.
+VALID_SPACE_KINDS = ("kitchen", "working")
+
+
+def structures_with_space_kind(structures, kind):
+    """Names of every structure declaring `{"kind": kind}` in its `spaces`
+    list — the single general mechanism both `working_from` (kind
+    "working") and a meal's kitchen tag (kind "kitchen") are validated
+    against, replacing the old "any structure name is fine" rule for
+    working_from (see requirements/public.md -> Structures -> spaces)."""
+    return {s["name"] for s in structures if any(sp.get("kind") == kind for sp in s.get("spaces", []))}
 
 
 def record_label(r, index, file_label):
@@ -252,6 +273,27 @@ def validate_structures_file(structures):
                 f"Structure {s['name']!r} in shared/data/structures.json has active_to "
                 f"({active_to}) before active_from ({active_from})."
             )
+        spaces = s.get("spaces")
+        if spaces is not None:
+            if not isinstance(spaces, list):
+                raise ValueError(
+                    f"Structure {s['name']!r} in shared/data/structures.json has a non-list "
+                    f"'spaces' — must be a list of {{\"kind\": ...}} objects."
+                )
+            seen_kinds = set()
+            for i, sp in enumerate(spaces):
+                kind = nav.require(sp, "kind", f"spaces[{i}] for structure {s['name']!r}")
+                if kind not in VALID_SPACE_KINDS:
+                    raise ValueError(
+                        f"Invalid kind {kind!r} in spaces[{i}] for structure {s['name']!r} in "
+                        f"shared/data/structures.json — must be one of {', '.join(VALID_SPACE_KINDS)}."
+                    )
+                if kind in seen_kinds:
+                    raise ValueError(
+                        f"Structure {s['name']!r} in shared/data/structures.json declares "
+                        f"'spaces' kind {kind!r} more than once."
+                    )
+                seen_kinds.add(kind)
 
 
 def structure_active(structure, iso_date):
@@ -393,11 +435,15 @@ def validate_driver(driver_id, person_id, people_by_id, person_name, field):
         )
 
 
-def validate_working_from(blocks, person_name, all_structure_names):
+def validate_working_from(blocks, person_name, working_structure_names):
     """working_from — someone working from a structure during the day,
     independent of where they're sleeping (see requirements/public.md ->
     Data -> travel.json -> working_from). Optional list of {structure,
-    start_date, end_date, quarters} blocks."""
+    start_date, end_date, quarters} blocks. `structure` must be one of
+    `working_structure_names` — structures declaring {"kind": "working"}
+    in their own `spaces` list (see structures_with_space_kind() above) —
+    not just any structure name in shared/data/structures.json; a
+    structure has to actually say it supports working."""
     if blocks is None:
         return
     if not isinstance(blocks, list):
@@ -405,10 +451,11 @@ def validate_working_from(blocks, person_name, all_structure_names):
     for i, block in enumerate(blocks):
         label = f"working_from[{i}] for {person_name!r}"
         structure = nav.require(block, "structure", label)
-        if structure not in all_structure_names:
+        if structure not in working_structure_names:
             raise ValueError(
-                f"Unknown structure {structure!r} in {label} — must exactly match a name in "
-                f"shared/data/structures.json."
+                f"Unknown or non-working structure {structure!r} in {label} — must exactly "
+                f"match the name of a structure in shared/data/structures.json that declares "
+                f'{{"kind": "working"}} in its \'spaces\' list.'
             )
         start = nav.require(block, "start_date", label)
         end = nav.require(block, "end_date", label)
@@ -485,7 +532,7 @@ def validate_travel(travel, people_by_id, structures, vehicles):
     accommodation_structures = [s for s in structures if s["category"] == "accommodation"]
     transit_names = structure_names(structures, "transit")
     vehicle_names = {v["name"] for v in vehicles}
-    all_structure_names = {s["name"] for s in structures}
+    working_structure_names = structures_with_space_kind(structures, "working")
 
     validate_required_fields(travel, ["person_id"], "timeline/data/travel.json")
     seen_person_ids = set()
@@ -531,7 +578,7 @@ def validate_travel(travel, people_by_id, structures, vehicles):
         for room_date, room in entry.get("room_by_date", {}).items():
             validate_date_str(room_date, f"room_by_date for {person_name!r}")
             validate_room(room, accommodation_structures, f"{person_name!r} on {room_date}")
-        validate_working_from(entry.get("working_from"), person_name, all_structure_names)
+        validate_working_from(entry.get("working_from"), person_name, working_structure_names)
         validate_excursions(entry.get("excursions"), person_id, person_name, transit_names, vehicle_names, people_by_id, arrival, departure)
 
 
@@ -540,6 +587,33 @@ def validate_day_quarter_notes(data, label):
         validate_date_str(day, label)
         for q in quarters:
             validate_quarter_value(q, f"{label} on {day}")
+
+
+def validate_meals_file(meals, kitchen_structure_names):
+    """timeline/data/meals.json — keyed by date, then day quarter key, each
+    quarter's value an object {"note": <free text>, "structure": <optional
+    structure name>} (see requirements/public.md -> Data -> meals.json).
+    Unlike activities.json (still a bare free-text string per quarter, see
+    validate_day_quarter_notes() above), a meal entry is a small object so
+    it can optionally name which structure's Kitchen it belongs to."""
+    label = "timeline/data/meals.json"
+    for day, quarters in meals.items():
+        validate_date_str(day, label)
+        for q, entry in quarters.items():
+            validate_quarter_value(q, f"{label} on {day}")
+            entry_label = f"{label} entry for {day} {q}"
+            if not isinstance(entry, dict):
+                raise ValueError(f"{entry_label} must be an object with a 'note' field, not a bare string.")
+            note = nav.require(entry, "note", entry_label)
+            if not isinstance(note, str) or not note:
+                raise ValueError(f"'note' in {entry_label} must be a non-empty string.")
+            structure = entry.get("structure")
+            if structure is not None and structure not in kitchen_structure_names:
+                raise ValueError(
+                    f"Unknown or non-kitchen structure {structure!r} in {entry_label} — must "
+                    f"exactly match the name of a structure in shared/data/structures.json that "
+                    f'declares {{"kind": "kitchen"}} in its \'spaces\' list.'
+                )
 
 
 def quarter_key(iso_date, quarter):
@@ -602,23 +676,27 @@ def person_working_here(entry, day_iso, quarter):
     return hits
 
 
-def render_structures_row(present, working, accommodation_structures, day_iso):
+def render_structures_row(present, working, kitchen_by_structure, accommodation_structures, day_iso):
     """Labeled "Structures", not "Sleeping" — deliberately reframed away
     from an overnight-only concept to "who's associated with which
     structure right now, and why" (see requirements/public.md -> Homepage
-    = Timeline -> Row-by-row rules -> Structures). Merges two independent
+    = Timeline -> Row-by-row rules -> Structures). Merges three independent
     sources into the same outer per-structure box, but keeps them visually
     distinct within it: `present` (people actually staying there this
     quarter, via room/room_by_date) render as today — a flat name list or
     named room boxes — while `working` (people working from there this
     quarter, via working_from — see person_working_here() below) always
-    get their own labeled "Working" sub-box, never merged into the
-    sleeping-side list, so a name showing up because someone's working
-    from a structure for the day reads as clearly different from someone
-    actually staying there. The same person can land in two different
-    structure boxes on one quarter screen (their overnight structure, and
-    wherever they're working from) since those are two independent facts,
-    not one."""
+    get their own labeled "Working" sub-box, and `kitchen_by_structure`
+    (this exact day+quarter's meal note, if one is tagged to a structure —
+    see render_quarter_screen() below) gets its own labeled "Kitchen"
+    sub-box — neither ever merged into the sleeping-side list, so a name
+    (or a meal) showing up for one of these reasons reads as clearly
+    different from someone actually staying there. The same person can
+    land in two different structure boxes on one quarter screen (their
+    overnight structure, and wherever they're working from) since those
+    are independent facts, not one; a Kitchen sub-box's "occupant" is a
+    meal note string, not a person, since it says what's cooking, not
+    who's cooking (see requirements/public.md -> Structures -> spaces)."""
     by_structure = {}
     for p, room in present:
         structure, detail = parse_room(room, accommodation_structures)
@@ -637,7 +715,7 @@ def render_structures_row(present, working, accommodation_structures, day_iso):
     # declared room; `always_shown` alone (no `rooms`, e.g. Red Shed) just
     # guarantees the outer box, with no forced-empty room boxes inside it.
     # Structures with neither keep the old occupancy-only behavior (e.g.
-    # Tent/Camper Van, which are free-text-instance places).
+    # The Field/Camper Van, which are free-text-instance places).
     for s in accommodation_structures:
         if not structure_active(s, day_iso):
             continue
@@ -649,16 +727,27 @@ def render_structures_row(present, working, accommodation_structures, day_iso):
         elif s.get("always_shown"):
             by_structure.setdefault(s["name"], {})
 
-    # working_by_structure can name a structure with nobody sleeping there
-    # at all (e.g. Red Shed occupied only by day-workers) — the outer box
-    # still needs to exist for it, so render every structure named by
-    # EITHER source, not just the sleeping side.
-    all_structures = set(by_structure) | set(working_by_structure)
+    # working_by_structure/kitchen_by_structure can each name a structure
+    # with nobody sleeping there at all (e.g. Red Shed occupied only by
+    # day-workers, or a structure whose kitchen is in use but that nobody's
+    # currently staying at) — the outer box still needs to exist for it, so
+    # render every structure named by ANY of the three sources, not just
+    # the sleeping side.
+    all_structures = set(by_structure) | set(working_by_structure) | set(kitchen_by_structure)
     if not all_structures:
         return ""
 
     def sort_key(k):
         return (k is None, k or "")
+
+    # A structure's declared `rooms` list is a FIXED order (see
+    # requirements/public.md -> Structures -> Nested box display) — the
+    # order it's written in shared/data/structures.json, e.g. Cottage's
+    # Master Suite/Green Room/Blue Room — not alphabetical. Only structures
+    # with a `rooms` list get this; a structure with free-text `instances`
+    # (The Field) or no fixed list at all has no declared order to honor,
+    # so its details still sort alphabetically below.
+    rooms_order_by_structure = {s["name"]: s["rooms"] for s in accommodation_structures if s.get("rooms")}
 
     boxes = []
     for structure in sorted(all_structures, key=sort_key):
@@ -673,8 +762,20 @@ def render_structures_row(present, working, accommodation_structures, day_iso):
             )
             continue
 
+        declared_rooms = rooms_order_by_structure.get(structure)
+        if declared_rooms:
+            # Declared order first, then anything unexpected (shouldn't
+            # happen — validate_room() only allows declared names — but
+            # sorted alphabetically rather than silently dropped if it ever
+            # does), bare-structure occupants (detail=None) always last,
+            # matching sort_key's existing None-sorts-last convention.
+            detail_order = [d for d in declared_rooms if d in by_detail]
+            detail_order += [d for d in sorted(by_detail, key=sort_key) if d not in declared_rooms]
+        else:
+            detail_order = sorted(by_detail, key=sort_key)
+
         inner = []
-        for detail in sorted(by_detail, key=sort_key):
+        for detail in detail_order:
             names = sorted(by_detail[detail])
             if detail is None:
                 inner.append(f'<span class="room-people">{esc(", ".join(names))}</span>')
@@ -685,6 +786,14 @@ def render_structures_row(present, working, accommodation_structures, day_iso):
                     f'<span class="room-people">{esc(", ".join(names))}</span>'
                     '</div>'
                 )
+        kitchen_note = kitchen_by_structure.get(structure)
+        if kitchen_note:
+            inner.append(
+                '<div class="room-box kitchen-box">'
+                '<span class="room-label">Kitchen</span>'
+                f'<span class="room-people">{esc(kitchen_note)}</span>'
+                '</div>'
+            )
         working_names = sorted(working_by_structure.get(structure, []))
         if working_names:
             inner.append(
@@ -789,13 +898,24 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
         )
         rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Departing:</span>{lines}</div>')
 
-    structures_row = render_structures_row(present, working, accommodation_structures, day.isoformat())
+    # A meal entry's optional `structure` tag (see requirements/public.md ->
+    # Data -> meals.json) puts the SAME note text into that structure's own
+    # "Kitchen" sub-box on the Structures row below — never a second,
+    # separately-authored string. kitchen_by_structure is at most one entry
+    # today, since meals.json holds one note per day+quarter, but is built
+    # as a dict (not a bare tuple) so render_structures_row() doesn't need
+    # to care how many there are.
+    meal_entry = meals.get(day.isoformat(), {}).get(quarter)
+    kitchen_by_structure = {}
+    if meal_entry and meal_entry.get("structure"):
+        kitchen_by_structure[meal_entry["structure"]] = meal_entry["note"]
+
+    structures_row = render_structures_row(present, working, kitchen_by_structure, accommodation_structures, day.isoformat())
     if structures_row:
         rows.append(structures_row)
 
-    meal = meals.get(day.isoformat(), {}).get(quarter)
-    if meal:
-        rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Meal:</span> {esc(meal)}</div>')
+    if meal_entry:
+        rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Meal:</span> {esc(meal_entry["note"])}</div>')
 
     activity = activities.get(day.isoformat(), {}).get(quarter)
     if activity:
@@ -808,9 +928,12 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
     # full "Wednesday, August 5th" used elsewhere on the site), shown first
     # and smaller/secondary as supporting detail; the bare quarter name
     # (e.g. "Morning"), shown second and bold/prominent since that's what
-    # you actually scan for while scrolling — no time-range suffix here,
-    # unlike QUARTER_LABELS' own full value ("Morning · 6am–12pm"), which
-    # stays as-is for the jump-to-time dropdown's own link text.
+    # you actually scan for while scrolling — no time-range suffix here.
+    # render_jump_panel() below reads the same bare QUARTER_NAMES value for
+    # its own three named chips now too (no more "· 6am–12pm" there
+    # either) — QUARTER_LABELS' fuller value is only still used for a
+    # validation error message (see validate_time_range() above), not
+    # anywhere user-facing.
     # quarter_name comes from QUARTER_NAMES, not QUARTER_LABELS — 00-06 is
     # "" there (see shared/trip.py), so this quarter screen's own
     # data-quarter-name attribute is empty and shared.js's live label
@@ -850,24 +973,42 @@ def render_jump_panel(href_prefix=""):
     content (see shared/nav.py -> render_nav()). Always the full August
     1-15 range — every quarter screen always exists in the page (see
     build_timeline_html() below), so unlike the old cutoff-based version
-    there's no day/quarter this could ever omit. Each day's four links
-    use QUARTER_LABELS as-is (shared/trip.py) — 00-06's link reads just
-    its bare time range ("12am–6am"), no name, same rule as the nav's
-    live label; the day heading directly above each group of four links
-    already makes clear whose 12am–6am it is. `href_prefix` is "" on
-    site/index.html itself (a same-page anchor) or e.g. "../index.html"
+    there's no day/quarter this could ever omit.
+
+    Each day is one row of exactly four link chips — no separate day
+    heading above them (see requirements/public.md -> Navigation ->
+    Timeline's panel): the FIRST chip (still the 00-06 quarter's own
+    link — same target as always) carries the day heading's own text
+    instead of a bare time range, so the heading is folded into that chip
+    rather than repeated as its own line above four separate ones —
+    format_date_jump() (shared/trip.py), not format_date_full(), since
+    this is a compact chip in a dropdown, not a page with room to spare:
+    "Sat, Aug 1st", abbreviated weekday and month but still with the
+    ordinal suffix. The other three read just the bare quarter name
+    ("Morning"/"Afternoon"/"Evening", from QUARTER_NAMES, not
+    QUARTER_LABELS — no "· 6am–12pm" suffix here anymore either). Every
+    chip also carries `data-quarter` so timeline/shared.css can tint each
+    one its own quarter's color (the same Morning/Afternoon/Evening/Night
+    family the quarter screens themselves use), including the date chip,
+    which gets Night's color since it's still literally the 00-06 slot —
+    just also carrying that day's date as its label. `href_prefix` is ""
+    on site/index.html itself (a same-page anchor) or e.g. "../index.html"
     from Family Tree/a Details page (a cross-page link — plain browser
     navigation handles those, no JS needed)."""
     groups = []
     for d in daterange(TRIP_START, TRIP_END):
-        day_label = format_date_full(d)
-        links = "".join(
-            f'<a href="{href_prefix}#{quarter_screen_id(d.isoformat(), q)}">{QUARTER_LABELS[q]}</a>' for q in QUARTERS
-        )
-        groups.append(
-            f'<div class="jump-day-group"><span class="jump-day-label">{day_label}</span>'
-            f'<div class="jump-links">{links}</div></div>'
-        )
+        day_label = format_date_jump(d)
+        links = []
+        for q in QUARTERS:
+            if q == "00-06":
+                text, extra_class = day_label, " jump-link-date"
+            else:
+                text, extra_class = QUARTER_NAMES[q], ""
+            links.append(
+                f'<a href="{href_prefix}#{quarter_screen_id(d.isoformat(), q)}" '
+                f'data-quarter="{q}" class="jump-link{extra_class}">{text}</a>'
+            )
+        groups.append(f'<div class="jump-links jump-day-links">{"".join(links)}</div>')
 
     return "".join(groups)
 
@@ -971,7 +1112,7 @@ def main():
 
     people_by_id = {p["id"]: p for p in people}
     validate_travel(travel, people_by_id, structures, vehicles)
-    validate_day_quarter_notes(meals, "timeline/data/meals.json")
+    validate_meals_file(meals, structures_with_space_kind(structures, "kitchen"))
     validate_day_quarter_notes(activities, "timeline/data/activities.json")
 
     html = build_page_html(people, travel, meals, activities, structures, shared_base_css, shared_css, shared_nav_js, shared_js)
