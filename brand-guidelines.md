@@ -80,6 +80,10 @@ Pastel art deco, 1970s-leaning — soft, tonal, nothing shouts. The four day-qua
 **Accent — a status flag, not a background:**
 * Accent — Driftwood sand `#e8d9b5` — used narrowly for one job: flagging an attending person whose travel facts haven't been entered yet (Family Tree, `.person.status-needed`), plus a couple of small decorative borders (the Timeline's room boxes). Deliberately outside the Backgrounds family above and no longer tied to Afternoon's color — it's the one warm color in an otherwise cool, tonal palette, which is what makes "needs attention" actually pop.
 
+**Utility — plain structural neutrals, not part of the ten-color brand palette above:**
+* Border `#ddd6c4` — the one divider/outline color used everywhere something needs a hairline (card borders, row dividers, the nav's own bottom rule) — `--border` in `shared/base.css`. A muted tint in the same warm-neutral family as Parchment, deliberately unbranded so it never competes with the ten colors above.
+* Muted hint text `#8a8378` — the italic "nothing scheduled"/"no one added yet" empty-state copy (`.quarter-empty-hint`, `.empty-hint`), a plain low-emphasis gray rather than a designed brand color, since an empty state is explicitly not something to make eye-catching.
+
 Role and hierarchy (a title vs. a label vs. an action) come from weight and size, not from switching colors — see *Signature visual conventions* below for how this plays out in the Timeline's nav bar specifically.
 
 ## Typography

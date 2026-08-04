@@ -16,7 +16,7 @@
   --bg: #f2e9d6;        /* parchment — a warm pale tint of Accent, the fixed "paper card" color (structure/room boxes, Family Tree boxes, jump panels), never the atmosphere */
   --text: #23282b;      /* charcoal */
   --grove: #c9e2c0;     /* soft pastel green — background for anything that isn't a specific day/quarter: see body below */
-  --border: #ddd6c4;
+  --border: #ddd6c4;    /* plain structural neutral — see brand-guidelines.md -> Colours -> Utility */
   --nav-height: 3.75rem;
 }
 * { box-sizing: border-box; }
