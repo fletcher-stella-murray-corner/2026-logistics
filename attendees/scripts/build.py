@@ -219,17 +219,23 @@ that's the correct story (you arrive back, THEN that's where you sleep)."""
 def fact_line(time_text, label, detail_html):
     """One line under a day heading (see render_person_page() below) —
     every kind of fact (Arrival, Sleeping, Working from, Departure,
-    Driving) renders through this one function. `time_text` is the exact
-    time or bare quarter name leading a point-in-time fact (Arrival/
-    Departure/Driving — see time_label() above); omitted (None) for a
-    date-range fact (Sleeping/Working from), which has no single time of
-    day to lead with — the line just starts at the label. `detail_html`
-    is pre-escaped/joined HTML (from format_leg_body() or a plain
-    esc()'d string) — not escaped again here."""
+    Driving) renders through this one function. Always LABEL-first (see
+    requirements/public.md -> Attendees -> Layout) — "what happened"
+    before "when" — never the reverse: `time_text`, when present, comes
+    right after the label, not before it. `time_text` is the exact time
+    or bare quarter name for a point-in-time fact (Arrival/Departure/
+    Driving — see time_label() above); omitted (None) for a date-range
+    fact (Sleeping/Working from), which has no single time of day to
+    show at all — those lines already started at the label even before
+    this, so this change only actually moves anything for the
+    point-in-time kinds. `detail_html` is pre-escaped/joined HTML (from
+    format_leg_body() or a plain esc()'d string) — not escaped again
+    here."""
     time_html = f'<span class="fact-time">{esc(time_text)}</span> ' if time_text else ""
     return (
         '<div class="fact-line">'
-        f'{time_html}<span class="fact-label">{esc(label)}</span> '
+        f'<span class="fact-label">{esc(label)}</span> '
+        f'{time_html}'
         f'<span class="fact-detail">{detail_html}</span>'
         "</div>"
     )

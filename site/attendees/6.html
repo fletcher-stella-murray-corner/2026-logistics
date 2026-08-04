@@ -347,14 +347,15 @@ a { color: var(--secondary); }
   margin: 1.4rem 0 0.4rem;
 }
 .fact-day:first-of-type { margin-top: 0; }
-/* Every fact line reads as one flowing sentence — time (or bare quarter
-   name) leading, a short label, then the detail — rather than a
-   three-column table row: a point-in-time fact (Arrival/Departure/
-   Driving) leads with .fact-time (see time_label() in
-   attendees/scripts/build.py); a date-range fact (Sleeping/Working from)
-   has no single time of day to lead with, so it starts straight at the
-   label instead — see fact_line(). flex-wrap lets a long detail (e.g. a
-   Driving line) wrap onto its own line on a narrow phone without
+/* Every fact line reads as one flowing sentence — the label leading
+   ("what happened"), then the time (or bare quarter name, "when"), then
+   the detail — rather than a three-column table row: every kind of
+   fact, point-in-time (Arrival/Departure/Driving) or date-range
+   (Sleeping/Working from), starts at .fact-label; a point-in-time fact
+   additionally shows .fact-time right after it (see time_label() in
+   attendees/scripts/build.py), a date-range fact has no single time of
+   day to show at all — see fact_line(). flex-wrap lets a long detail
+   (e.g. a Driving line) wrap onto its own line on a narrow phone without
    breaking the label away from its time. */
 .fact-line {
   display: flex;
@@ -408,7 +409,7 @@ a { color: var(--secondary); }
 </nav>
 <h1 class="attendees-title">Helen S</h1>
 <main>
-<h2 class="fact-day">Saturday, Aug 1st</h2><div class="fact-line"><span class="fact-label">Arrival</span> <span class="fact-detail">Has been reading in a chair since an undetermined time</span></div><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Cottage — Master Suite till Monday, Aug 3rd</span></div><h2 class="fact-day">Tuesday, Aug 4th</h2><div class="fact-line"><span class="fact-time">5pm</span> <span class="fact-label">Departure</span> <span class="fact-detail">by 🚗 Car</span></div><h2 class="fact-day">Wednesday, Aug 5th</h2><div class="fact-line"><span class="fact-time">5:59pm</span> <span class="fact-label">Arrival</span> <span class="fact-detail">by 🚗 Car</span></div><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Cottage — Master Suite till Thursday, Aug 13th</span></div><h2 class="fact-day">Thursday, Aug 13th</h2><div class="fact-line"><span class="fact-time">6am</span> <span class="fact-label">Departure</span> <span class="fact-detail">by 🚗 Car — With David · Vehicle TBD</span></div>
+<h2 class="fact-day">Saturday, Aug 1st</h2><div class="fact-line"><span class="fact-label">Arrival</span> <span class="fact-detail">Has been reading in a chair since an undetermined time</span></div><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Cottage — Master Suite till Monday, Aug 3rd</span></div><h2 class="fact-day">Tuesday, Aug 4th</h2><div class="fact-line"><span class="fact-label">Departure</span> <span class="fact-time">5pm</span> <span class="fact-detail">by 🚗 Car</span></div><h2 class="fact-day">Wednesday, Aug 5th</h2><div class="fact-line"><span class="fact-label">Arrival</span> <span class="fact-time">5:59pm</span> <span class="fact-detail">by 🚗 Car</span></div><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Cottage — Master Suite till Thursday, Aug 13th</span></div><h2 class="fact-day">Thursday, Aug 13th</h2><div class="fact-line"><span class="fact-label">Departure</span> <span class="fact-time">6am</span> <span class="fact-detail">by 🚗 Car — With David · Vehicle TBD</span></div>
 </main>
 <script>
 // Shared client-side nav logic — inlined into every page at build time
