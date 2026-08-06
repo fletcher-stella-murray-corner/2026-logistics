@@ -5,7 +5,6 @@
   { "id": "barbs-cottage", "name": "Barb's Cottage", "category": "accommodation" },
   { "id": "lakes-general-store", "name": "Lakes General Store", "category": "accommodation", "rooms": ["Top Room"] },
   { "id": "sheogue-inn", "name": "Little Shemogue Inn", "category": "accommodation", "rooms": ["Room X", "Room Zed", "Room Y", "Room T", "Room K"] },
-  { "id": "camper-van", "name": "Camper Van", "category": "accommodation" },
   { "id": "halifax-airport", "name": "Halifax Airport", "category": "transit" },
   { "id": "moncton-airport", "name": "Moncton Airport", "category": "transit" },
   { "id": "sackville-station", "name": "Sackville Station", "category": "transit" }

@@ -182,7 +182,7 @@
         "return": { "date": "2026-08-05", "quarter": "12-18", "time_range": ["17:59", "17:59"], "mode": "car" }
       }
     ],
-    "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "With David · Vehicle TBD" }
+    "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "vehicle": "White Toyota Camry" }
   },
   {
     "person_id": 448796,
@@ -194,12 +194,12 @@
         "return": { "date": "2026-08-05", "quarter": "12-18", "time_range": ["17:59", "17:59"], "mode": "car" }
       }
     ],
-    "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "With David · Vehicle TBD" }
+    "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "vehicle": "White Toyota Camry" }
   },
   {
     "person_id": 477500,
     "arrival": { "date": "2026-08-01", "quarter": "18-24", "time_range": ["18:00", "18:00"], "mode": "car", "vehicle": "White Toyota Camry", "detail": "" },
-    "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "Vehicle TBD" },
+    "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "vehicle": "White Dodge Caravan" },
     "room": "Cottage — Blue Room",
     "room_by_date": {
       "2026-08-08": "The Field — Rachel's camping tent",
