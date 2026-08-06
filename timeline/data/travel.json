@@ -1,9 +1,10 @@
 [
   {
     "person_id": 737806,
-    "arrival": { "date": "2026-08-07", "quarter": "18-24", "time_range": ["20:00", "20:00"], "mode": "car" },
-    "departure": { "date": "2026-08-11", "quarter": "06-12", "time_range": ["08:00", "08:00"], "mode": "car" },
-    "room": "Barb's Cottage"
+    "arrival": { "date": "2026-08-07", "quarter": "12-18", "mode": "car" },
+    "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "car" },
+    "room": "Barb's Cottage",
+    "pending": true
   },
   {
     "person_id": 318011,
