@@ -65,11 +65,14 @@ a.person:hover, a.person:focus-visible {
 }
 .person-name { display: block; }
 /* A dog attached to its owner (see requirements/public.md -> people.json
-   -> dogs) — plain text under the name, inside the same box, never its
-   own box. Muted/smaller than the name so the box still reads as "one
-   person" at a glance, the dog a secondary detail on it. */
+   -> dogs) — plain text beside the owner's box, never its own box and
+   never nested inside the box it belongs to (a sibling element in the
+   markup — see family-tree/scripts/build.py -> render_person()). .couple's
+   own flex row (gap + align-items: center above) is what actually places
+   it beside the box, vertically centered against it, rather than any
+   layout rule here. Muted/smaller than the name so it still reads as a
+   secondary detail, not a second person. */
 .person-dogs {
-  display: block;
   font-size: 0.75rem;
   color: var(--secondary);
 }

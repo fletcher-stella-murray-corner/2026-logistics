@@ -244,14 +244,6 @@ def render_person(person, collected_ids):
     elif status == "not-attending":
         classes.append("status-not-attending")
     inner = f'<span class="person-name">{esc(person["name"])}</span>'
-    # A dog is an attribute of its owner, not a person of its own — no box,
-    # no id, no travel/attending status (see requirements/public.md ->
-    # people.json -> dogs). Rendered as plain text, unlike the married-in/
-    # status modifiers above, since it's real content (a name) rather than
-    # a status those are deliberately kept non-verbal for.
-    dogs = person.get("dogs")
-    if dogs:
-        inner += f'<span class="person-dogs">+ {esc(", ".join(dogs))}</span>'
 
     # Attending people link straight to their own Attendees page — the
     # sole entry point to that feature (see module docstring). Not
@@ -260,7 +252,18 @@ def render_person(person, collected_ids):
         tag, extra = "a", f' href="../attendees/{person["id"]}.html"'
     else:
         tag, extra = "span", ""
-    return f'<{tag} class="{" ".join(classes)}"{extra}>{inner}</{tag}>'
+    box = f'<{tag} class="{" ".join(classes)}"{extra}>{inner}</{tag}>'
+
+    # A dog is an attribute of its owner, not a person of its own — no box,
+    # no id, no travel/attending status (see requirements/public.md ->
+    # people.json -> dogs). Rendered as a sibling tag beside the owner's
+    # own box (not nested inside it), so the box itself still reads as
+    # "just this person" — .couple's flex row is what actually places it
+    # beside rather than below (see family-tree/shared.css -> .person-dogs).
+    dogs = person.get("dogs")
+    if dogs:
+        box += f'<span class="person-dogs">+ {esc(", ".join(dogs))}</span>'
+    return box
 
 
 def render_legend():
