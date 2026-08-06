@@ -122,25 +122,25 @@
   },
   {
     "person_id": 509234,
-    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["17:15", "17:15"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "room": "Little Shemogue Inn — Room X"
   },
   {
     "person_id": 597586,
-    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["17:15", "17:15"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "room": "The Field — Brendan's tent"
   },
   {
     "person_id": 753966,
-    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["17:15", "17:15"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "room": "The Field — Brendan's tent"
   },
   {
     "person_id": 973286,
-    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["17:15", "17:15"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "room": "The Field — Brendan's tent"
   },
@@ -167,7 +167,7 @@
     "airport_runs": [
       {
         "depart": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["17:00", "17:00"], "mode": "car", "hub": "Moncton Airport" },
-        "return": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:00", "18:00"], "mode": "car" },
+        "return": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["19:30", "19:30"], "mode": "car" },
         "passenger_ids": [509234, 597586, 753966, 973286]
       }
     ]
