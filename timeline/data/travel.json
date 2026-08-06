@@ -80,13 +80,13 @@
   },
   {
     "person_id": 444018,
-    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["23:00", "23:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
+    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["23:55", "23:55"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
     "departure": { "date": "2026-08-09", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
     "room": "Lakes General Store — Top Room"
   },
   {
     "person_id": 881406,
-    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["23:00", "23:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
+    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["23:55", "23:55"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
     "departure": { "date": "2026-08-09", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
     "room": "Lakes General Store — Top Room"
   },
@@ -99,7 +99,7 @@
       {
         "passenger_ids": [444018, 881406],
         "depart": { "date": "2026-08-06", "quarter": "18-24", "mode": "car", "hub": "Moncton Airport" },
-        "return": { "date": "2026-08-06", "quarter": "18-24", "mode": "car" }
+        "return": { "date": "2026-08-07", "quarter": "00-06", "time_range": ["01:00", "01:00"], "mode": "car" }
       },
       {
         "passenger_ids": [444018, 881406],
