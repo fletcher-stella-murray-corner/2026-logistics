@@ -30,7 +30,7 @@
     "room": "Little Shemogue Inn — Room K",
     "airport_runs": [
       {
-        "passenger_ids": [267115, 737624, 970384],
+        "passenger_ids": [737624, 970384],
         "depart": { "date": "2026-08-07", "quarter": "06-12", "mode": "car", "hub": "Moncton Airport" },
         "return": { "date": "2026-08-07", "quarter": "06-12", "mode": "car" }
       }
@@ -56,14 +56,14 @@
   },
   {
     "person_id": 267115,
-    "arrival": { "date": "2026-08-07", "quarter": "06-12", "mode": "plane", "hub": "Moncton Airport", "driver_id": 256947 },
+    "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car", "detail": "Flew into Moncton, then rented a car" },
     "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station" },
     "room": "Little Shemogue Inn — Room Y"
   },
   {
     "person_id": 254788,
-    "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car" },
-    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car" },
+    "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car", "detail": "Flew into Moncton, then rented a car" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station" },
     "room": "Little Shemogue Inn — Room Y"
   },
   {
