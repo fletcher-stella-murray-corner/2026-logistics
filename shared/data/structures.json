@@ -1,9 +1,11 @@
 [
   { "id": "cottage", "name": "Cottage", "category": "accommodation", "rooms": ["Master Suite", "Green Room", "Blue Room"], "spaces": [{ "kind": "kitchen" }] },
   { "id": "red-shed", "name": "Red Shed", "category": "accommodation", "always_shown": true, "spaces": [{ "kind": "working" }] },
-  { "id": "sheogue-inn", "name": "Sheogue Inn", "category": "accommodation" },
+  { "id": "the-field", "name": "The Field", "category": "accommodation", "instances": ["Rachel's camping tent", "old worn out tent", "Caravan", "Brendan's tent", "Kate & Bob's Revel camper van"] },
+  { "id": "barbs-cottage", "name": "Barb's Cottage", "category": "accommodation" },
+  { "id": "lakes-general-store", "name": "Lakes General Store", "category": "accommodation", "rooms": ["Top Room"] },
+  { "id": "sheogue-inn", "name": "Little Shemogue Inn", "category": "accommodation", "rooms": ["Room X", "Room Zed", "Room Y", "Room T", "Room K"] },
   { "id": "camper-van", "name": "Camper Van", "category": "accommodation" },
-  { "id": "the-field", "name": "The Field", "category": "accommodation", "instances": ["Rachel's camping tent", "old worn out tent", "Caravan"] },
   { "id": "halifax-airport", "name": "Halifax Airport", "category": "transit" },
   { "id": "moncton-airport", "name": "Moncton Airport", "category": "transit" },
   { "id": "sackville-station", "name": "Sackville Station", "category": "transit" }

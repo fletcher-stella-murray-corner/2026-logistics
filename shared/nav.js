@@ -57,6 +57,57 @@ function currentQuarterSectionId(tripStart, tripEnd) {
   return 'qc-' + iso + '-' + quarter;
 }
 
+// A deliberate "jump to this section" action — used by every call site
+// that can land more than one quarter screen away from where the visitor
+// currently is: this file's own "Timeline" nav item click, and (in
+// timeline/shared.js) the transition screen's two choices and every
+// jump-menu link. Plain top-level function, same reasoning as
+// currentQuarterSectionId() above — needed before timeline/shared.js's
+// own DOMContentLoaded block runs, and shared rather than duplicated
+// since call sites live in both files.
+//
+// Exists specifically to fix a real flashing-content bug (see
+// requirements/public.md -> Home & Timeline -> Time-of-day background):
+// timeline/shared.js's live scroll-position color blend repaints on
+// every scroll event, which is exactly right for an organic scroll or a
+// one-screen jump (a gentle cross-fade into the next quarter's color),
+// but a browser's smooth-scroll animation takes roughly the same short
+// duration to cross ANY distance — so a jump of, say, five screens fires
+// that same per-frame repaint five times faster, racing through five
+// quarters' colors in under a second. That reads as a strobe, not a
+// cross-fade. window.__scrollJumpActive is the flag
+// updateQuarterBlend() (timeline/shared.js) checks to skip its own
+// per-frame work while a jump is in flight, so a multi-screen jump shows
+// no color changes at all for its duration and settles in one clean
+// step on the destination's own correct color the instant it lands —
+// nothing skipped for a single-screen jump or organic scrolling, since
+// those never set this flag in the first place.
+var scrollJumpSettleTimer = null;
+function jumpToSection(target) {
+  if (!target) return;
+  window.__scrollJumpActive = true;
+  if (scrollJumpSettleTimer) clearTimeout(scrollJumpSettleTimer);
+  var settle = function () {
+    window.__scrollJumpActive = false;
+    document.removeEventListener('scrollend', settle);
+    // Nudge timeline/shared.js's own scroll listener to recompute now
+    // that we've landed — without this, the blend would stay frozen at
+    // whatever it was showing right before the jump until the visitor's
+    // next real scroll/swipe.
+    window.dispatchEvent(new Event('scroll'));
+  };
+  // 'scrollend' (supported in every current evergreen browser) fires the
+  // instant the browser's own smooth-scroll animation actually finishes
+  // — far more reliable than guessing a fixed duration. The setTimeout
+  // is only a fallback for a browser missing it entirely.
+  if ('onscrollend' in window) {
+    document.addEventListener('scrollend', settle, { once: true });
+  } else {
+    scrollJumpSettleTimer = setTimeout(settle, 700);
+  }
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   // "Timeline" nav item's own click (see requirements/public.md ->
   // Navigation) — jumps to "now": scrolls in place when already on
@@ -70,8 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (prefix) {
         window.location.href = prefix + '#' + id;
       } else {
-        var target = document.getElementById(id);
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        jumpToSection(document.getElementById(id));
       }
     });
   }

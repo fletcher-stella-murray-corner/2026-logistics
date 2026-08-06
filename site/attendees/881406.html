@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Family Tree — Murray Corner 2026</title>
+<title>Matt — Murray Corner 2026</title>
 <style>
 /* Shared site-wide chrome — inlined into every page at build time (see
    technical.md -> Where CSS and JS changes go). Nav bar, color variables,
@@ -324,131 +324,73 @@ h1, h2, h3 {
 }
 a { color: var(--secondary); }
 
-/* Family-tree feature — inlined into site/family-tree/index.html at build
-   time. Generation-grouped layout: couples paired, children nested below. */
-.tree-title { margin-bottom: 0.25rem; }
-.tree-subtitle { color: var(--secondary); margin-top: 0; margin-bottom: 2rem; }
-/* The key explaining what a box's border/background/opacity means (see
-   family-tree/scripts/build.py -> render_legend()) — plain text and real
-   .person swatches, no icons, matching brand-guidelines.md's information-
-   layer rule (flat, legible, nothing ornamental). Each swatch is an empty
-   .person box wearing the real modifier class, sized down — not a
-   redrawn copy of the styling — so it can never drift from what the tree
-   itself actually shows. */
-.tree-legend {
+/* Attendees feature — inlined into site/attendees/*.html at build time.
+   One page per attending person summarizing their own arrival/departure/
+   room facts (see requirements/public.md -> Attendees). No index page —
+   a person's page is reached by clicking them in the Family Tree, or via
+   the "Detail" link in the Timeline's "Folks ▾" disclosure. */
+.attendees-title { margin-bottom: 0.25rem; }
+
+/* A dog attached to this page's owner (see requirements/public.md ->
+   people.json -> dogs) — a single static note under the heading, not a
+   dated fact, so it sits outside <main>'s day-grouped timeline
+   entirely. */
+.attendee-dogs { color: var(--secondary); margin-top: 0; margin-bottom: 1.5rem; }
+
+/* One <h2 class="fact-day"> per distinct date (see render_person_page()
+   in attendees/scripts/build.py), matching brand-guidelines.md ->
+   Typography -> Headlines' own "Day headings" spec (Limelight, Primary)
+   — every fact starting on that date (Arrival, Sleeping, Working from,
+   Departure, Driving) is grouped underneath it as one or more
+   .fact-line rows, instead of each fact repeating its own full date.
+   No font-weight override here — shared/base.css's shared h1/h2/h3 rule
+   already pins this to Limelight's own single weight (400) deliberately,
+   and a 700 here would win the cascade (higher specificity) and force a
+   synthetic bold the font was never designed to render. */
+.fact-day {
+  font-size: 1.25rem;
+  color: var(--primary);
+  margin: 1.4rem 0 0.4rem;
+}
+.fact-day:first-of-type { margin-top: 0; }
+/* Every fact line reads as one flowing sentence — the label leading
+   ("what happened"), then the time (or bare quarter name, "when"), then
+   the detail — rather than a three-column table row: every kind of
+   fact, point-in-time (Arrival/Departure/Driving) or date-range
+   (Sleeping/Working from), starts at .fact-label; a point-in-time fact
+   additionally shows .fact-time right after it (see time_label() in
+   attendees/scripts/build.py), a date-range fact has no single time of
+   day to show at all — see fact_line(). flex-wrap lets a long detail
+   (e.g. a Driving line) wrap onto its own line on a narrow phone without
+   breaking the label away from its time. */
+.fact-line {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
-  margin-bottom: 2rem;
-  font-size: 0.8rem;
+  align-items: baseline;
+  column-gap: 0.4rem;
+  row-gap: 0.1rem;
+  margin: 0.5rem 0;
+  font-size: 1.05rem;
+}
+.fact-time {
+  font-weight: 700;
+  color: var(--primary);
+  flex: 0 0 auto;
+}
+/* Uppercase + letter-spaced — the one label device used everywhere on
+   the site (see timeline/shared.css -> .quarter-row-label for the fuller
+   rationale), kept at this line's own inline size (not shrunk) since it
+   sits directly beside .fact-time/.fact-detail in one flowing sentence —
+   a smaller label word here would look broken mid-line, not "labelled". */
+.fact-label {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--secondary);
+  flex: 0 0 auto;
 }
-.legend-item { display: inline-flex; align-items: center; gap: 0.5rem; }
-.legend-swatch {
-  width: 1.1rem;
-  height: 1.1rem;
-  padding: 0;
-  vertical-align: middle;
-}
-
-/* Root-level spacing (between separate family lines with no common
-   ancestor shown) is a flex gap here, not a margin on .family-unit below
-   — a .family-unit already sits inside .children's own flex gap once
-   nested, and flex items don't collapse margins with each other the way
-   block elements do, so a margin here AND a gap on the parent flex
-   container would double up (compounding at every nesting depth — the
-   original bug this replaced: visibly excessive, uneven whitespace the
-   deeper a branch went). One spacing mechanism, applied at whichever
-   level is doing the stacking (.generation for roots, .children for
-   siblings below), rather than two overlapping ones. */
-.generation { margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
-.couple { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
-.person {
-  display: inline-block;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-}
-/* An attending person's box is a link to their Attendees page — the sole
-   entry point to that feature (see family-tree/scripts/build.py ->
-   render_person()). Reset link defaults so it still reads as a plain box,
-   not a typical blue underlined link; a subtle border-color change on
-   hover/focus is the only affordance it's clickable, per
-   brand-guidelines.md's plain/unfussy, no-decoration visual language. A
-   not-attending person has no such page, so stays a plain <span> with no
-   hover treatment. */
-a.person {
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-}
-a.person:hover, a.person:focus-visible {
-  border-color: var(--secondary);
-}
-.person-name { display: block; }
-/* A dog attached to its owner (see requirements/public.md -> people.json
-   -> dogs) — plain text under the name, inside the same box, never its
-   own box. Muted/smaller than the name so the box still reads as "one
-   person" at a glance, the dog a secondary detail on it. */
-.person-dogs {
-  display: block;
-  font-size: 0.75rem;
-  color: var(--secondary);
-}
-/* Married in (joined by marriage/partnership, not a blood descendant) —
-   dashed AND colored border, no caption any more (see
-   family-tree/scripts/build.py -> render_person()) — the words moved to
-   the nav's own "Folks ▾" dropdown (render_folks_menu()); on the tree
-   itself this is a purely visual signal now. */
-.person.married-in {
-  border-style: dashed;
-  border-color: var(--secondary);
-}
-/* Attending, but no travel.json entry yet — sand tint (brand-guidelines.md's
-   documented use for accent: "day-card background tint") flags it as
-   still-open without introducing a new color or an icon; no caption any
-   more, same reasoning as .married-in above. */
-.person.status-needed {
-  background: var(--accent);
-}
-.person.status-not-attending {
-  opacity: 0.55;
-}
-.couple-joiner { color: var(--secondary); }
-.empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
-/* Stacked top to bottom, not side by side — siblings render in
-   birth_order (oldest first, see family-tree/scripts/build.py ->
-   sibling_sort_key()) and need to actually read that way top-to-bottom,
-   not left-to-right, or the oldest-first ordering the data already
-   computes correctly is invisible/backwards on screen. */
-.children {
-  margin: 0.5rem 0 0 1.5rem;
-  padding-left: 1rem;
-  border-left: 2px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-/* The standalone section's own small heading (see family-tree/scripts/
-   build.py -> render_standalone_section()) — same uppercase/letter-spaced
-   label treatment as .tree-legend above, so it reads as "a system label",
-   not a name/heading of its own. Margin-top separates it from the
-   generational tree above; the tree itself has no per-generation heading
-   at all, so without this the standalone group could easily be mistaken
-   for just another generation of the same family. */
-.standalone-heading {
-  margin-top: 2rem;
-  margin-bottom: 0.75rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--secondary);
-}
+.fact-detail { flex: 1 1 16rem; min-width: 0; }
+.attendee-pending { color: var(--secondary); font-style: italic; }
 
 </style>
 </head>
@@ -463,20 +405,18 @@ a.person:hover, a.person:focus-visible {
 </details>
 </span>
 <span class="nav-split">
-<button type="button" id="folks-random" class="nav-split-label" data-attendees-prefix="../attendees/" data-people="[{&quot;id&quot;: 267115, &quot;name&quot;: &quot;Helen P&quot;}, {&quot;id&quot;: 254788, &quot;name&quot;: &quot;David M&quot;}, {&quot;id&quot;: 256947, &quot;name&quot;: &quot;Kaylyn&quot;}, {&quot;id&quot;: 331326, &quot;name&quot;: &quot;Shawn&quot;}, {&quot;id&quot;: 351002, &quot;name&quot;: &quot;JR&quot;}, {&quot;id&quot;: 737624, &quot;name&quot;: &quot;Wes&quot;}, {&quot;id&quot;: 970384, &quot;name&quot;: &quot;Evey&quot;}, {&quot;id&quot;: 739631, &quot;name&quot;: &quot;Lil&quot;}, {&quot;id&quot;: 616311, &quot;name&quot;: &quot;Jim P&quot;}, {&quot;id&quot;: 420649, &quot;name&quot;: &quot;Elizabeth&quot;}, {&quot;id&quot;: 702536, &quot;name&quot;: &quot;Jeremy&quot;}, {&quot;id&quot;: 821712, &quot;name&quot;: &quot;Kate P&quot;}, {&quot;id&quot;: 716257, &quot;name&quot;: &quot;Bob&quot;}, {&quot;id&quot;: 444018, &quot;name&quot;: &quot;Shannon&quot;}, {&quot;id&quot;: 881406, &quot;name&quot;: &quot;Matt&quot;}, {&quot;id&quot;: 680865, &quot;name&quot;: &quot;Andy&quot;}, {&quot;id&quot;: 509234, &quot;name&quot;: &quot;Cynthia&quot;}, {&quot;id&quot;: 597586, &quot;name&quot;: &quot;Brendan&quot;}, {&quot;id&quot;: 753966, &quot;name&quot;: &quot;Priscilla&quot;}, {&quot;id&quot;: 973286, &quot;name&quot;: &quot;Thiago&quot;}, {&quot;id&quot;: 374200, &quot;name&quot;: &quot;Jim S&quot;}, {&quot;id&quot;: 448796, &quot;name&quot;: &quot;Helen S&quot;}, {&quot;id&quot;: 477500, &quot;name&quot;: &quot;David S&quot;}, {&quot;id&quot;: 502053, &quot;name&quot;: &quot;Rachel&quot;}, {&quot;id&quot;: 755749, &quot;name&quot;: &quot;Susan S&quot;}, {&quot;id&quot;: 318011, &quot;name&quot;: &quot;Moshin&quot;}, {&quot;id&quot;: 737806, &quot;name&quot;: &quot;Barb&quot;}]">Folks</button>
+<button type="button" id="folks-random" class="nav-split-label" data-attendees-prefix="" data-people="[{&quot;id&quot;: 267115, &quot;name&quot;: &quot;Helen P&quot;}, {&quot;id&quot;: 254788, &quot;name&quot;: &quot;David M&quot;}, {&quot;id&quot;: 256947, &quot;name&quot;: &quot;Kaylyn&quot;}, {&quot;id&quot;: 331326, &quot;name&quot;: &quot;Shawn&quot;}, {&quot;id&quot;: 351002, &quot;name&quot;: &quot;JR&quot;}, {&quot;id&quot;: 737624, &quot;name&quot;: &quot;Wes&quot;}, {&quot;id&quot;: 970384, &quot;name&quot;: &quot;Evey&quot;}, {&quot;id&quot;: 739631, &quot;name&quot;: &quot;Lil&quot;}, {&quot;id&quot;: 616311, &quot;name&quot;: &quot;Jim P&quot;}, {&quot;id&quot;: 420649, &quot;name&quot;: &quot;Elizabeth&quot;}, {&quot;id&quot;: 702536, &quot;name&quot;: &quot;Jeremy&quot;}, {&quot;id&quot;: 821712, &quot;name&quot;: &quot;Kate P&quot;}, {&quot;id&quot;: 716257, &quot;name&quot;: &quot;Bob&quot;}, {&quot;id&quot;: 444018, &quot;name&quot;: &quot;Shannon&quot;}, {&quot;id&quot;: 881406, &quot;name&quot;: &quot;Matt&quot;}, {&quot;id&quot;: 680865, &quot;name&quot;: &quot;Andy&quot;}, {&quot;id&quot;: 509234, &quot;name&quot;: &quot;Cynthia&quot;}, {&quot;id&quot;: 597586, &quot;name&quot;: &quot;Brendan&quot;}, {&quot;id&quot;: 753966, &quot;name&quot;: &quot;Priscilla&quot;}, {&quot;id&quot;: 973286, &quot;name&quot;: &quot;Thiago&quot;}, {&quot;id&quot;: 374200, &quot;name&quot;: &quot;Jim S&quot;}, {&quot;id&quot;: 448796, &quot;name&quot;: &quot;Helen S&quot;}, {&quot;id&quot;: 477500, &quot;name&quot;: &quot;David S&quot;}, {&quot;id&quot;: 502053, &quot;name&quot;: &quot;Rachel&quot;}, {&quot;id&quot;: 755749, &quot;name&quot;: &quot;Susan S&quot;}, {&quot;id&quot;: 318011, &quot;name&quot;: &quot;Moshin&quot;}, {&quot;id&quot;: 737806, &quot;name&quot;: &quot;Barb&quot;}]">Folks</button>
 <details class="jump-menu">
 <summary><span class="nav-caret">▾</span></summary>
-<div class="jump-panel"><div class="folks-list"><span class="jump-person"><span class="jump-person-name">Helen P</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-06-12">Timeline</a><a href="../attendees/267115.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">David M</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-06-12">Timeline</a><a href="../attendees/254788.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Kaylyn</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-06-12">Timeline</a><a href="../attendees/256947.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Shawn</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-06-12">Timeline</a><a href="../attendees/331326.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">JR</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-06-12">Timeline</a><a href="../attendees/351002.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Wes</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-06-12">Timeline</a><a href="../attendees/737624.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Evey</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-06-12">Timeline</a><a href="../attendees/970384.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Lil</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-06-12">Timeline</a><a href="../attendees/739631.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Jim P</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-18-24">Timeline</a><a href="../attendees/616311.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Elizabeth</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="../attendees/420649.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Jeremy</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="../attendees/702536.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Kate P</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-18-24">Timeline</a><a href="../attendees/821712.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Bob</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-18-24">Timeline</a><a href="../attendees/716257.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Shannon</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-18-24">Timeline</a><a href="../attendees/444018.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Matt</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-18-24">Timeline</a><a href="../attendees/881406.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Andy</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="../attendees/680865.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Cynthia</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="../attendees/509234.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Brendan</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="../attendees/597586.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Priscilla</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="../attendees/753966.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Thiago</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="../attendees/973286.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Jim S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-00-06">Timeline</a><a href="../attendees/374200.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Helen S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-00-06">Timeline</a><a href="../attendees/448796.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">David S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-18-24">Timeline</a><a href="../attendees/477500.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Rachel</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-18-24">Timeline</a><a href="../attendees/502053.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Susan S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-12-18">Timeline</a><a href="../attendees/755749.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Moshin</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-18-24">Timeline</a><a href="../attendees/318011.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Barb</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-18-24">Timeline</a><a href="../attendees/737806.html">Detail</a></span></span></div></div>
+<div class="jump-panel"><div class="folks-list"><span class="jump-person"><span class="jump-person-name">Helen P</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-06-12">Timeline</a><a href="267115.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">David M</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-06-12">Timeline</a><a href="254788.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Kaylyn</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-06-12">Timeline</a><a href="256947.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Shawn</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-06-12">Timeline</a><a href="331326.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">JR</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-06-12">Timeline</a><a href="351002.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Wes</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-06-12">Timeline</a><a href="737624.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Evey</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-06-12">Timeline</a><a href="970384.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Lil</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-06-12">Timeline</a><a href="739631.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Jim P</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-18-24">Timeline</a><a href="616311.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Elizabeth</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="420649.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Jeremy</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="702536.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Kate P</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-18-24">Timeline</a><a href="821712.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Bob</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-18-24">Timeline</a><a href="716257.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Shannon</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-18-24">Timeline</a><a href="444018.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Matt</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-18-24">Timeline</a><a href="881406.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Andy</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="680865.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Cynthia</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="509234.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Brendan</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="597586.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Priscilla</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="753966.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Thiago</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="973286.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Jim S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-00-06">Timeline</a><a href="374200.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Helen S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-00-06">Timeline</a><a href="448796.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">David S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-18-24">Timeline</a><a href="477500.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Rachel</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-18-24">Timeline</a><a href="502053.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Susan S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-12-18">Timeline</a><a href="755749.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Moshin</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-18-24">Timeline</a><a href="318011.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Barb</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-18-24">Timeline</a><a href="737806.html">Detail</a></span></span></div></div>
 </details>
 </span>
-<a href="index.html">Tree</a>
+<a href="../family-tree/index.html">Tree</a>
 </nav>
-<h1 class="tree-title">Family Tree</h1>
-<p class="tree-subtitle">Where everyone fits</p>
-<div class="tree-legend"><span class="legend-item"><span class="person legend-swatch married-in"></span> Married in</span><span class="legend-item"><span class="person legend-swatch status-needed"></span> Collecting facts</span><span class="legend-item"><span class="person legend-swatch status-not-attending"></span> Not attending</span></div>
+<h1 class="attendees-title">Matt</h1>
+
 <main>
-<div class="generation"><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">Fletcher Sr</span></span><span class="couple-joiner">&amp;</span><span class="person status-not-attending"><span class="person-name">Stella</span></span></div><div class="children"><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">Margaret</span></span></div><div class="children"><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">John</span></span></div></div></div></div><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">Fletcher Jr</span></span></div><div class="children"><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">Steven</span></span></div></div><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">Susan B</span></span></div></div></div></div><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">Jesse</span></span><span class="couple-joiner">&amp;</span><span class="person married-in status-not-attending"><span class="person-name">Donald</span></span></div><div class="children"><div class="family-unit"><div class="couple"><a class="person" href="../attendees/680865.html"><span class="person-name">Andy</span></a><span class="couple-joiner">&amp;</span><a class="person married-in" href="../attendees/509234.html"><span class="person-name">Cynthia</span><span class="person-dogs">+ Zoro</span></a></div><div class="children"><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">Sandra</span></span></div></div><div class="family-unit"><div class="couple"><a class="person" href="../attendees/597586.html"><span class="person-name">Brendan</span></a><span class="couple-joiner">&amp;</span><a class="person married-in" href="../attendees/753966.html"><span class="person-name">Priscilla</span></a></div><div class="children"><div class="family-unit"><div class="couple"><a class="person" href="../attendees/973286.html"><span class="person-name">Thiago</span></a></div></div></div></div></div></div><div class="family-unit"><div class="couple"><a class="person" href="../attendees/374200.html"><span class="person-name">Jim S</span></a><span class="couple-joiner">&amp;</span><a class="person married-in" href="../attendees/448796.html"><span class="person-name">Helen S</span></a></div><div class="children"><div class="family-unit"><div class="couple"><a class="person" href="../attendees/755749.html"><span class="person-name">Susan S</span></a><span class="couple-joiner">&amp;</span><a class="person married-in" href="../attendees/318011.html"><span class="person-name">Moshin</span></a></div></div><div class="family-unit"><div class="couple"><a class="person" href="../attendees/477500.html"><span class="person-name">David S</span></a><span class="couple-joiner">&amp;</span><a class="person married-in" href="../attendees/502053.html"><span class="person-name">Rachel</span></a></div></div></div></div></div></div><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">Weston</span></span></div><div class="children"><div class="family-unit"><div class="couple"><a class="person" href="../attendees/267115.html"><span class="person-name">Helen P</span></a><span class="couple-joiner">&amp;</span><a class="person married-in" href="../attendees/254788.html"><span class="person-name">David M</span></a></div><div class="children"><div class="family-unit"><div class="couple"><a class="person" href="../attendees/256947.html"><span class="person-name">Kaylyn</span></a><span class="couple-joiner">&amp;</span><a class="person married-in" href="../attendees/351002.html"><span class="person-name">JR</span></a></div><div class="children"><div class="family-unit"><div class="couple"><a class="person" href="../attendees/737624.html"><span class="person-name">Wes</span></a></div></div><div class="family-unit"><div class="couple"><a class="person" href="../attendees/970384.html"><span class="person-name">Evey</span></a></div></div></div></div><div class="family-unit"><div class="couple"><a class="person" href="../attendees/331326.html"><span class="person-name">Shawn</span></a><span class="couple-joiner">&amp;</span><a class="person married-in" href="../attendees/739631.html"><span class="person-name">Lil</span><span class="person-dogs">+ Kiki</span></a></div></div></div></div><div class="family-unit"><div class="couple"><span class="person status-not-attending"><span class="person-name">Fletcher P</span></span></div></div><div class="family-unit"><div class="couple"><a class="person" href="../attendees/616311.html"><span class="person-name">Jim P</span></a></div><div class="children"><div class="family-unit"><div class="couple"><a class="person" href="../attendees/420649.html"><span class="person-name">Elizabeth</span></a><span class="couple-joiner">&amp;</span><a class="person married-in" href="../attendees/702536.html"><span class="person-name">Jeremy</span></a></div></div></div></div><div class="family-unit"><div class="couple"><a class="person" href="../attendees/821712.html"><span class="person-name">Kate P</span></a><span class="couple-joiner">&amp;</span><a class="person married-in" href="../attendees/716257.html"><span class="person-name">Bob</span></a></div><div class="children"><div class="family-unit"><div class="couple"><a class="person" href="../attendees/444018.html"><span class="person-name">Shannon</span></a><span class="couple-joiner">&amp;</span><a class="person married-in" href="../attendees/881406.html"><span class="person-name">Matt</span></a></div></div></div></div></div></div></div></div></div>
-<p class="standalone-heading">Also joining us</p><div class="generation standalone-section"><div class="family-unit"><div class="couple"><a class="person" href="../attendees/737806.html"><span class="person-name">Barb</span></a></div></div></div>
+<h2 class="fact-day">Thursday, Aug 6th</h2><div class="fact-line"><span class="fact-label">Arrival</span> <span class="fact-time">11pm</span> <span class="fact-detail">by ✈️ Plane — Moncton Airport — Kate P driving</span></div><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Lakes General Store — Top Room till Sunday, Aug 9th</span></div><h2 class="fact-day">Sunday, Aug 9th</h2><div class="fact-line"><span class="fact-label">Departure</span> <span class="fact-time">3pm</span> <span class="fact-detail">by ✈️ Plane — Moncton Airport — Kate P driving</span></div>
 </main>
 <script>
 // Shared client-side nav logic — inlined into every page at build time

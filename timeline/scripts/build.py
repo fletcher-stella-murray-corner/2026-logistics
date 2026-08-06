@@ -528,6 +528,56 @@ def validate_excursions(excursions, person_id, person_name, transit_names, vehic
         prev_return_key = return_key
 
 
+def validate_airport_runs(runs, person_id, person_name, transit_names, vehicle_names, people_by_id, arrival, departure):
+    """airport_runs — a driver's own round trip to ferry OTHER attendees to
+    or from a transit hub (see requirements/public.md -> Data ->
+    travel.json -> airport_runs). Deliberately a separate concept from
+    excursions above, not a variant of it: an excursion is about THIS
+    person's own temporary absence from the trip, so it renders as a real
+    Departure+Arrival pair on their page — an airport run is an errand
+    *at* the accommodation's own transit hub, not a personal absence from
+    the trip, and rendering it with the same Departure/Arrival labels
+    reads as if the driver left and rejoined the trip a second time, which
+    isn't true (see attendees/scripts/build.py -> airport_run_line() for
+    how this renders as a single distinct "Airport run" line instead).
+    Same {depart, return} leg shape and bounds-checking as excursions,
+    plus passenger_ids: who's actually being ferried, a real reference
+    list (not free text in `detail`) so a typo'd/renamed passenger is a
+    build error, not a silently wrong caption."""
+    if runs is None:
+        return
+    if not isinstance(runs, list):
+        raise ValueError(f"airport_runs for {person_name!r} must be a list of {{depart, return, passenger_ids}} blocks.")
+    arrival_key = quarter_key(arrival["date"], arrival["quarter"]) if arrival else None
+    departure_key = quarter_key(departure["date"], departure["quarter"]) if departure else None
+    for i, run in enumerate(runs):
+        label = f"airport_runs[{i}] for {person_name!r}"
+        depart = nav.require(run, "depart", label)
+        ret = nav.require(run, "return", label)
+        validate_leg(depart, person_id, person_name, f"{label} depart", transit_names, vehicle_names, people_by_id)
+        validate_leg(ret, person_id, person_name, f"{label} return", transit_names, vehicle_names, people_by_id)
+        depart_key = quarter_key(depart["date"], depart["quarter"])
+        return_key = quarter_key(ret["date"], ret["quarter"])
+        if return_key < depart_key:
+            raise ValueError(
+                f"return ({ret['date']} {ret['quarter']}) is before depart "
+                f"({depart['date']} {depart['quarter']}) in {label}."
+            )
+        if arrival_key is not None and depart_key < arrival_key:
+            raise ValueError(f"{label} departs before arrival for {person_name!r}.")
+        if departure_key is not None and return_key > departure_key:
+            raise ValueError(f"{label} returns after the final departure for {person_name!r}.")
+
+        passenger_ids = nav.require(run, "passenger_ids", label)
+        if not isinstance(passenger_ids, list) or not passenger_ids:
+            raise ValueError(f"{label} passenger_ids must be a non-empty list of person ids.")
+        for pid in passenger_ids:
+            if pid == person_id:
+                raise ValueError(f"{label} lists {person_name!r} as their own passenger — omit the driver from passenger_ids.")
+            if pid not in people_by_id:
+                raise ValueError(f"{label} passenger_ids references id {pid!r}, which doesn't exist in shared/data/people.json.")
+
+
 def validate_travel(travel, people_by_id, structures, vehicles):
     accommodation_structures = [s for s in structures if s["category"] == "accommodation"]
     transit_names = structure_names(structures, "transit")
@@ -580,6 +630,7 @@ def validate_travel(travel, people_by_id, structures, vehicles):
             validate_room(room, accommodation_structures, f"{person_name!r} on {room_date}")
         validate_working_from(entry.get("working_from"), person_name, working_structure_names)
         validate_excursions(entry.get("excursions"), person_id, person_name, transit_names, vehicle_names, people_by_id, arrival, departure)
+        validate_airport_runs(entry.get("airport_runs"), person_id, person_name, transit_names, vehicle_names, people_by_id, arrival, departure)
 
 
 def validate_day_quarter_notes(data, label):
@@ -642,6 +693,92 @@ def travel_detail(leg, people_by_id):
     if driver:
         parts.append(f"{driver['name']} driving")
     return " · ".join(parts)
+
+
+def group_legs_by_detail(pairs, people_by_id):
+    """Group (person, leg) pairs from the Arriving:/Departing: rows that
+    represent the same real-world trip, so several people sharing one
+    flight/car (e.g. four people landing on the same plane, all driven
+    onward by the same person) read as the single event it is, not a
+    repeated near-identical line per person (see requirements/public.md ->
+    Home & Timeline -> Row-by-row rules -> Arrivals/Departures).
+
+    First buckets by (mode, rendered detail via travel_detail() above) —
+    same mode and identical time/hub/vehicle/free-text detail/driver. A
+    bucket only renders as ONE combined line if that shared detail
+    actually says something beyond the time (a hub, a named vehicle,
+    free-text detail, or a driver) — real evidence it's the same trip.
+    Two people who merely happen to arrive at the same rounded time (e.g.
+    both "9pm", nothing else set) are NOT assumed to be traveling
+    together just because the strings match — that produced a real bug:
+    an unrelated third person's coincidentally-identical arrival time got
+    folded into a couple's own line, implying they all traveled together
+    when only the couple did. For a bucket with no distinguishing detail,
+    only actual partners (reciprocal `partner_id`, see
+    requirements/public.md -> people.json -> partner_id) sharing that
+    bucket still combine into one line; everyone else in it renders on
+    their own, even though their rendered detail text is identical.
+    Order-preserving: a group renders at the position of its first
+    member's first appearance in `pairs`."""
+    buckets = {}
+    order = []
+    for p, leg in pairs:
+        key = (leg["mode"], travel_detail(leg, people_by_id))
+        if key not in buckets:
+            buckets[key] = {"mode": leg["mode"], "detail": key[1], "leg": leg, "people": []}
+            order.append(key)
+        buckets[key]["people"].append(p)
+
+    groups = []
+    for key in order:
+        bucket = buckets[key]
+        leg = bucket["leg"]
+        has_distinguishing_detail = any([leg.get("hub"), leg.get("vehicle"), leg.get("detail"), leg.get("driver_id")])
+        if has_distinguishing_detail or len(bucket["people"]) == 1:
+            groups.append({"mode": bucket["mode"], "detail": bucket["detail"], "people": bucket["people"]})
+            continue
+        bucket_ids = {p["id"] for p in bucket["people"]}
+        paired = set()
+        for p in bucket["people"]:
+            if p["id"] in paired:
+                continue
+            partner_id = p.get("partner_id")
+            if partner_id in bucket_ids and partner_id not in paired:
+                partner = next(q for q in bucket["people"] if q["id"] == partner_id)
+                groups.append({"mode": bucket["mode"], "detail": bucket["detail"], "people": [p, partner]})
+                paired.add(p["id"])
+                paired.add(partner_id)
+            else:
+                groups.append({"mode": bucket["mode"], "detail": bucket["detail"], "people": [p]})
+                paired.add(p["id"])
+    return groups
+
+
+def render_travel_row(label, pairs, people_by_id):
+    """The Arriving:/Departing: row body — one line per distinct trip (see
+    group_legs_by_detail() above), not one per person. A `dogs` tag (see
+    requirements/public.md -> people.json -> dogs) rides along on
+    whichever name it belongs to, right where that person's name appears
+    in the joined list — same "+ <name>" shape used everywhere else a dog
+    shows (Family Tree, Attendees), just inline here instead of on its
+    own line, since this row is already one line per trip."""
+    if not pairs:
+        return ""
+    lines = []
+    for group in group_legs_by_detail(pairs, people_by_id):
+        names = []
+        for p in group["people"]:
+            name = esc(p["name"])
+            if p.get("dogs"):
+                name += f' (+ {esc(", ".join(p["dogs"]))})'
+            names.append(name)
+        lines.append(
+            f'<span class="person-line">'
+            f'<span class="mode-tag">{esc(MODE_TAGS.get(group["mode"], group["mode"]))}</span>'
+            f'{nav.join_names(names)} — {esc(group["detail"])}'
+            f"</span>"
+        )
+    return f'<div class="quarter-row"><span class="quarter-row-label">{esc(label)}</span>{"".join(lines)}</div>'
 
 
 def room_for_date(entry, iso_date):
@@ -740,6 +877,24 @@ def render_structures_row(present, working, kitchen_by_structure, accommodation_
     def sort_key(k):
         return (k is None, k or "")
 
+    # The outer structure boxes render in the order structures.json's own
+    # accommodation entries are written — Cottage, Red Shed, The Field,
+    # etc. — not alphabetically (see requirements/public.md -> Structures
+    # -> Nested box display). This mirrors the same "declared order, not
+    # alphabetical" rule a structure's own `rooms` list already gets
+    # below, just one level up: the file's own array order is the single
+    # place this is declared, so reordering the row means reordering that
+    # file, not touching this script. A structure absent from
+    # accommodation_structures (shouldn't happen — every name here came
+    # from validated data) sorts after every declared one rather than
+    # crashing; "Unassigned" (None) always sorts last regardless.
+    structure_order_index = {s["name"]: i for i, s in enumerate(accommodation_structures)}
+
+    def structure_display_key(k):
+        if k is None:
+            return (True, 0)
+        return (False, structure_order_index.get(k, len(structure_order_index)))
+
     # A structure's declared `rooms` list is a FIXED order (see
     # requirements/public.md -> Structures -> Nested box display) — the
     # order it's written in shared/data/structures.json, e.g. Cottage's
@@ -750,7 +905,7 @@ def render_structures_row(present, working, kitchen_by_structure, accommodation_
     rooms_order_by_structure = {s["name"]: s["rooms"] for s in accommodation_structures if s.get("rooms")}
 
     boxes = []
-    for structure in sorted(all_structures, key=sort_key):
+    for structure in sorted(all_structures, key=structure_display_key):
         by_detail = by_structure.get(structure, {})
         if structure is None:
             names = sorted(by_detail.get(None, []))
@@ -878,25 +1033,13 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
 
     rows = []
 
-    if arrivals:
-        lines = "".join(
-            f'<span class="person-line">'
-            f'<span class="mode-tag">{esc(MODE_TAGS.get(a["mode"], a["mode"]))}</span>'
-            f'{esc(p["name"])} — {esc(travel_detail(a, people_by_id))}'
-            f"</span>"
-            for p, a in arrivals
-        )
-        rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Arriving:</span>{lines}</div>')
+    arriving_row = render_travel_row("Arriving:", arrivals, people_by_id)
+    if arriving_row:
+        rows.append(arriving_row)
 
-    if departures:
-        lines = "".join(
-            f'<span class="person-line">'
-            f'<span class="mode-tag">{esc(MODE_TAGS.get(d["mode"], d["mode"]))}</span>'
-            f'{esc(p["name"])} — {esc(travel_detail(d, people_by_id))}'
-            f"</span>"
-            for p, d in departures
-        )
-        rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Departing:</span>{lines}</div>')
+    departing_row = render_travel_row("Departing:", departures, people_by_id)
+    if departing_row:
+        rows.append(departing_row)
 
     # A meal entry's optional `structure` tag (see requirements/public.md ->
     # Data -> meals.json) puts the SAME note text into that structure's own

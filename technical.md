@@ -45,11 +45,15 @@ Every script lives in a feature's `scripts/` folder, is plain Python 3 with no d
 
 When in doubt: if a change would need to be made in more than one page, it belongs in `shared/base.css` (site-wide) or the owning feature's `shared.css` (feature-wide), not copied into each page's inline block.
 
+**Changing what shape a data file is** (a new/renamed/removed field, a new allowed value, a whole new file) is a different question from where CSS/JS goes — see `way-of-working.md` → *Data model changes* for that procedure.
+
 **After editing any of these, run `scripts/build_site.py` before previewing.** No page in `site/` links to `shared/base.css` or a feature's `shared.css`/`shared.js` at runtime — the build step inlines their contents into each page's `<style>`/`<script>` block (see *Shape of the system* above). Editing a source file and reloading a page already open from `site/` will show zero change, no matter how correct the edit is — the browser is still rendering whatever was embedded at the last build.
 
 ## Lessons learned
 
 **Cross-page nav links must account for folder depth.** `site/family-tree/index.html` is one directory below `site/index.html`, so its link back to the Timeline must be `../index.html` — a bare `index.html` resolves against the *current* directory and silently links the page to itself (no 404, no console error, just a dead "back" link that looks fine until you actually click it). The rule going forward: any relative href between two pages needs to account for the actual path difference between them — `family-tree/index.html` or `attendees/<id>.html` from the root, `../index.html` from one directory down (`family-tree/` or `attendees/`), `../attendees/<id>.html` from `family-tree/` to `attendees/` (and vice versa). Caught only by actually clicking the link and checking `location.href`, not by reading the code — the href *looks* correct at a glance either way.
+
+**`attendees/scripts/build.py` never deletes a stale output file — only ever writes/overwrites the ones it currently generates.** Its output filename is `<id>.html`, so any change to a person's `id` (a renumber, or the one-time migration to random 6-digit ids — see `requirements/public.md` → *people.json* → `id`) leaves the *old* `<old-id>.html` sitting in `site/attendees/` untouched, alongside the new `<new-id>.html` — a real, still-deployed, now-orphaned page with no link pointing at it from anywhere on the site, easy to miss since the build itself exits clean and every *linked* page looks correct. After any change that alters which ids exist, diff `site/attendees/`'s file list against the current `attending: true` roster and delete anything left over by hand — this isn't automated.
 
 ## Architecture boundary
 

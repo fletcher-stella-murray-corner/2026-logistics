@@ -27,6 +27,19 @@ def require(record, field, label):
     return record[field]
 
 
+def join_names(names):
+    """Plain-English join for a short list of names — "Ann", "Ann & Bo", or
+    "Ann, Bo & Cy". Used by both timeline/scripts/build.py (grouping
+    several people who share one arrival/departure leg into a single line
+    — see render_travel_row()) and attendees/scripts/build.py (an airport
+    run's passenger list — see airport_run_line()), so the two can't drift
+    on the join style. Not esc()'d here — callers pass already-escaped
+    names."""
+    if len(names) == 1:
+        return names[0]
+    return f"{', '.join(names[:-1])} & {names[-1]}"
+
+
 def render_folks_menu(people, travel, *, timeline_prefix, attendees_prefix):
     """The Folks split control's panel content — one shape, one roster,
     used identically on every page (Home/Timeline, Family Tree, Details)

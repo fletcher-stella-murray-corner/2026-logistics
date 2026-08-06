@@ -28,8 +28,17 @@
   vertical-align: middle;
 }
 
-.generation { margin-bottom: 1.5rem; }
-.family-unit { margin-bottom: 1rem; }
+/* Root-level spacing (between separate family lines with no common
+   ancestor shown) is a flex gap here, not a margin on .family-unit below
+   — a .family-unit already sits inside .children's own flex gap once
+   nested, and flex items don't collapse margins with each other the way
+   block elements do, so a margin here AND a gap on the parent flex
+   container would double up (compounding at every nesting depth — the
+   original bug this replaced: visibly excessive, uneven whitespace the
+   deeper a branch went). One spacing mechanism, applied at whichever
+   level is doing the stacking (.generation for roots, .children for
+   siblings below), rather than two overlapping ones. */
+.generation { margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
 .couple { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 .person {
   display: inline-block;
@@ -55,6 +64,15 @@ a.person:hover, a.person:focus-visible {
   border-color: var(--secondary);
 }
 .person-name { display: block; }
+/* A dog attached to its owner (see requirements/public.md -> people.json
+   -> dogs) — plain text under the name, inside the same box, never its
+   own box. Muted/smaller than the name so the box still reads as "one
+   person" at a glance, the dog a secondary detail on it. */
+.person-dogs {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--secondary);
+}
 /* Married in (joined by marriage/partnership, not a blood descendant) —
    dashed AND colored border, no caption any more (see
    family-tree/scripts/build.py -> render_person()) — the words moved to
@@ -88,4 +106,20 @@ a.person:hover, a.person:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+/* The standalone section's own small heading (see family-tree/scripts/
+   build.py -> render_standalone_section()) — same uppercase/letter-spaced
+   label treatment as .tree-legend above, so it reads as "a system label",
+   not a name/heading of its own. Margin-top separates it from the
+   generational tree above; the tree itself has no per-generation heading
+   at all, so without this the standalone group could easily be mistaken
+   for just another generation of the same family. */
+.standalone-heading {
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--secondary);
 }

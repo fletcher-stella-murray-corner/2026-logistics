@@ -24,8 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (transitionNow) {
     transitionNow.addEventListener('click', function () {
       var id = currentQuarterSectionId(transitionNow.dataset.tripStart, transitionNow.dataset.tripEnd);
-      var target = document.getElementById(id);
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      jumpToSection(document.getElementById(id));
     });
   }
   var transitionAug1 = document.getElementById('transition-aug1');
@@ -34,22 +33,25 @@ document.addEventListener('DOMContentLoaded', function () {
       var target = document.getElementById(this.getAttribute('href').slice(1));
       if (target) {
         event.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        jumpToSection(target);
       }
     });
   }
 
-  // Jump-menu links do a smooth animated scroll to their target, then
-  // close the disclosure so it doesn't keep covering the day quarter
-  // canvas just jumped to. Deliberately uses scrollIntoView({behavior:
-  // 'smooth'}) on click rather than the CSS `scroll-behavior: smooth`
-  // property — that property applies to ALL scrolling including native
-  // scroll-snap settling, and pairing it with scroll-snap-type is a known
-  // Safari/iOS bug (see timeline/shared.css). Scoping "smooth" to just
-  // this explicit, deliberate jump action avoids that entirely. Covers
-  // both split controls' own panels (the Timeline's day/quarter jump
-  // list and "Folks") — a loop over ALL .jump-menu elements, not just the
-  // first match.
+  // Jump-menu links do a smooth animated scroll to their target (via
+  // jumpToSection() in shared/nav.js — see that function's own comment
+  // for why a multi-screen jump like this needs to suspend the live
+  // color blend below, not just animate the scroll), then close the
+  // disclosure so it doesn't keep covering the day quarter canvas just
+  // jumped to. Deliberately uses scrollIntoView({behavior: 'smooth'})
+  // (inside jumpToSection()) rather than the CSS `scroll-behavior:
+  // smooth` property — that property applies to ALL scrolling including
+  // native scroll-snap settling, and pairing it with scroll-snap-type is
+  // a known Safari/iOS bug (see timeline/shared.css). Scoping "smooth"
+  // to just this explicit, deliberate jump action avoids that entirely.
+  // Covers both split controls' own panels (the Timeline's day/quarter
+  // jump list and "Folks") — a loop over ALL .jump-menu elements, not
+  // just the first match.
   var menus = document.querySelectorAll('.jump-menu');
   menus.forEach(function (menu) {
     var links = menu.querySelectorAll('a');
@@ -58,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var target = document.getElementById(this.getAttribute('href').slice(1));
         if (target) {
           event.preventDefault();
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          jumpToSection(target);
           if (history.replaceState) {
             history.replaceState(null, '', this.getAttribute('href'));
           }

@@ -35,6 +35,21 @@ For any change to `people.json` or `travel.json`:
 5. **Open the built pages for everyone named in step 1** — their own Attendees page, plus the Timeline quarter screens spanning the affected range — not just the page for the person you edited. This is also the only way to catch a rendering-level bug that's invisible in the raw JSON (e.g. sibling display order, or a milestone gap that silently didn't appear).
 6. Only then commit — see *Git* below.
 
+## Data model changes
+
+Changing the *shape* of a data file — a new field, a renamed/removed one, a new allowed value, a whole new file — is a different kind of change from *Data entry* above, which only fills in facts within a shape that's already fixed. It's rarer, but it's also the one most likely to leave a script silently out of sync with what another script now expects, so it gets its own procedure:
+
+1. **Update the schema doc first.** The relevant file's own `Data` subsection in `requirements/public.md` is the source of truth for its shape — write the change there before touching any script, so the new shape is fully specified before code follows it.
+2. **Find every consumer.** Grep the field/file name across every feature's `build.py`, plus `shared/nav.py`, `shared/trip.py`, and `scripts/report.py`. `00-index.md`'s doc table (which script reads which file) is the starting checklist — a field four scripts read is four places to check, not one.
+3. **Add or adjust validation** in the file's owning build script (the one already responsible for it — e.g. `timeline/scripts/build.py` owns `travel.json`/`structures.json`/`vehicles.json`). Fail loudly: a friendly message naming the record and field, never a raw `KeyError` — match the style every existing validator already uses (`shared/nav.py` → `require()`, each script's own `record_label()`).
+4. **Update every consumer's rendering logic**, not just the one that motivated the change. A shared field going stale in a script nobody thought to touch is the same trap *Data entry* above warns about for data (two entries staying independently valid while quietly disagreeing) — just applied to code instead of data.
+5. **Backfill existing records.** Decide and apply a default/migration so the file stays internally consistent — an optional field can lean on `.get()` with a sensible fallback, but a newly *required* field needs every existing record updated in the same commit, not left to fail the next build.
+6. **Update `00-index.md`'s one-line description** of the file/script if the change alters what it's responsible for.
+7. **Rebuild and review every affected page** (`scripts/build_site.py`). A clean exit only proves the new shape is well-formed — same limitation *Data entry* calls out for `scripts/report.py` — not that every consumer actually renders it correctly.
+8. **Commit it all together** — schema doc, validation, every consumer update, and any backfilled data, in one commit. A data-model change is a code change, not a data-entry edit, so it doesn't follow *Data entry*'s separate one-person-at-a-time rhythm.
+
+A **new data file** (not just a new field on an existing one) needs one more thing beyond the above: its own row in `00-index.md`'s doc table, and an entry in `technical.md`'s Scripts table naming what validates it.
+
 ## Git
 
 - Commit before editing a data file by hand. `build.py` writes directly to the HTML pages; a clean working tree is your only rollback if something goes wrong.

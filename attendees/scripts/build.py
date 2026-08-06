@@ -201,7 +201,7 @@ def format_work_quarters(quarters):
     return " & ".join(labels[q] for q in WORK_QUARTERS if q in quarters)
 
 
-FACT_RANK = {"Arrival": 0, "Sleeping": 1, "Working from": 2, "Departure": 3, "Driving": 4}
+FACT_RANK = {"Arrival": 0, "Airport run": 1, "Sleeping": 2, "Working from": 3, "Departure": 4, "Driving": 5}
 """The tie-break order for two facts landing on the exact same date (see
 requirements/public.md -> Attendees -> Layout) — a causal order, not an
 arbitrary one: you can't be asleep/working somewhere before the Arrival
@@ -265,6 +265,31 @@ def working_line(block):
     quarters = block.get("quarters", list(WORK_QUARTERS))
     detail = f"{esc(block['structure'])}, {esc(format_work_quarters(quarters))}"
     return fact_line(None, "Working from", detail)
+
+
+def airport_run_line(run, people_by_id):
+    """An airport run's own line — rendered as ONE fact line covering both
+    the depart and return legs, not two (contrast excursions, which
+    deliberately render as a separate Departure+Arrival pair — see
+    requirements/public.md -> Data -> travel.json -> airport_runs for why
+    those are different concepts). A driver doing an airport run hasn't
+    left and rejoined the trip; showing it as a same-shaped Arrival/
+    Departure pair on their own page reads that way regardless, which is
+    exactly the confusion this single-line "Airport run" fact exists to
+    avoid. Time is a range (depart time–return time, e.g. "5pm–6pm") when
+    the two differ, or just the one label when they don't — e.g. neither
+    leg has a precise time_range and both fall in the same quarter, which
+    would otherwise render as a confusing "Evening–Evening" repeating the
+    same bare quarter name for no reason. detail is the depart leg's own
+    mode/hub/vehicle (reusing format_leg_body(), same as any other leg)
+    plus who's actually being ferried, from passenger_ids — a real
+    reference list, not free text."""
+    depart, ret = run["depart"], run["return"]
+    depart_label, return_label = time_label(depart), time_label(ret)
+    time_text = depart_label if depart_label == return_label else f"{depart_label}–{return_label}"
+    passengers = nav.join_names([esc(people_by_id[pid]["name"]) for pid in run["passenger_ids"]])
+    detail = f"{format_leg_body(depart, people_by_id, lead_with_by=True)} — {passengers}"
+    return fact_line(time_text, "Airport run", detail)
 
 
 def sleeping_end_date(departure):
@@ -461,6 +486,12 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
                 fact_line(time_label(ret), "Arrival", format_leg_body(ret, people_by_id, lead_with_by=True)),
             ))
 
+        # Airport runs — see requirements/public.md -> Data -> travel.json
+        # -> airport_runs and airport_run_line() above for why this is one
+        # line, not a Departure+Arrival pair the way excursions render.
+        for run in entry.get("airport_runs", []):
+            items.append((run["depart"]["date"], FACT_RANK["Airport run"], airport_run_line(run, people_by_id)))
+
         if departure:
             items.append((
                 departure["date"], FACT_RANK["Departure"],
@@ -524,6 +555,13 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
             for iso_date, lines in day_blocks
         )
 
+    # A dog is an attribute of the page owner, not a dated fact — shown
+    # once, right under the heading, never folded into the day-grouped
+    # timeline body above (see requirements/public.md -> people.json ->
+    # dogs, and -> Attendees -> Layout).
+    dogs = person.get("dogs")
+    dogs_html = f'<p class="attendee-dogs">Traveling with: {esc(", ".join(dogs))}</p>' if dogs else ""
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -538,6 +576,7 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
 <body>
 {nav_row}
 <h1 class="attendees-title">{esc(person['name'])}</h1>
+{dogs_html}
 <main>
 {body}
 </main>

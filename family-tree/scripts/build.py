@@ -116,15 +116,33 @@ def validate_people_shape(people):
         name = nav.require(p, "name", label)
         if not isinstance(name, str) or not name.strip():
             raise ValueError(f"{label} has an empty or non-string name.")
-        generation = nav.require(p, "generation", label)
-        if not isinstance(generation, int):
-            raise ValueError(f"{label} has a non-integer generation {generation!r} — generation must be an integer.")
+        standalone = p.get("standalone")
+        if standalone is not None and not isinstance(standalone, bool):
+            raise ValueError(f"{label} has a non-boolean standalone {standalone!r} — standalone must be true or false.")
+        # generation only exists to place someone within the generational
+        # tree structure (see requirements/public.md -> people.json ->
+        # generation) — meaningless, so not required, for someone marked
+        # standalone (see -> standalone above), who renders in their own
+        # section below that tree entirely, not nested anywhere in it.
+        if not standalone:
+            generation = nav.require(p, "generation", label)
+            if not isinstance(generation, int):
+                raise ValueError(f"{label} has a non-integer generation {generation!r} — generation must be an integer.")
+        elif "generation" in p and not isinstance(p["generation"], int):
+            raise ValueError(f"{label} has a non-integer generation {p['generation']!r} — generation must be an integer.")
         parent_ids = p.get("parent_ids") or []
         if len(parent_ids) > 2:
             raise ValueError(f"{name!r} has {len(parent_ids)} parent_ids — a person can have at most 2.")
         birth_order = p.get("birth_order")
         if birth_order is not None and not isinstance(birth_order, int):
             raise ValueError(f"{label} has a non-integer birth_order {birth_order!r} — birth_order must be an integer.")
+        dogs = p.get("dogs")
+        if dogs is not None:
+            if not isinstance(dogs, list) or not dogs:
+                raise ValueError(f"{label} has a non-list or empty dogs {dogs!r} — dogs must be a non-empty list when present.")
+            for dog in dogs:
+                if not isinstance(dog, str) or not dog.strip():
+                    raise ValueError(f"{label} has a non-string or empty dog name in dogs {dogs!r}.")
 
 
 def validate_people(people):
@@ -226,6 +244,14 @@ def render_person(person, collected_ids):
     elif status == "not-attending":
         classes.append("status-not-attending")
     inner = f'<span class="person-name">{esc(person["name"])}</span>'
+    # A dog is an attribute of its owner, not a person of its own — no box,
+    # no id, no travel/attending status (see requirements/public.md ->
+    # people.json -> dogs). Rendered as plain text, unlike the married-in/
+    # status modifiers above, since it's real content (a name) rather than
+    # a status those are deliberately kept non-verbal for.
+    dogs = person.get("dogs")
+    if dogs:
+        inner += f'<span class="person-dogs">+ {esc(", ".join(dogs))}</span>'
 
     # Attending people link straight to their own Attendees page — the
     # sole entry point to that feature (see module docstring). Not
@@ -290,14 +316,22 @@ def render_unit(person, people_by_id, children_by_parent, rendered_ids, collecte
 
 
 def build_tree_html(people, collected_ids):
-    if not people:
+    # standalone people (see requirements/public.md -> people.json ->
+    # standalone) opt out of the generational tree entirely — excluded
+    # here so a standalone person with no `generation` set can't
+    # accidentally default to generation 1 (see person.get("generation", 1)
+    # below) and get swept into the roots list. They get their own
+    # section instead — see render_standalone_section() below.
+    tree_people = [p for p in people if not p.get("standalone")]
+
+    if not tree_people:
         return '<p class="empty-hint">No one added to the family tree yet.</p>'
 
-    people_by_id = {p["id"]: p for p in people}
-    children_by_parent = build_children_map(people)
-    min_generation = min(p.get("generation", 1) for p in people)
+    people_by_id = {p["id"]: p for p in tree_people}
+    children_by_parent = build_children_map(tree_people)
+    min_generation = min(p.get("generation", 1) for p in tree_people)
 
-    roots = [p for p in people if p.get("generation", 1) == min_generation]
+    roots = [p for p in tree_people if p.get("generation", 1) == min_generation]
     roots.sort(key=sibling_sort_key)
 
     rendered_ids = set()
@@ -305,7 +339,7 @@ def build_tree_html(people, collected_ids):
         render_unit(r, people_by_id, children_by_parent, rendered_ids, collected_ids) for r in roots
     )
 
-    missing = [p for p in people if p["id"] not in rendered_ids]
+    missing = [p for p in tree_people if p["id"] not in rendered_ids]
     if missing:
         missing.sort(key=lambda p: p["id"])
         names = ", ".join(f"{p['name']!r} (id {p['id']})" for p in missing)
@@ -313,10 +347,41 @@ def build_tree_html(people, collected_ids):
             f"The following people are never reached from a generation-{min_generation} "
             f"root and would silently be missing from the Family Tree page: {names}. "
             f"Check their generation and parent_ids — every non-root person needs a "
-            f"parent_ids chain that eventually leads back to a root."
+            f"parent_ids chain that eventually leads back to a root. If this person isn't "
+            f"actually related to anyone in the tree, set standalone: true instead of trying "
+            f"to connect them."
         )
 
     return f'<div class="generation">{units_html}</div>'
+
+
+def render_standalone_section(people, collected_ids):
+    """People marked standalone: true (see requirements/public.md ->
+    people.json -> standalone) — genuinely unrelated to anyone else in the
+    tree — render in their own flat section at the very bottom of the
+    page, below the whole generational tree, instead of being forced into
+    a parent_ids/partner_id chain back to a root, or treated as another
+    top-level root sitting next to generation 1. Same box states/legend/
+    Attendees-link behavior as everyone else (render_person() below) —
+    only the nesting is different (none: one box per row, no couple
+    pairing, no children)."""
+    standalone_people = [p for p in people if p.get("standalone")]
+    if not standalone_people:
+        return ""
+    standalone_people.sort(key=sibling_sort_key)
+    boxes = "".join(
+        f'<div class="family-unit"><div class="couple">{render_person(p, collected_ids)}</div></div>'
+        for p in standalone_people
+    )
+    # A short heading, unlike the generational tree above it (which has no
+    # per-generation label at all) — without one, a reader could easily
+    # mistake this flat, unconnected group for another generation of the
+    # same family rather than guests with no blood/marriage tie to anyone
+    # in it.
+    return (
+        '<p class="standalone-heading">Also joining us</p>'
+        f'<div class="generation standalone-section">{boxes}</div>'
+    )
 
 
 def build_page_html(people, travel, collected_ids, shared_base_css, shared_css, shared_nav_js):
@@ -335,6 +400,7 @@ def build_page_html(people, travel, collected_ids, shared_base_css, shared_css, 
         include_play=False,
     )
     tree_html = build_tree_html(people, collected_ids)
+    standalone_html = render_standalone_section(people, collected_ids)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -353,6 +419,7 @@ def build_page_html(people, travel, collected_ids, shared_base_css, shared_css, 
 {render_legend()}
 <main>
 {tree_html}
+{standalone_html}
 </main>
 <script>
 {shared_nav_js}

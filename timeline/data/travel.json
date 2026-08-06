@@ -1,6 +1,151 @@
 [
   {
-    "person_id": 9,
+    "person_id": 737806,
+    "arrival": { "date": "2026-08-07", "quarter": "18-24", "time_range": ["20:00", "20:00"], "mode": "car" },
+    "departure": { "date": "2026-08-11", "quarter": "06-12", "time_range": ["08:00", "08:00"], "mode": "car" },
+    "room": "Barb's Cottage"
+  },
+  {
+    "person_id": 318011,
+    "arrival": { "date": "2026-08-07", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "car" },
+    "departure": { "date": "2026-08-09", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car" },
+    "room": "Cottage — Blue Room"
+  },
+  {
+    "person_id": 737624,
+    "arrival": { "date": "2026-08-07", "quarter": "06-12", "mode": "plane", "hub": "Moncton Airport", "driver_id": 256947 },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station" },
+    "room": "Little Shemogue Inn — Room K"
+  },
+  {
+    "person_id": 970384,
+    "arrival": { "date": "2026-08-07", "quarter": "06-12", "mode": "plane", "hub": "Moncton Airport", "driver_id": 256947 },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station" },
+    "room": "Little Shemogue Inn — Room K"
+  },
+  {
+    "person_id": 256947,
+    "arrival": { "date": "2026-08-06", "quarter": "06-12", "time_range": ["10:00", "10:00"], "mode": "car" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car" },
+    "room": "Little Shemogue Inn — Room K",
+    "airport_runs": [
+      {
+        "passenger_ids": [267115, 737624, 970384],
+        "depart": { "date": "2026-08-07", "quarter": "06-12", "mode": "car", "hub": "Moncton Airport" },
+        "return": { "date": "2026-08-07", "quarter": "06-12", "mode": "car" }
+      }
+    ]
+  },
+  {
+    "person_id": 351002,
+    "arrival": { "date": "2026-08-06", "quarter": "06-12", "time_range": ["10:00", "10:00"], "mode": "car" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car" },
+    "room": "Little Shemogue Inn — Room K"
+  },
+  {
+    "person_id": 331326,
+    "arrival": { "date": "2026-08-06", "quarter": "06-12", "time_range": ["09:00", "09:00"], "mode": "car" },
+    "departure": { "date": "2026-08-11", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car" },
+    "room": "Little Shemogue Inn — Room T"
+  },
+  {
+    "person_id": 739631,
+    "arrival": { "date": "2026-08-06", "quarter": "06-12", "time_range": ["09:00", "09:00"], "mode": "car" },
+    "departure": { "date": "2026-08-11", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car" },
+    "room": "Little Shemogue Inn — Room T"
+  },
+  {
+    "person_id": 267115,
+    "arrival": { "date": "2026-08-07", "quarter": "06-12", "mode": "plane", "hub": "Moncton Airport", "driver_id": 256947 },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station" },
+    "room": "Little Shemogue Inn — Room Y"
+  },
+  {
+    "person_id": 254788,
+    "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car" },
+    "room": "Little Shemogue Inn — Room Y"
+  },
+  {
+    "person_id": 420649,
+    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car", "detail": "Flew into Halifax at 2pm, then drove to the cottage" },
+    "departure": { "date": "2026-08-09", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car", "detail": "Flying out of Halifax at 3pm" },
+    "room": "Little Shemogue Inn — Room Zed"
+  },
+  {
+    "person_id": 702536,
+    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car", "detail": "Flew into Halifax at 2pm, then drove to the cottage" },
+    "departure": { "date": "2026-08-09", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car", "detail": "Flying out of Halifax at 3pm" },
+    "room": "Little Shemogue Inn — Room Zed"
+  },
+  {
+    "person_id": 444018,
+    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["23:00", "23:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
+    "departure": { "date": "2026-08-09", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
+    "room": "Lakes General Store — Top Room"
+  },
+  {
+    "person_id": 881406,
+    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["23:00", "23:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
+    "departure": { "date": "2026-08-09", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
+    "room": "Lakes General Store — Top Room"
+  },
+  {
+    "person_id": 821712,
+    "arrival": { "date": "2026-08-04", "quarter": "18-24", "time_range": ["21:00", "21:00"], "mode": "car" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car" },
+    "room": "The Field — Kate & Bob's Revel camper van",
+    "airport_runs": [
+      {
+        "passenger_ids": [444018, 881406],
+        "depart": { "date": "2026-08-06", "quarter": "18-24", "mode": "car", "hub": "Moncton Airport" },
+        "return": { "date": "2026-08-06", "quarter": "18-24", "mode": "car" }
+      },
+      {
+        "passenger_ids": [444018, 881406],
+        "depart": { "date": "2026-08-09", "quarter": "12-18", "mode": "car", "hub": "Moncton Airport" },
+        "return": { "date": "2026-08-09", "quarter": "12-18", "mode": "car" }
+      }
+    ]
+  },
+  {
+    "person_id": 716257,
+    "arrival": { "date": "2026-08-04", "quarter": "18-24", "time_range": ["21:00", "21:00"], "mode": "car" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car" },
+    "room": "The Field — Kate & Bob's Revel camper van"
+  },
+  {
+    "person_id": 616311,
+    "arrival": { "date": "2026-08-04", "quarter": "18-24", "time_range": ["21:00", "21:00"], "mode": "car" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["13:00", "13:00"], "mode": "car" },
+    "room": "Cottage — Green Room"
+  },
+  {
+    "person_id": 509234,
+    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["17:15", "17:15"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "room": "Little Shemogue Inn — Room X"
+  },
+  {
+    "person_id": 597586,
+    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["17:15", "17:15"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "room": "The Field — Brendan's tent"
+  },
+  {
+    "person_id": 753966,
+    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["17:15", "17:15"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "room": "The Field — Brendan's tent"
+  },
+  {
+    "person_id": 973286,
+    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["17:15", "17:15"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "room": "The Field — Brendan's tent"
+  },
+  {
+    "person_id": 755749,
     "arrival": { "date": "2026-08-04", "quarter": "12-18", "time_range": ["14:30", "14:30"], "mode": "car" },
     "departure": { "date": "2026-08-11", "quarter": "12-18", "mode": "car" },
     "room": "Cottage — Master Suite",
@@ -15,7 +160,20 @@
     }
   },
   {
-    "person_id": 5,
+    "person_id": 680865,
+    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car" },
+    "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "car" },
+    "room": "Little Shemogue Inn — Room X",
+    "airport_runs": [
+      {
+        "depart": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["17:00", "17:00"], "mode": "car", "hub": "Moncton Airport" },
+        "return": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:00", "18:00"], "mode": "car" },
+        "passenger_ids": [509234, 597586, 753966, 973286]
+      }
+    ]
+  },
+  {
+    "person_id": 374200,
     "arrival_note": "Never left",
     "room": "Cottage — Master Suite",
     "excursions": [
@@ -27,7 +185,7 @@
     "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "With David · Vehicle TBD" }
   },
   {
-    "person_id": 6,
+    "person_id": 448796,
     "arrival_note": "Has been reading in a chair since an undetermined time",
     "room": "Cottage — Master Suite",
     "excursions": [
@@ -39,7 +197,7 @@
     "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "With David · Vehicle TBD" }
   },
   {
-    "person_id": 7,
+    "person_id": 477500,
     "arrival": { "date": "2026-08-01", "quarter": "18-24", "time_range": ["18:00", "18:00"], "mode": "car", "vehicle": "White Toyota Camry", "detail": "" },
     "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "detail": "Vehicle TBD" },
     "room": "Cottage — Blue Room",
@@ -57,9 +215,9 @@
     ]
   },
   {
-    "person_id": 8,
+    "person_id": 502053,
     "arrival": { "date": "2026-08-01", "quarter": "18-24", "time_range": ["18:00", "18:00"], "mode": "car", "vehicle": "White Toyota Camry", "detail": "" },
-    "departure": { "date": "2026-08-09", "quarter": "00-06", "mode": "plane", "hub": "Moncton Airport", "detail": "6am flight · Departing Cottage at 3am", "driver_id": 7 },
+    "departure": { "date": "2026-08-09", "quarter": "00-06", "mode": "plane", "hub": "Moncton Airport", "detail": "6am flight · Departing Cottage at 3am", "driver_id": 477500 },
     "room": "Cottage — Blue Room",
     "room_by_date": {
       "2026-08-08": "The Field — Rachel's camping tent"

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>David S — Murray Corner 2026</title>
+<title>Brendan — Murray Corner 2026</title>
 <style>
 /* Shared site-wide chrome — inlined into every page at build time (see
    technical.md -> Where CSS and JS changes go). Nav bar, color variables,
@@ -331,6 +331,12 @@ a { color: var(--secondary); }
    the "Detail" link in the Timeline's "Folks ▾" disclosure. */
 .attendees-title { margin-bottom: 0.25rem; }
 
+/* A dog attached to this page's owner (see requirements/public.md ->
+   people.json -> dogs) — a single static note under the heading, not a
+   dated fact, so it sits outside <main>'s day-grouped timeline
+   entirely. */
+.attendee-dogs { color: var(--secondary); margin-top: 0; margin-bottom: 1.5rem; }
+
 /* One <h2 class="fact-day"> per distinct date (see render_person_page()
    in attendees/scripts/build.py), matching brand-guidelines.md ->
    Typography -> Headlines' own "Day headings" spec (Limelight, Primary)
@@ -399,17 +405,18 @@ a { color: var(--secondary); }
 </details>
 </span>
 <span class="nav-split">
-<button type="button" id="folks-random" class="nav-split-label" data-attendees-prefix="" data-people="[{&quot;id&quot;: 5, &quot;name&quot;: &quot;Jim S&quot;}, {&quot;id&quot;: 6, &quot;name&quot;: &quot;Helen S&quot;}, {&quot;id&quot;: 7, &quot;name&quot;: &quot;David S&quot;}, {&quot;id&quot;: 8, &quot;name&quot;: &quot;Rachel&quot;}, {&quot;id&quot;: 9, &quot;name&quot;: &quot;Susan&quot;}]">Folks</button>
+<button type="button" id="folks-random" class="nav-split-label" data-attendees-prefix="" data-people="[{&quot;id&quot;: 267115, &quot;name&quot;: &quot;Helen P&quot;}, {&quot;id&quot;: 254788, &quot;name&quot;: &quot;David M&quot;}, {&quot;id&quot;: 256947, &quot;name&quot;: &quot;Kaylyn&quot;}, {&quot;id&quot;: 331326, &quot;name&quot;: &quot;Shawn&quot;}, {&quot;id&quot;: 351002, &quot;name&quot;: &quot;JR&quot;}, {&quot;id&quot;: 737624, &quot;name&quot;: &quot;Wes&quot;}, {&quot;id&quot;: 970384, &quot;name&quot;: &quot;Evey&quot;}, {&quot;id&quot;: 739631, &quot;name&quot;: &quot;Lil&quot;}, {&quot;id&quot;: 616311, &quot;name&quot;: &quot;Jim P&quot;}, {&quot;id&quot;: 420649, &quot;name&quot;: &quot;Elizabeth&quot;}, {&quot;id&quot;: 702536, &quot;name&quot;: &quot;Jeremy&quot;}, {&quot;id&quot;: 821712, &quot;name&quot;: &quot;Kate P&quot;}, {&quot;id&quot;: 716257, &quot;name&quot;: &quot;Bob&quot;}, {&quot;id&quot;: 444018, &quot;name&quot;: &quot;Shannon&quot;}, {&quot;id&quot;: 881406, &quot;name&quot;: &quot;Matt&quot;}, {&quot;id&quot;: 680865, &quot;name&quot;: &quot;Andy&quot;}, {&quot;id&quot;: 509234, &quot;name&quot;: &quot;Cynthia&quot;}, {&quot;id&quot;: 597586, &quot;name&quot;: &quot;Brendan&quot;}, {&quot;id&quot;: 753966, &quot;name&quot;: &quot;Priscilla&quot;}, {&quot;id&quot;: 973286, &quot;name&quot;: &quot;Thiago&quot;}, {&quot;id&quot;: 374200, &quot;name&quot;: &quot;Jim S&quot;}, {&quot;id&quot;: 448796, &quot;name&quot;: &quot;Helen S&quot;}, {&quot;id&quot;: 477500, &quot;name&quot;: &quot;David S&quot;}, {&quot;id&quot;: 502053, &quot;name&quot;: &quot;Rachel&quot;}, {&quot;id&quot;: 755749, &quot;name&quot;: &quot;Susan S&quot;}, {&quot;id&quot;: 318011, &quot;name&quot;: &quot;Moshin&quot;}, {&quot;id&quot;: 737806, &quot;name&quot;: &quot;Barb&quot;}]">Folks</button>
 <details class="jump-menu">
 <summary><span class="nav-caret">▾</span></summary>
-<div class="jump-panel"><div class="folks-list"><span class="jump-person"><span class="jump-person-name">Jim S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-00-06">Timeline</a><a href="5.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Helen S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-00-06">Timeline</a><a href="6.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">David S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-18-24">Timeline</a><a href="7.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Rachel</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-18-24">Timeline</a><a href="8.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Susan</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-12-18">Timeline</a><a href="9.html">Detail</a></span></span></div></div>
+<div class="jump-panel"><div class="folks-list"><span class="jump-person"><span class="jump-person-name">Helen P</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-06-12">Timeline</a><a href="267115.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">David M</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-06-12">Timeline</a><a href="254788.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Kaylyn</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-06-12">Timeline</a><a href="256947.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Shawn</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-06-12">Timeline</a><a href="331326.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">JR</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-06-12">Timeline</a><a href="351002.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Wes</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-06-12">Timeline</a><a href="737624.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Evey</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-06-12">Timeline</a><a href="970384.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Lil</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-06-12">Timeline</a><a href="739631.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Jim P</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-18-24">Timeline</a><a href="616311.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Elizabeth</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="420649.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Jeremy</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="702536.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Kate P</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-18-24">Timeline</a><a href="821712.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Bob</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-18-24">Timeline</a><a href="716257.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Shannon</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-18-24">Timeline</a><a href="444018.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Matt</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-18-24">Timeline</a><a href="881406.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Andy</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="680865.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Cynthia</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="509234.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Brendan</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="597586.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Priscilla</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="753966.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Thiago</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-06-12-18">Timeline</a><a href="973286.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Jim S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-00-06">Timeline</a><a href="374200.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Helen S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-00-06">Timeline</a><a href="448796.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">David S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-18-24">Timeline</a><a href="477500.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Rachel</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-01-18-24">Timeline</a><a href="502053.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Susan S</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-04-12-18">Timeline</a><a href="755749.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Moshin</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-18-24">Timeline</a><a href="318011.html">Detail</a></span></span><span class="jump-person"><span class="jump-person-name">Barb</span><span class="jump-person-actions"><a href="../index.html#qc-2026-08-07-18-24">Timeline</a><a href="737806.html">Detail</a></span></span></div></div>
 </details>
 </span>
 <a href="../family-tree/index.html">Tree</a>
 </nav>
-<h1 class="attendees-title">David S</h1>
+<h1 class="attendees-title">Brendan</h1>
+
 <main>
-<h2 class="fact-day">Saturday, Aug 1st</h2><div class="fact-line"><span class="fact-label">Arrival</span> <span class="fact-time">6pm</span> <span class="fact-detail">by 🚗 Car — White Toyota Camry</span></div><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">Cottage — Blue Room till Friday, Aug 7th</span></div><h2 class="fact-day">Tuesday, Aug 4th</h2><div class="fact-line"><span class="fact-label">Working from</span> <span class="fact-detail">Red Shed, mornings &amp; afternoons</span></div><h2 class="fact-day">Wednesday, Aug 5th</h2><div class="fact-line"><span class="fact-label">Working from</span> <span class="fact-detail">Red Shed, mornings &amp; afternoons</span></div><h2 class="fact-day">Thursday, Aug 6th</h2><div class="fact-line"><span class="fact-label">Working from</span> <span class="fact-detail">Red Shed, mornings &amp; afternoons</span></div><h2 class="fact-day">Saturday, Aug 8th</h2><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">The Field — Rachel's camping tent</span></div><h2 class="fact-day">Sunday, Aug 9th</h2><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">The Field — old worn out tent till Thursday, Aug 13th</span></div><div class="fact-line"><span class="fact-label">Driving</span> <span class="fact-time">12am–6am</span> <span class="fact-detail">Rachel’s departure — ✈️ Plane — Moncton Airport — 6am flight · Departing Cottage at 3am — David S driving</span></div><h2 class="fact-day">Tuesday, Aug 11th</h2><div class="fact-line"><span class="fact-label">Working from</span> <span class="fact-detail">Red Shed, mornings &amp; afternoons</span></div><h2 class="fact-day">Wednesday, Aug 12th</h2><div class="fact-line"><span class="fact-label">Working from</span> <span class="fact-detail">Red Shed, mornings &amp; afternoons</span></div><h2 class="fact-day">Thursday, Aug 13th</h2><div class="fact-line"><span class="fact-label">Departure</span> <span class="fact-time">6am</span> <span class="fact-detail">by 🚗 Car — Vehicle TBD</span></div>
+<h2 class="fact-day">Thursday, Aug 6th</h2><div class="fact-line"><span class="fact-label">Arrival</span> <span class="fact-time">5:15pm</span> <span class="fact-detail">by ✈️ Plane — Moncton Airport — Andy driving</span></div><div class="fact-line"><span class="fact-label">Sleeping</span> <span class="fact-detail">The Field — Brendan's tent till Monday, Aug 10th</span></div><h2 class="fact-day">Monday, Aug 10th</h2><div class="fact-line"><span class="fact-label">Departure</span> <span class="fact-time">Afternoon</span> <span class="fact-detail">by ✈️ Plane — Moncton Airport — Andy driving</span></div>
 </main>
 <script>
 // Shared client-side nav logic — inlined into every page at build time
@@ -471,6 +478,57 @@ function currentQuarterSectionId(tripStart, tripEnd) {
   return 'qc-' + iso + '-' + quarter;
 }
 
+// A deliberate "jump to this section" action — used by every call site
+// that can land more than one quarter screen away from where the visitor
+// currently is: this file's own "Timeline" nav item click, and (in
+// timeline/shared.js) the transition screen's two choices and every
+// jump-menu link. Plain top-level function, same reasoning as
+// currentQuarterSectionId() above — needed before timeline/shared.js's
+// own DOMContentLoaded block runs, and shared rather than duplicated
+// since call sites live in both files.
+//
+// Exists specifically to fix a real flashing-content bug (see
+// requirements/public.md -> Home & Timeline -> Time-of-day background):
+// timeline/shared.js's live scroll-position color blend repaints on
+// every scroll event, which is exactly right for an organic scroll or a
+// one-screen jump (a gentle cross-fade into the next quarter's color),
+// but a browser's smooth-scroll animation takes roughly the same short
+// duration to cross ANY distance — so a jump of, say, five screens fires
+// that same per-frame repaint five times faster, racing through five
+// quarters' colors in under a second. That reads as a strobe, not a
+// cross-fade. window.__scrollJumpActive is the flag
+// updateQuarterBlend() (timeline/shared.js) checks to skip its own
+// per-frame work while a jump is in flight, so a multi-screen jump shows
+// no color changes at all for its duration and settles in one clean
+// step on the destination's own correct color the instant it lands —
+// nothing skipped for a single-screen jump or organic scrolling, since
+// those never set this flag in the first place.
+var scrollJumpSettleTimer = null;
+function jumpToSection(target) {
+  if (!target) return;
+  window.__scrollJumpActive = true;
+  if (scrollJumpSettleTimer) clearTimeout(scrollJumpSettleTimer);
+  var settle = function () {
+    window.__scrollJumpActive = false;
+    document.removeEventListener('scrollend', settle);
+    // Nudge timeline/shared.js's own scroll listener to recompute now
+    // that we've landed — without this, the blend would stay frozen at
+    // whatever it was showing right before the jump until the visitor's
+    // next real scroll/swipe.
+    window.dispatchEvent(new Event('scroll'));
+  };
+  // 'scrollend' (supported in every current evergreen browser) fires the
+  // instant the browser's own smooth-scroll animation actually finishes
+  // — far more reliable than guessing a fixed duration. The setTimeout
+  // is only a fallback for a browser missing it entirely.
+  if ('onscrollend' in window) {
+    document.addEventListener('scrollend', settle, { once: true });
+  } else {
+    scrollJumpSettleTimer = setTimeout(settle, 700);
+  }
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   // "Timeline" nav item's own click (see requirements/public.md ->
   // Navigation) — jumps to "now": scrolls in place when already on
@@ -484,8 +542,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (prefix) {
         window.location.href = prefix + '#' + id;
       } else {
-        var target = document.getElementById(id);
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        jumpToSection(document.getElementById(id));
       }
     });
   }

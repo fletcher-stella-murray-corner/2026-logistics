@@ -5,6 +5,12 @@
    the "Detail" link in the Timeline's "Folks ▾" disclosure. */
 .attendees-title { margin-bottom: 0.25rem; }
 
+/* A dog attached to this page's owner (see requirements/public.md ->
+   people.json -> dogs) — a single static note under the heading, not a
+   dated fact, so it sits outside <main>'s day-grouped timeline
+   entirely. */
+.attendee-dogs { color: var(--secondary); margin-top: 0; margin-bottom: 1.5rem; }
+
 /* One <h2 class="fact-day"> per distinct date (see render_person_page()
    in attendees/scripts/build.py), matching brand-guidelines.md ->
    Typography -> Headlines' own "Day headings" spec (Limelight, Primary)
