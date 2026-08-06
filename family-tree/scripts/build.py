@@ -8,8 +8,7 @@ Also reads timeline/data/travel.json (read-only, same as the Attendees
 feature) purely to compute each attending person's facts-collected/
 collecting-facts status — shown on the box itself as a visual-only signal
 (border style, background tint, opacity — see render_person() and
-family-tree/shared.css) and explained once in the on-page legend
-(render_legend() below), not per-entry in the nav's own "Folks ▾"
+family-tree/shared.css), not per-entry in the nav's own "Folks ▾"
 dropdown, which is a plain jump list now (see shared/nav.py ->
 render_folks_menu()) — see requirements/public.md -> Family Tree ->
 Layout and -> Navigation -> Folks panel. This is also the sole
@@ -227,14 +226,12 @@ def person_status(person, collected_ids):
 
 
 def render_person(person, collected_ids):
-    # Visual-only signal, no text caption — border style/color, a
-    # background tint, and opacity are still how married-in/collecting-
-    # facts/not-attending read on the tree itself (see
-    # family-tree/shared.css -> .married-in/.status-needed/
-    # .status-not-attending); the words themselves ("Married in",
-    # "Collecting facts", "Not attending") are explained once by the
-    # on-page legend instead (render_legend() below) — see
-    # requirements/public.md -> Family Tree -> Layout for why.
+    # Visual-only signal, no text caption and no on-page legend either —
+    # border style/color, a background tint, and opacity are the only way
+    # married-in/collecting-facts/not-attending read on the tree itself
+    # (see family-tree/shared.css -> .married-in/.status-needed/
+    # .status-not-attending) — see requirements/public.md -> Family Tree ->
+    # Layout for why.
     status = person_status(person, collected_ids)
     classes = ["person"]
     if person.get("married_in"):
@@ -264,28 +261,6 @@ def render_person(person, collected_ids):
     if dogs:
         box += f'<span class="person-dogs">+ {esc(", ".join(dogs))}</span>'
     return box
-
-
-def render_legend():
-    """A one-time key explaining the tree's visual-only language (see
-    render_person() above and requirements/public.md -> Family Tree ->
-    Layout) — shown once near the top of the page rather than a caption
-    repeated under every third name, so someone new to the family can
-    learn the convention in one glance instead of needing to already know
-    it or go hunting in the "Folks ▾" dropdown for the words. Each swatch
-    reuses the exact same classes as a real person box (.person plus its
-    modifier), not a hand-drawn copy of the styling, so the key can never
-    silently drift out of sync with what the boxes actually look like."""
-    items = [
-        ("married-in", "Married in"),
-        ("status-needed", "Collecting facts"),
-        ("status-not-attending", "Not attending"),
-    ]
-    swatches = "".join(
-        f'<span class="legend-item"><span class="person legend-swatch {cls}"></span> {esc(label)}</span>'
-        for cls, label in items
-    )
-    return f'<div class="tree-legend">{swatches}</div>'
 
 
 def render_unit(person, people_by_id, children_by_parent, rendered_ids, collected_ids):
@@ -364,7 +339,7 @@ def render_standalone_section(people, collected_ids):
     tree — render in their own flat section at the very bottom of the
     page, below the whole generational tree, instead of being forced into
     a parent_ids/partner_id chain back to a root, or treated as another
-    top-level root sitting next to generation 1. Same box states/legend/
+    top-level root sitting next to generation 1. Same box states/
     Attendees-link behavior as everyone else (render_person() below) —
     only the nesting is different (none: one box per row, no couple
     pairing, no children)."""
@@ -419,7 +394,6 @@ def build_page_html(people, travel, collected_ids, shared_base_css, shared_css, 
 {nav_row}
 <h1 class="tree-title">Family Tree</h1>
 <p class="tree-subtitle">{TREE_SUBTITLE}</p>
-{render_legend()}
 <main>
 {tree_html}
 {standalone_html}
