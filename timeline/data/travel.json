@@ -58,25 +58,25 @@
   {
     "person_id": 267115,
     "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car", "detail": "Flew into Moncton, then rented a car" },
-    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station", "detail": "Returning the rental car in Moncton before the train" },
     "room": "Little Shemogue Inn — Room Y"
   },
   {
     "person_id": 254788,
     "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car", "detail": "Flew into Moncton, then rented a car" },
-    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station", "detail": "Returning the rental car in Moncton before the train" },
     "room": "Little Shemogue Inn — Room Y"
   },
   {
     "person_id": 420649,
-    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car", "detail": "Flew into Halifax at 2pm, then drove to the cottage" },
-    "departure": { "date": "2026-08-09", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car", "detail": "Flying out of Halifax at 3pm" },
+    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car", "detail": "Flew into Halifax at 2pm, rented a car, then drove to the cottage" },
+    "departure": { "date": "2026-08-09", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car", "detail": "Returning the rental car at Halifax before flying out at 3pm" },
     "room": "Little Shemogue Inn — Room Zed"
   },
   {
     "person_id": 702536,
-    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car", "detail": "Flew into Halifax at 2pm, then drove to the cottage" },
-    "departure": { "date": "2026-08-09", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car", "detail": "Flying out of Halifax at 3pm" },
+    "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car", "detail": "Flew into Halifax at 2pm, rented a car, then drove to the cottage" },
+    "departure": { "date": "2026-08-09", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car", "detail": "Returning the rental car at Halifax before flying out at 3pm" },
     "room": "Little Shemogue Inn — Room Zed"
   },
   {

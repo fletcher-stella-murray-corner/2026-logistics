@@ -678,7 +678,7 @@ def daterange(start, end):
         d += timedelta(days=1)
 
 
-def travel_detail(leg, people_by_id):
+def travel_detail(leg, people_by_id, driver_label="driving"):
     parts = []
     time_range = leg.get("time_range")
     if time_range:
@@ -691,11 +691,11 @@ def travel_detail(leg, people_by_id):
         parts.append(detail)
     driver = people_by_id.get(leg.get("driver_id"))
     if driver:
-        parts.append(f"{driver['name']} driving")
+        parts.append(f"{driver['name']} {driver_label}")
     return " · ".join(parts)
 
 
-def group_legs_by_detail(pairs, people_by_id):
+def group_legs_by_detail(pairs, people_by_id, driver_label="driving"):
     """Group (person, leg) pairs from the Arriving:/Departing: rows that
     represent the same real-world trip, so several people sharing one
     flight/car (e.g. four people landing on the same plane, all driven
@@ -723,7 +723,7 @@ def group_legs_by_detail(pairs, people_by_id):
     buckets = {}
     order = []
     for p, leg in pairs:
-        key = (leg["mode"], travel_detail(leg, people_by_id))
+        key = (leg["mode"], travel_detail(leg, people_by_id, driver_label))
         if key not in buckets:
             buckets[key] = {"mode": leg["mode"], "detail": key[1], "leg": leg, "people": []}
             order.append(key)
@@ -754,18 +754,23 @@ def group_legs_by_detail(pairs, people_by_id):
     return groups
 
 
-def render_travel_row(label, pairs, people_by_id):
+def render_travel_row(label, pairs, people_by_id, driver_label="driving"):
     """The Arriving:/Departing: row body — one line per distinct trip (see
     group_legs_by_detail() above), not one per person. A `dogs` tag (see
     requirements/public.md -> people.json -> dogs) rides along on
     whichever name it belongs to, right where that person's name appears
     in the joined list — same "+ <name>" shape used everywhere else a dog
     shows (Family Tree, Attendees), just inline here instead of on its
-    own line, since this row is already one line per trip."""
+    own line, since this row is already one line per trip. `driver_label`
+    distinguishes an Arriving row's "<name> pickup" (someone meeting the
+    traveler at a hub) from a Departing row's "<name> driving" (someone
+    dropping the traveler off) — same `driver_id` fact, worded for which
+    direction it actually is (see the "Arriving:"/"Departing:" call sites
+    below)."""
     if not pairs:
         return ""
     lines = []
-    for group in group_legs_by_detail(pairs, people_by_id):
+    for group in group_legs_by_detail(pairs, people_by_id, driver_label):
         names = []
         for p in group["people"]:
             name = esc(p["name"])
@@ -1033,7 +1038,7 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
 
     rows = []
 
-    arriving_row = render_travel_row("Arriving:", arrivals, people_by_id)
+    arriving_row = render_travel_row("Arriving:", arrivals, people_by_id, driver_label="pickup")
     if arriving_row:
         rows.append(arriving_row)
 

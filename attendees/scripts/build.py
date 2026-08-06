@@ -160,14 +160,20 @@ def time_label(leg):
     return name if name else QUARTER_TIMES[leg["quarter"]]
 
 
-def format_leg_body(leg, people_by_id, lead_with_by=False):
+def format_leg_body(leg, people_by_id, lead_with_by=False, driver_label="driving"):
     """The rest of a leg's facts — mode, hub, vehicle, detail, driver —
     with no date/time (see time_label() above). Pre-escaped and joined,
     ready to drop straight into a fact_line()'s detail_html.
     `lead_with_by=True` prepends "by " to the mode (e.g. "by 🚗 Car"), for
     an Arrival/Departure line reading as a sentence ("5:15pm Arrival by
     🚗 Car") — left off for a Driving line, which already reads as one
-    without it ("Rachel’s departure — ✈️ Plane — ...")."""
+    without it ("Rachel’s departure — ✈️ Plane — ..."). `driver_label`
+    is "pickup" for a leg that's someone meeting the traveler at a hub
+    (an Arrival, or an excursion's return) and "driving" for one dropping
+    them off (a Departure, or an excursion's own depart) — same
+    `driver_id` fact, worded for which direction it actually is; each
+    call site below picks the one that matches (see requirements/public.md
+    -> Data -> travel.json -> driver_id)."""
     mode_label = MODE_TAGS.get(leg["mode"], leg["mode"])
     parts = [f"by {mode_label}" if lead_with_by else mode_label]
     if leg.get("hub"):
@@ -178,7 +184,7 @@ def format_leg_body(leg, people_by_id, lead_with_by=False):
         parts.append(leg["detail"])
     driver = people_by_id.get(leg.get("driver_id"))
     if driver:
-        parts.append(f"{driver['name']} driving")
+        parts.append(f"{driver['name']} {driver_label}")
     return " — ".join(esc(p) for p in parts)
 
 
@@ -427,7 +433,7 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
         if arrival:
             items.append((
                 arrival["date"], FACT_RANK["Arrival"],
-                fact_line(time_label(arrival), "Arrival", format_leg_body(arrival, people_by_id, lead_with_by=True)),
+                fact_line(time_label(arrival), "Arrival", format_leg_body(arrival, people_by_id, lead_with_by=True, driver_label="pickup")),
             ))
         else:
             # An entry's own arrival_note (see requirements/public.md ->
@@ -483,7 +489,7 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
             ))
             items.append((
                 ret["date"], FACT_RANK["Arrival"],
-                fact_line(time_label(ret), "Arrival", format_leg_body(ret, people_by_id, lead_with_by=True)),
+                fact_line(time_label(ret), "Arrival", format_leg_body(ret, people_by_id, lead_with_by=True, driver_label="pickup")),
             ))
 
         # Airport runs — see requirements/public.md -> Data -> travel.json
@@ -508,7 +514,14 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
     # someone else doesn't depend on your own travel status. Keyed by the
     # leg's own date, so it lands in the same timeline as everything else.
     for traveler, field, leg in driving_assignments(person["id"], travel, people_by_id):
-        detail_html = f"{esc(traveler['name'])}’s {field} — {format_leg_body(leg, people_by_id)}"
+        # Pickup for a leg that brings the traveler TO the trip (an
+        # arrival, or an excursion's return); driving for one that takes
+        # them away from it (a departure, or an excursion's own depart) —
+        # same distinction format_leg_body()'s own driver_label makes
+        # above, just keyed off driving_assignments()'s `field` instead of
+        # a literal arrival/departure leg reference.
+        driver_label = "pickup" if field in ("arrival", "excursion return") else "driving"
+        detail_html = f"{esc(traveler['name'])}’s {field} — {format_leg_body(leg, people_by_id, driver_label=driver_label)}"
         items.append((leg["date"], FACT_RANK["Driving"], fact_line(time_label(leg), "Driving", detail_html)))
 
     if entry is None and not items:
