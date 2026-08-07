@@ -171,7 +171,14 @@ def gather_arrivals(people_by_id, travel):
     """Every attending person's own bookend arrival, plus every
     excursion's own return leg (counts as an arrival, same as everywhere
     else on the site — see requirements/public.md -> Data -> travel.json
-    -> excursions)."""
+    -> excursions) — but ONLY for someone who has a real bookend arrival
+    to begin with. Someone with no `arrival` at all (just an
+    `arrival_note` — e.g. Jim S/Helen S, "Never left"/"reading in a
+    chair") is framed on this page as simply having been here for an
+    unclear amount of time (see gather_no_arrival_groups() below), not a
+    dated Arrival fact — their excursion's own return leg isn't a real
+    "coming back" milestone either, then, since they never registered as
+    "away from the trip" in the first place on this page's own terms."""
     pairs = []
     for entry in travel:
         person = people_by_id.get(entry["person_id"])
@@ -179,12 +186,18 @@ def gather_arrivals(people_by_id, travel):
             continue
         if entry.get("arrival"):
             pairs.append((person, entry["arrival"]))
-        for exc in entry.get("excursions", []):
-            pairs.append((person, exc["return"]))
+            for exc in entry.get("excursions", []):
+                pairs.append((person, exc["return"]))
     return pairs
 
 
 def gather_departures(people_by_id, travel):
+    """Every attending person's own bookend departure, plus every
+    excursion's own depart leg — same "only for someone with a real
+    bookend arrival" exception gather_arrivals() above makes, and for
+    the same reason: Jim S/Helen S's own mid-trip excursion isn't a real
+    "leaving" milestone on this page, even though they DO have a real
+    final departure (Aug 13) that still counts normally."""
     pairs = []
     for entry in travel:
         person = people_by_id.get(entry["person_id"])
@@ -192,9 +205,54 @@ def gather_departures(people_by_id, travel):
             continue
         if entry.get("departure"):
             pairs.append((person, entry["departure"]))
-        for exc in entry.get("excursions", []):
-            pairs.append((person, exc["depart"]))
+        if entry.get("arrival"):
+            for exc in entry.get("excursions", []):
+                pairs.append((person, exc["depart"]))
     return pairs
+
+
+def gather_no_arrival_groups(people_by_id, travel):
+    """Attending people with no bookend `arrival` leg at all (see
+    requirements/public.md -> Data -> travel.json -> arrival_note) —
+    shown on this page as their own kind of row, "here for an unclear
+    amount of time," grouped under the trip's very first day the same
+    way the Attendees page's own render_person_page() groups this exact
+    case (see that function's own `else` branch) — but reworded for this
+    page's own framing rather than each person's own individual
+    arrival_note text (Jim's "Never left," Helen's own wording), since
+    here they're read as one shared fact about the household rather than
+    each person's own story. Actual partners combine into one row, same
+    partner-only exception every other grouping rule on this page uses.
+    Returns a list of person-lists (one list per row)."""
+    people = []
+    for entry in travel:
+        person = people_by_id.get(entry["person_id"])
+        if person is None or not person.get("attending"):
+            continue
+        if not entry.get("arrival"):
+            people.append(person)
+    ids = {p["id"] for p in people}
+    groups = []
+    seen = set()
+    for p in people:
+        if p["id"] in seen:
+            continue
+        partner_id = p.get("partner_id")
+        if partner_id in ids and partner_id not in seen:
+            partner = next(q for q in people if q["id"] == partner_id)
+            groups.append([p, partner])
+            seen.add(p["id"])
+            seen.add(partner_id)
+        else:
+            groups.append([p])
+            seen.add(p["id"])
+    return groups
+
+
+def render_no_arrival_row(people_list, kind_label=None):
+    label_html = f'<span class="fact-label">{esc(kind_label)}</span> ' if kind_label else ""
+    names = nav.join_names([esc(p["name"]) for p in people_list])
+    return f'<div class="fact-line">{label_html}<span class="fact-detail">{names} — here for an unclear amount of time</span></div>'
 
 
 def gather_meals(meals):
@@ -321,6 +379,7 @@ def main():
     arrival_groups = group_by_trip(gather_arrivals(people_by_id, travel), people_by_id, "pickup")
     departure_groups = group_by_trip(gather_departures(people_by_id, travel), people_by_id, "driving")
     meal_rows = gather_meals(meals)
+    no_arrival_groups = gather_no_arrival_groups(people_by_id, travel)
 
     def href_for(iso_date, quarter):
         return f"../index.html#{quarter_screen_id(iso_date, quarter)}"
@@ -331,6 +390,14 @@ def main():
     arrival_entries = [
         (g["leg"]["date"], sort_triple(g["leg"]["date"], g["leg"]["quarter"], g["leg"].get("time_range")), "Arrival", g)
         for g in arrival_groups
+    ]
+    # Sorted first (quarter index -1, before even 00-06) among Aug 1st's
+    # own entries — "here for an unclear amount of time" reads best as
+    # the very first thing on the list, not slotted in wherever a real
+    # leg happened to land that day.
+    arrival_entries += [
+        (timeline_build.TRIP_START.isoformat(), (timeline_build.TRIP_START.isoformat(), -1, [""]), "Arrival", g)
+        for g in no_arrival_groups
     ]
     departure_entries = [
         (g["leg"]["date"], sort_triple(g["leg"]["date"], g["leg"]["quarter"], g["leg"].get("time_range")), "Departure", g)
@@ -344,6 +411,8 @@ def main():
     def render_entry(entry, show_label):
         date_iso, _, kind, payload = entry
         label = kind if show_label else None
+        if isinstance(payload, list):
+            return date_iso, render_no_arrival_row(payload, kind_label=label)
         if kind == "Meal":
             return date_iso, render_meal_row(payload, href_for(payload["date"], payload["quarter"]), kind_label=label)
         leg = payload["leg"]
