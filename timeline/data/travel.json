@@ -124,32 +124,36 @@
   {
     "person_id": 509234,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
-    "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
-    "room": "Little Shemogue Inn — Room X"
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["07:00", "07:00"], "mode": "plane", "hub": "Moncton Airport", "detail": "Leaving the cottage around 5am — drive to Moncton still unclear" },
+    "room": "Little Shemogue Inn — Room X",
+    "pending": true
   },
   {
     "person_id": 597586,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
-    "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["07:00", "07:00"], "mode": "plane", "hub": "Moncton Airport", "detail": "Leaving the cottage around 5am — drive to Moncton still unclear" },
     "room": "The Field — Brendan's tent",
     "room_by_date": { "2026-08-06": "Red Shed" },
-    "room_by_quarter": { "2026-08-07": { "00-06": "Red Shed" } }
+    "room_by_quarter": { "2026-08-07": { "00-06": "Red Shed" } },
+    "pending": true
   },
   {
     "person_id": 753966,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
-    "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["07:00", "07:00"], "mode": "plane", "hub": "Moncton Airport", "detail": "Leaving the cottage around 5am — drive to Moncton still unclear" },
     "room": "The Field — Brendan's tent",
     "room_by_date": { "2026-08-06": "Red Shed" },
-    "room_by_quarter": { "2026-08-07": { "00-06": "Red Shed" } }
+    "room_by_quarter": { "2026-08-07": { "00-06": "Red Shed" } },
+    "pending": true
   },
   {
     "person_id": 973286,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
-    "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["07:00", "07:00"], "mode": "plane", "hub": "Moncton Airport", "detail": "Leaving the cottage around 5am — drive to Moncton still unclear" },
     "room": "The Field — Brendan's tent",
     "room_by_date": { "2026-08-06": "Red Shed" },
-    "room_by_quarter": { "2026-08-07": { "00-06": "Red Shed" } }
+    "room_by_quarter": { "2026-08-07": { "00-06": "Red Shed" } },
+    "pending": true
   },
   {
     "person_id": 755749,
@@ -172,7 +176,7 @@
   {
     "person_id": 680865,
     "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car" },
-    "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "car" },
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["09:00", "09:00"], "mode": "car" },
     "room": "Little Shemogue Inn — Room X",
     "airport_runs": [
       {
