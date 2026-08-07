@@ -146,8 +146,11 @@ INTRO_SCREEN_ID = "trip-top"
 ENDORSEMENTS = [
     ("I like the morning afternoon night level of detail a lot 👌🏻", "Kaylyn"),
     ("A very enjoyable read", "Shannon"),
-    ("This is great!", "Kat"),
+    ("This is great!", "Kate"),
 ]
+
+# See requirements/public.md -> Home & Timeline -> AI disclaimer.
+AI_DISCLAIMER = "This site was built with AI help — if you spot an error, blame the AI, not the trip planning."
 
 QUARTER_INDEX = {q: i for i, q in enumerate(QUARTERS)}
 # Minute-of-day (0-1440) bounds for each quarter, used to sanity-check an
@@ -247,12 +250,15 @@ def validate_structures_file(structures):
             )
         rooms = s.get("rooms")
         instances = s.get("instances")
-        if rooms is not None and instances is not None:
+        buildings = s.get("buildings")
+        if sum(x is not None for x in (rooms, instances, buildings)) > 1:
             raise ValueError(
-                f"Structure {s['name']!r} in shared/data/structures.json has both 'rooms' and "
-                f"'instances' set — a structure can only be one or the other ('rooms' are fixed "
-                f"physical places that always show, even empty; 'instances' are a validated name "
-                f"list that only shows up when actually occupied)."
+                f"Structure {s['name']!r} in shared/data/structures.json has more than one of "
+                f"'rooms', 'instances', and 'buildings' set — a structure can only be one of "
+                f"the three ('rooms' are fixed physical places that always show, even empty; "
+                f"'instances' are a validated name list that only shows up when actually "
+                f"occupied; 'buildings' groups fixed rooms under more than one physical building "
+                f"at the same site)."
             )
         if rooms is not None:
             if not rooms or len(set(rooms)) != len(rooms):
@@ -265,6 +271,36 @@ def validate_structures_file(structures):
                 raise ValueError(
                     f"Structure {s['name']!r} in shared/data/structures.json has an invalid "
                     f"'instances' list — must be non-empty with no duplicate instance names."
+                )
+        if buildings is not None:
+            if not buildings:
+                raise ValueError(
+                    f"Structure {s['name']!r} in shared/data/structures.json has an empty "
+                    f"'buildings' list — must declare at least one building."
+                )
+            seen_building_names = set()
+            all_rooms = []
+            for i, b in enumerate(buildings):
+                b_name = nav.require(b, "name", f"buildings[{i}] for structure {s['name']!r}")
+                b_rooms = nav.require(b, "rooms", f"buildings[{i}] ({b_name!r}) for structure {s['name']!r}")
+                if b_name in seen_building_names:
+                    raise ValueError(
+                        f"Duplicate building name {b_name!r} in structure {s['name']!r} in "
+                        f"shared/data/structures.json — building names must be unique within a structure."
+                    )
+                seen_building_names.add(b_name)
+                if not b_rooms or len(set(b_rooms)) != len(b_rooms):
+                    raise ValueError(
+                        f"Building {b_name!r} in structure {s['name']!r} in "
+                        f"shared/data/structures.json has an invalid 'rooms' list — must be "
+                        f"non-empty with no duplicate room names."
+                    )
+                all_rooms.extend(b_rooms)
+            if len(set(all_rooms)) != len(all_rooms):
+                raise ValueError(
+                    f"Structure {s['name']!r} in shared/data/structures.json has a room name "
+                    f"repeated across more than one of its 'buildings' — every room name must "
+                    f"be unique across the whole structure, not just within its own building."
                 )
         always_shown = s.get("always_shown")
         if always_shown is not None and not isinstance(always_shown, bool):
@@ -383,15 +419,22 @@ def validate_room(room, accommodation_structures, context):
         prefix = f"{name} — "
         if room.startswith(prefix):
             detail = room[len(prefix):]
-            # `rooms` (fixed physical places, always shown) and `instances`
-            # (a validated name list, occupancy-shown only — see
-            # requirements/public.md -> Structures) are mutually exclusive
-            # per validate_structures_file(), so at most one of these is set.
+            # `rooms` (fixed physical places, always shown), `buildings`
+            # (fixed rooms grouped under more than one physical building),
+            # and `instances` (a validated name list, occupancy-shown only
+            # — see requirements/public.md -> Structures) are mutually
+            # exclusive per validate_structures_file(), so at most one of
+            # these is set.
             declared_rooms = s.get("rooms")
             declared_instances = s.get("instances")
-            declared = declared_rooms or declared_instances
+            declared_buildings = s.get("buildings")
+            if declared_buildings:
+                declared_from_buildings = [r for b in declared_buildings for r in b["rooms"]]
+            else:
+                declared_from_buildings = None
+            declared = declared_rooms or declared_instances or declared_from_buildings
             if declared and detail not in declared:
-                kind = "rooms" if declared_rooms else "instances"
+                kind = "rooms" if (declared_rooms or declared_buildings) else "instances"
                 raise ValueError(
                     f"Unknown {kind[:-1]} {detail!r} for structure {name!r} in room for {context} — "
                     f"{name!r} has a fixed {kind} list, must be one of {', '.join(declared)}."
@@ -887,24 +930,32 @@ def render_structures_row(present, working, kitchen_by_structure, accommodation_
     for p, structure_name in working:
         working_by_structure.setdefault(structure_name, []).append(p["name"])
 
-    # A structure with a fixed `rooms` list, or `always_shown: true`, is a
-    # real, physical place that doesn't disappear just because nobody's
-    # currently associated with it — it always gets a box (empty or not)
-    # for as long as the structure itself is active (see
+    # A structure with a fixed `rooms` list, `buildings`, or `always_shown:
+    # true`, is a real, physical place that doesn't disappear just because
+    # nobody's currently associated with it — it always gets a box (empty
+    # or not) for as long as the structure itself is active (see
     # requirements/public.md -> Structures -> Active range and Structures
     # -> Nested box display). A `rooms` structure also always shows every
-    # declared room; `always_shown` alone (no `rooms`, e.g. Red Shed) just
-    # guarantees the outer box, with no forced-empty room boxes inside it.
-    # Structures with neither keep the old occupancy-only behavior (e.g.
-    # The Field/Camper Van, which are free-text-instance places).
+    # declared room; `buildings` is the same, just with every declared room
+    # across every declared building; `always_shown` alone (no `rooms`/
+    # `buildings`, e.g. Red Shed) just guarantees the outer box, with no
+    # forced-empty room boxes inside it. Structures with none of the three
+    # keep the old occupancy-only behavior (e.g. The Field/Camper Van,
+    # which are free-text-instance places).
     for s in accommodation_structures:
         if not structure_active(s, day_iso):
             continue
         rooms = s.get("rooms")
+        buildings = s.get("buildings")
         if rooms:
             bucket = by_structure.setdefault(s["name"], {})
             for room_name in rooms:
                 bucket.setdefault(room_name, [])
+        elif buildings:
+            bucket = by_structure.setdefault(s["name"], {})
+            for b in buildings:
+                for room_name in b["rooms"]:
+                    bucket.setdefault(room_name, [])
         elif s.get("always_shown"):
             by_structure.setdefault(s["name"], {})
 
@@ -948,6 +999,12 @@ def render_structures_row(present, working, kitchen_by_structure, accommodation_
     # so its details still sort alphabetically below.
     rooms_order_by_structure = {s["name"]: s["rooms"] for s in accommodation_structures if s.get("rooms")}
 
+    # A structure with `buildings` instead of a flat `rooms` list gets one
+    # extra box level: each declared building, in declared order, always
+    # rendered, each containing its own declared rooms in declared order
+    # (see requirements/public.md -> Structures -> Nested box display).
+    buildings_by_structure = {s["name"]: s["buildings"] for s in accommodation_structures if s.get("buildings")}
+
     boxes = []
     for structure in sorted(all_structures, key=structure_display_key):
         by_detail = by_structure.get(structure, {})
@@ -961,30 +1018,64 @@ def render_structures_row(present, working, kitchen_by_structure, accommodation_
             )
             continue
 
-        declared_rooms = rooms_order_by_structure.get(structure)
-        if declared_rooms:
-            # Declared order first, then anything unexpected (shouldn't
-            # happen — validate_room() only allows declared names — but
-            # sorted alphabetically rather than silently dropped if it ever
-            # does), bare-structure occupants (detail=None) always last,
-            # matching sort_key's existing None-sorts-last convention.
-            detail_order = [d for d in declared_rooms if d in by_detail]
-            detail_order += [d for d in sorted(by_detail, key=sort_key) if d not in declared_rooms]
-        else:
-            detail_order = sorted(by_detail, key=sort_key)
-
-        inner = []
-        for detail in detail_order:
+        def render_room_box(detail):
             names = sorted(by_detail[detail])
-            if detail is None:
-                inner.append(f'<span class="room-people">{esc(", ".join(names))}</span>')
-            else:
+            return (
+                '<div class="room-box">'
+                f'<span class="room-label">{esc(detail)}</span>'
+                f'<span class="room-people">{esc(", ".join(names))}</span>'
+                '</div>'
+            )
+
+        declared_buildings = buildings_by_structure.get(structure)
+        if declared_buildings:
+            # One box per declared building, in declared order, each always
+            # rendered with an inner room box for every one of its declared
+            # rooms (see requirements/public.md -> Structures -> Nested box
+            # display) — Working/Kitchen sub-boxes stay outside this, as
+            # siblings of the building boxes, added below.
+            inner = []
+            declared_flat = set()
+            for b in declared_buildings:
+                declared_flat.update(b["rooms"])
+                room_boxes = "".join(render_room_box(detail) for detail in b["rooms"])
                 inner.append(
-                    '<div class="room-box">'
-                    f'<span class="room-label">{esc(detail)}</span>'
-                    f'<span class="room-people">{esc(", ".join(names))}</span>'
+                    '<div class="building-box">'
+                    f'<span class="building-label">{esc(b["name"])}</span>'
+                    f'<div class="building-rooms">{room_boxes}</div>'
                     '</div>'
                 )
+            # Anything unexpected (shouldn't happen — validate_room() only
+            # allows names declared in one of the buildings) still renders
+            # rather than being silently dropped, same tolerance the flat
+            # `rooms` branch below gives its own unexpected details.
+            leftover = [d for d in sorted(by_detail, key=sort_key) if d not in declared_flat]
+            for detail in leftover:
+                if detail is None:
+                    names = sorted(by_detail[None])
+                    inner.append(f'<span class="room-people">{esc(", ".join(names))}</span>')
+                else:
+                    inner.append(render_room_box(detail))
+        else:
+            declared_rooms = rooms_order_by_structure.get(structure)
+            if declared_rooms:
+                # Declared order first, then anything unexpected (shouldn't
+                # happen — validate_room() only allows declared names — but
+                # sorted alphabetically rather than silently dropped if it ever
+                # does), bare-structure occupants (detail=None) always last,
+                # matching sort_key's existing None-sorts-last convention.
+                detail_order = [d for d in declared_rooms if d in by_detail]
+                detail_order += [d for d in sorted(by_detail, key=sort_key) if d not in declared_rooms]
+            else:
+                detail_order = sorted(by_detail, key=sort_key)
+
+            inner = []
+            for detail in detail_order:
+                if detail is None:
+                    names = sorted(by_detail[None])
+                    inner.append(f'<span class="room-people">{esc(", ".join(names))}</span>')
+                else:
+                    inner.append(render_room_box(detail))
         kitchen_note = kitchen_by_structure.get(structure)
         if kitchen_note:
             inner.append(
@@ -1163,6 +1254,7 @@ def render_intro_screen():
 <p class="trip-subtitle">{TRIP_SUBTITLE}</p>
 {render_endorsements()}
 <p class="scroll-hint">Scroll or swipe down to start ↓</p>
+<p class="ai-disclaimer">{esc(AI_DISCLAIMER)}</p>
 </section>"""
 
 

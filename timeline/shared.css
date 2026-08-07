@@ -287,6 +287,13 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
   color: var(--secondary);
   font-size: 0.9rem;
 }
+.ai-disclaimer {
+  margin-top: 1.5rem;
+  color: var(--secondary);
+  font-size: 0.78rem;
+  font-style: italic;
+  max-width: 26rem;
+}
 
 .quarter-row { margin: 0.6rem 0; font-size: 1.05rem; }
 /* Small caps, letter-spaced, uppercase — the one typographic device
@@ -356,6 +363,31 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
    color per brand-guidelines.md. See requirements/public.md -> Structures
    -> Nested box display. */
 .room-box.working-box, .room-box.kitchen-box { border-style: dashed; }
+
+/* Building sub-box — the one extra nesting level a structure gets when it
+   declares `buildings` instead of a flat `rooms` list (e.g. Little
+   Shemogue Inn's Log Point/The Apartment) — see requirements/public.md ->
+   Structures -> Nested box display. Sits between the outer .structure-box
+   and its inner .room-box list: a step up from .room-box's own border
+   weight/padding (it's one level further out) but still visually lighter
+   than .structure-box, so the structure > building > room hierarchy reads
+   at a glance. */
+.building-box {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+}
+.building-label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+  margin-bottom: 0.25rem;
+}
+.building-rooms { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 
 /* Time-of-day background — a tint per day quarter (see
    requirements/public.md -> Homepage = Timeline -> Time-of-day
