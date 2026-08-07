@@ -209,8 +209,8 @@
     "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "vehicle": "White Dodge Caravan" },
     "room": "Cottage — Blue Room",
     "room_by_date": {
-      "2026-08-07": "The Field — Rachel's camping tent",
-      "2026-08-08": "The Field — Rachel's camping tent",
+      "2026-08-07": "The Field — old worn out tent",
+      "2026-08-08": "The Field — old worn out tent",
       "2026-08-09": "The Field — old worn out tent",
       "2026-08-10": "The Field — old worn out tent",
       "2026-08-11": "The Field — old worn out tent",
@@ -229,8 +229,8 @@
     "departure": { "date": "2026-08-09", "quarter": "00-06", "mode": "plane", "hub": "Moncton Airport", "detail": "6am flight · Departing Cottage at 3am", "driver_id": 477500 },
     "room": "Cottage — Blue Room",
     "room_by_date": {
-      "2026-08-07": "The Field — Rachel's camping tent",
-      "2026-08-08": "The Field — Rachel's camping tent"
+      "2026-08-07": "The Field — old worn out tent",
+      "2026-08-08": "The Field — old worn out tent"
     },
     "room_by_quarter": { "2026-08-07": { "00-06": "Cottage — Blue Room" } },
     "working_from": [
