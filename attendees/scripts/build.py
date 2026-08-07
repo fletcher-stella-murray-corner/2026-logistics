@@ -160,20 +160,25 @@ def time_label(leg):
     return name if name else QUARTER_TIMES[leg["quarter"]]
 
 
-def format_leg_body(leg, people_by_id, lead_with_by=False, driver_label="driving"):
-    """The rest of a leg's facts — mode, hub, vehicle, detail, driver —
-    with no date/time (see time_label() above). Pre-escaped and joined,
-    ready to drop straight into a fact_line()'s detail_html.
-    `lead_with_by=True` prepends "by " to the mode (e.g. "by 🚗 Car"), for
-    an Arrival/Departure line reading as a sentence ("5:15pm Arrival by
-    🚗 Car") — left off for a Driving line, which already reads as one
-    without it ("Rachel’s departure — ✈️ Plane — ..."). `driver_label`
-    is "pickup" for a leg that's someone meeting the traveler at a hub
-    (an Arrival, or an excursion's return) and "driving" for one dropping
-    them off (a Departure, or an excursion's own depart) — same
-    `driver_id` fact, worded for which direction it actually is; each
-    call site below picks the one that matches (see requirements/public.md
-    -> Data -> travel.json -> driver_id)."""
+def format_leg_body(leg, people_by_id, lead_with_by=False, driver_label="driving", companions=None):
+    """The rest of a leg's facts — mode, hub, vehicle, detail, driver,
+    who else is on it — with no date/time (see time_label() above).
+    Pre-escaped and joined, ready to drop straight into a fact_line()'s
+    detail_html. `lead_with_by=True` prepends "by " to the mode (e.g. "by
+    🚗 Car"), for an Arrival/Departure line reading as a sentence ("5:15pm
+    Arrival by 🚗 Car") — left off for a Driving line, which already reads
+    as one without it ("Rachel’s departure — ✈️ Plane — ...").
+    `driver_label` is "pickup" for a leg that's someone meeting the
+    traveler at a hub (an Arrival, or an excursion's return) and "driving"
+    for one dropping them off (a Departure, or an excursion's own depart)
+    — same `driver_id` fact, worded for which direction it actually is;
+    each call site below picks the one that matches (see
+    requirements/public.md -> Data -> travel.json -> driver_id).
+    `companions`, if given, is the list of people (from co_travelers()
+    above) sharing this same real trip — rendered as a trailing "with
+    <names>" clause, e.g. "with Evey, Helen P & David M", so a traveler's
+    own page says who they're actually going with, not just their own
+    mode/hub."""
     mode_label = MODE_TAGS.get(leg["mode"], leg["mode"])
     parts = [f"by {mode_label}" if lead_with_by else mode_label]
     if leg.get("hub"):
@@ -185,6 +190,8 @@ def format_leg_body(leg, people_by_id, lead_with_by=False, driver_label="driving
     driver = people_by_id.get(leg.get("driver_id"))
     if driver:
         parts.append(f"{driver['name']} {driver_label}")
+    if companions:
+        parts.append(f"with {nav.join_names([c['name'] for c in companions])}")
     return " — ".join(esc(p) for p in parts)
 
 
@@ -408,6 +415,55 @@ def driving_assignments(person_id, travel, people_by_id):
     return assignments
 
 
+def co_travelers(person, leg, field, travel, people_by_id):
+    """Everyone else on the same real trip as this leg (see
+    requirements/public.md -> Attendees -> Layout -> Arrival/Departure) —
+    matched on the STRUCTURAL trip-identifying fields only (mode, hub,
+    vehicle, date, quarter, time_range), deliberately NOT the free-text
+    `detail` or `driver_id` the Timeline's own combine-into-one-line rule
+    also requires (see timeline/scripts/build.py ->
+    group_legs_by_detail()) — that rule exists to control single-line
+    density there, not to answer "who's actually traveling with me": an
+    individual side detail one traveler has and another doesn't (e.g. a
+    rental-car return note) means they render on separate Timeline lines,
+    but they're still on the same flight/train/car, and this page should
+    say so. `time_range` IS part of the match, though, unlike `detail` —
+    two flights landing in the same broad quarter but at genuinely
+    different times (e.g. 6:30pm and 11:55pm, both "Evening") are not the
+    same trip just because they share a hub, so a real time_range still
+    tells them apart the same way it does on the Timeline (via
+    travel_detail()'s own formatted time). Same coincidental-bare-time
+    guard as the Timeline's rule, though: with no hub/vehicle set to point
+    to, only actual partners (reciprocal `partner_id`) still count as
+    traveling together — nobody else is assumed to be on the same trip
+    just because a bare time matches. `field` is "arrival" or "departure";
+    an excursion's `return`/`depart` is matched against the same field a
+    bookend leg of that kind would be, same as quarter_membership()
+    buckets them on the Timeline."""
+    key = timeline_build.quarter_key(leg["date"], leg["quarter"])
+    structural = (leg["mode"], leg.get("hub"), leg.get("vehicle"), leg.get("time_range"))
+    has_structural_detail = bool(leg.get("hub") or leg.get("vehicle"))
+    exc_field = "return" if field == "arrival" else "depart"
+    companions = []
+    for other_entry in travel:
+        traveler = people_by_id.get(other_entry["person_id"])
+        if traveler is None or traveler["id"] == person["id"]:
+            continue
+        candidates = [other_entry[field]] if other_entry.get(field) else []
+        candidates += [exc[exc_field] for exc in other_entry.get("excursions", [])]
+        for candidate in candidates:
+            if timeline_build.quarter_key(candidate["date"], candidate["quarter"]) != key:
+                continue
+            candidate_structural = (candidate["mode"], candidate.get("hub"), candidate.get("vehicle"), candidate.get("time_range"))
+            if candidate_structural != structural:
+                continue
+            if not has_structural_detail and traveler.get("partner_id") != person["id"]:
+                continue
+            companions.append(traveler)
+            break
+    return companions
+
+
 def render_person_page(person, entry, travel, people_by_id, shared_base_css, shared_css, nav_row, shared_nav_js):
     title = f"{person['name']}{TITLE_SUFFIX}"
 
@@ -433,7 +489,10 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
         if arrival:
             items.append((
                 arrival["date"], FACT_RANK["Arrival"],
-                fact_line(time_label(arrival), "Arrival", format_leg_body(arrival, people_by_id, lead_with_by=True, driver_label="pickup")),
+                fact_line(time_label(arrival), "Arrival", format_leg_body(
+                    arrival, people_by_id, lead_with_by=True, driver_label="pickup",
+                    companions=co_travelers(person, arrival, "arrival", travel, people_by_id),
+                )),
             ))
         else:
             # An entry's own arrival_note (see requirements/public.md ->
@@ -485,11 +544,17 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
             depart, ret = exc["depart"], exc["return"]
             items.append((
                 depart["date"], FACT_RANK["Departure"],
-                fact_line(time_label(depart), "Departure", format_leg_body(depart, people_by_id, lead_with_by=True)),
+                fact_line(time_label(depart), "Departure", format_leg_body(
+                    depart, people_by_id, lead_with_by=True,
+                    companions=co_travelers(person, depart, "departure", travel, people_by_id),
+                )),
             ))
             items.append((
                 ret["date"], FACT_RANK["Arrival"],
-                fact_line(time_label(ret), "Arrival", format_leg_body(ret, people_by_id, lead_with_by=True, driver_label="pickup")),
+                fact_line(time_label(ret), "Arrival", format_leg_body(
+                    ret, people_by_id, lead_with_by=True, driver_label="pickup",
+                    companions=co_travelers(person, ret, "arrival", travel, people_by_id),
+                )),
             ))
 
         # Airport runs — see requirements/public.md -> Data -> travel.json
@@ -501,7 +566,10 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
         if departure:
             items.append((
                 departure["date"], FACT_RANK["Departure"],
-                fact_line(time_label(departure), "Departure", format_leg_body(departure, people_by_id, lead_with_by=True)),
+                fact_line(time_label(departure), "Departure", format_leg_body(
+                    departure, people_by_id, lead_with_by=True,
+                    companions=co_travelers(person, departure, "departure", travel, people_by_id),
+                )),
             ))
         else:
             items.append((
