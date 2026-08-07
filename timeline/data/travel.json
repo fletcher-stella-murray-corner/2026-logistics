@@ -131,19 +131,22 @@
     "person_id": 597586,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
-    "room": "The Field — Brendan's tent"
+    "room": "The Field — Brendan's tent",
+    "room_by_date": { "2026-08-06": "Red Shed" }
   },
   {
     "person_id": 753966,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
-    "room": "The Field — Brendan's tent"
+    "room": "The Field — Brendan's tent",
+    "room_by_date": { "2026-08-06": "Red Shed" }
   },
   {
     "person_id": 973286,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
-    "room": "The Field — Brendan's tent"
+    "room": "The Field — Brendan's tent",
+    "room_by_date": { "2026-08-06": "Red Shed" }
   },
   {
     "person_id": 755749,
