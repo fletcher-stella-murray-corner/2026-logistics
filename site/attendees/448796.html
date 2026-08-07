@@ -503,13 +503,31 @@ function currentQuarterSectionId(tripStart, tripEnd) {
 // step on the destination's own correct color the instant it lands —
 // nothing skipped for a single-screen jump or organic scrolling, since
 // those never set this flag in the first place.
+//
+// Also suspends scroll-snap for the duration, same fix and same reason
+// timeline/shared.js's play/pause run already applies (see its own
+// startRun()/stopRun() comments and timeline/shared.css ->
+// html.timeline-page.auto-scrolling): scrollIntoView({behavior:
+// 'smooth'}) while an ancestor has scroll-snap-type: y mandatory active
+// is a known bad combination on mobile Safari/iOS specifically — for a
+// jump of more than one screen (the Home screen's "Aug 1st"/"Now"
+// buttons, or any jump-menu link landing more than a screen away) it can
+// silently fail to scroll at all, not just animate roughly, since the
+// play/pause fix only ever covered its OWN repeated calls, not this
+// function every other jump path (transition screen, jump-menu links,
+// the Timeline nav item) actually goes through. Harmless on any page
+// other than site/index.html — .auto-scrolling only matches CSS scoped
+// under html.timeline-page (timeline/shared.css), which no other page's
+// <html> carries.
 var scrollJumpSettleTimer = null;
 function jumpToSection(target) {
   if (!target) return;
   window.__scrollJumpActive = true;
+  document.documentElement.classList.add('auto-scrolling');
   if (scrollJumpSettleTimer) clearTimeout(scrollJumpSettleTimer);
   var settle = function () {
     window.__scrollJumpActive = false;
+    document.documentElement.classList.remove('auto-scrolling');
     document.removeEventListener('scrollend', settle);
     // Nudge timeline/shared.js's own scroll listener to recompute now
     // that we've landed — without this, the blend would stay frozen at
