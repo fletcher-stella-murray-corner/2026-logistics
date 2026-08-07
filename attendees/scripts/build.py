@@ -254,14 +254,29 @@ def fact_line(time_text, label, detail_html):
     )
 
 
-def sleeping_line(room, range_start, range_end):
+def sleeping_line(room, range_start, range_end, end_quarter):
     """A Sleeping fact's own line — the room, plus a "till <end day>"
-    clause when the stretch spans more than one day (omitted for a
-    single-day stretch, e.g. Susan's first night in the Master Suite —
-    see requirements/public.md -> Attendees -> Layout)."""
+    clause whenever the stretch doesn't end at the natural close of its
+    own last day (omitted only for a single-day stretch that runs through
+    to `18-24`, e.g. Susan's first night in the Master Suite — see
+    requirements/public.md -> Attendees -> Layout). `end_quarter` is the
+    milestone's own last quarter (see room_milestones() above, which now
+    walks quarters, not just dates, since room_by_quarter can end a
+    milestone mid-day): `18-24` is a full day's own natural end, so it
+    reads exactly like the old date-only "till <day>" text; `00-06` (no
+    quarter name of its own — see requirements/public.md -> Terminology)
+    gets its own "the early hours of <day>" phrasing rather than a bare
+    "till <day>" that would wrongly imply the whole day; `06-12`/`12-18`
+    get "the morning/afternoon of <day>"."""
     detail = esc(room) if room else "Unassigned"
-    if range_end != range_start:
-        detail += f" till {esc(format_date_label(range_end))}"
+    if range_end != range_start or end_quarter != "18-24":
+        if end_quarter == "18-24":
+            till_text = format_date_label(range_end)
+        elif end_quarter == "00-06":
+            till_text = f"the early hours of {format_date_label(range_end)}"
+        else:
+            till_text = f"the {QUARTER_NAMES[end_quarter].lower()} of {format_date_label(range_end)}"
+        detail += f" till {esc(till_text)}"
     return fact_line(None, "Sleeping", detail)
 
 
@@ -351,14 +366,27 @@ def excursion_away_ranges(entry):
 
 
 def room_milestones(entry, start_date, end_date):
-    """Collapse a person's room/room_by_date into contiguous same-room date
-    ranges, in chronological order — a milestone list (arrive, sleep here
-    for a stretch, sleep there for a stretch, depart), not a night-by-night
-    listing. See requirements/public.md -> Attendees -> Layout. Dates
-    covered by an excursion (see excursion_away_ranges() above) are
-    skipped entirely, splitting the stay into two milestones with a gap
-    rather than one range that wrongly includes time the person was away
-    — the excursion's own Departure/Arrival rows already say so."""
+    """Collapse a person's room/room_by_date/room_by_quarter into contiguous
+    same-room ranges, in chronological order — a milestone list (arrive,
+    sleep here for a stretch, sleep there for a stretch, depart), not a
+    night-by-night listing. See requirements/public.md -> Attendees ->
+    Layout. Dates covered by an excursion (see excursion_away_ranges()
+    above) are skipped entirely, splitting the stay into two milestones
+    with a gap rather than one range that wrongly includes time the
+    person was away — the excursion's own Departure/Arrival rows already
+    say so.
+
+    Walks every QUARTER of every date (not just once per date), resolving
+    each via timeline_build.room_for_quarter() — the same function the
+    Structures row itself uses, so the two can never disagree — so a
+    room_by_quarter override splits into its own sub-day milestone instead
+    of being silently flattened to whichever room happened to win for the
+    whole date. Each milestone is returned as (room, start_key, end_key),
+    where a key is (date, quarter) — see sleeping_line() below for how the
+    end key's quarter (only) turns into "till <day>"/"till the morning of
+    <day>"/etc text; the day-heading grouping this feeds
+    (render_person_page() below) only ever needs the start key's date, the
+    same as before this quarter-level change."""
     away_ranges = excursion_away_ranges(entry)
 
     def is_away(d):
@@ -367,25 +395,27 @@ def room_milestones(entry, start_date, end_date):
     milestones = []
     current_room = None
     current_start = None
-    prev_d = None
+    prev_key = None
     d = start_date
     while d <= end_date:
         if is_away(d):
             if current_room is not None:
-                milestones.append((current_room, current_start, prev_d))
+                milestones.append((current_room, current_start, prev_key))
                 current_room = None
             d += timedelta(days=1)
             continue
-        room = entry.get("room_by_date", {}).get(d.isoformat(), entry.get("room", ""))
-        if room != current_room:
-            if current_room is not None:
-                milestones.append((current_room, current_start, prev_d))
-            current_room = room
-            current_start = d
-        prev_d = d
+        for quarter in timeline_build.QUARTERS:
+            room = timeline_build.room_for_quarter(entry, d.isoformat(), quarter)
+            key = (d, quarter)
+            if room != current_room:
+                if current_room is not None:
+                    milestones.append((current_room, current_start, prev_key))
+                current_room = room
+                current_start = key
+            prev_key = key
         d += timedelta(days=1)
     if current_room is not None:
-        milestones.append((current_room, current_start, prev_d))
+        milestones.append((current_room, current_start, prev_key))
     return milestones
 
 
@@ -512,8 +542,9 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
         # above.
         start_date = date.fromisoformat(arrival["date"]) if arrival else TRIP_START
         end_date = sleeping_end_date(departure)
-        for room, range_start, range_end in room_milestones(entry, start_date, end_date):
-            items.append((range_start.isoformat(), FACT_RANK["Sleeping"], sleeping_line(room, range_start, range_end)))
+        for room, start_key, end_key in room_milestones(entry, start_date, end_date):
+            range_start, range_end = start_key[0], end_key[0]
+            items.append((range_start.isoformat(), FACT_RANK["Sleeping"], sleeping_line(room, range_start, range_end, end_key[1])))
 
         # One line per DAY a working_from block covers, not one line per
         # block — deliberately different from the Sleeping milestones

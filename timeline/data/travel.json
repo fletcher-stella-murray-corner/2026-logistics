@@ -132,21 +132,24 @@
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "room": "The Field — Brendan's tent",
-    "room_by_date": { "2026-08-06": "Red Shed" }
+    "room_by_date": { "2026-08-06": "Red Shed" },
+    "room_by_quarter": { "2026-08-07": { "00-06": "Red Shed" } }
   },
   {
     "person_id": 753966,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "room": "The Field — Brendan's tent",
-    "room_by_date": { "2026-08-06": "Red Shed" }
+    "room_by_date": { "2026-08-06": "Red Shed" },
+    "room_by_quarter": { "2026-08-07": { "00-06": "Red Shed" } }
   },
   {
     "person_id": 973286,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "departure": { "date": "2026-08-10", "quarter": "12-18", "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
     "room": "The Field — Brendan's tent",
-    "room_by_date": { "2026-08-06": "Red Shed" }
+    "room_by_date": { "2026-08-06": "Red Shed" },
+    "room_by_quarter": { "2026-08-07": { "00-06": "Red Shed" } }
   },
   {
     "person_id": 755749,
@@ -161,6 +164,9 @@
       "2026-08-09": "Cottage — Blue Room",
       "2026-08-10": "Cottage — Blue Room",
       "2026-08-11": "Cottage — Blue Room"
+    },
+    "room_by_quarter": {
+      "2026-08-07": { "00-06": "The Field — old worn out tent", "06-12": "The Field — old worn out tent" }
     }
   },
   {
@@ -214,6 +220,7 @@
       "2026-08-12": "The Field — old worn out tent",
       "2026-08-13": "The Field — old worn out tent"
     },
+    "room_by_quarter": { "2026-08-07": { "00-06": "Cottage — Blue Room" } },
     "working_from": [
       { "structure": "Red Shed", "start_date": "2026-08-04", "end_date": "2026-08-06" },
       { "structure": "Red Shed", "start_date": "2026-08-11", "end_date": "2026-08-12" }
@@ -228,6 +235,7 @@
       "2026-08-07": "The Field — Rachel's camping tent",
       "2026-08-08": "The Field — Rachel's camping tent"
     },
+    "room_by_quarter": { "2026-08-07": { "00-06": "Cottage — Blue Room" } },
     "working_from": [
       { "structure": "Red Shed", "start_date": "2026-08-03", "end_date": "2026-08-06" },
       { "structure": "Red Shed", "start_date": "2026-08-07", "end_date": "2026-08-07", "quarters": ["06-12"] }
