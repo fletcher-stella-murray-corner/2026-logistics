@@ -4,7 +4,7 @@
   { "id": "the-field", "name": "The Field", "category": "accommodation", "instances": ["Rachel's camping tent", "old worn out tent", "Caravan", "Brendan's tent", "Kate & Bob's Revel camper van"] },
   { "id": "barbs-cottage", "name": "Barb's Cottage", "category": "accommodation" },
   { "id": "lakes-general-store", "name": "Lakes General Store", "category": "accommodation", "rooms": ["Top Room"] },
-  { "id": "sheogue-inn", "name": "Little Shemogue Inn", "category": "accommodation", "buildings": [{ "name": "Log Point", "rooms": ["Room T", "Room Y", "Room K", "Room Zed"] }, { "name": "The Apartment", "rooms": ["Room X"] }] },
+  { "id": "sheogue-inn", "name": "Little Shemogue Inn", "category": "accommodation", "buildings": [{ "name": "Log Point", "rooms": ["Room T", "Room Y", "Room K", "Room 9"] }, { "name": "The Apartment", "rooms": ["Room X"] }] },
   { "id": "halifax-airport", "name": "Halifax Airport", "category": "transit" },
   { "id": "moncton-airport", "name": "Moncton Airport", "category": "transit" },
   { "id": "sackville-station", "name": "Sackville Station", "category": "transit" }

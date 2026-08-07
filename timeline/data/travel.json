@@ -64,13 +64,13 @@
     "person_id": 420649,
     "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car", "detail": "Flew into Halifax at 2pm, rented a car, then drove to the cottage" },
     "departure": { "date": "2026-08-09", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car", "detail": "Returning the rental car at Halifax before flying out at 3pm" },
-    "room": "Little Shemogue Inn — Room Zed"
+    "room": "Little Shemogue Inn — Room 9"
   },
   {
     "person_id": 702536,
     "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car", "detail": "Flew into Halifax at 2pm, rented a car, then drove to the cottage" },
     "departure": { "date": "2026-08-09", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car", "detail": "Returning the rental car at Halifax before flying out at 3pm" },
-    "room": "Little Shemogue Inn — Room Zed"
+    "room": "Little Shemogue Inn — Room 9"
   },
   {
     "person_id": 444018,
