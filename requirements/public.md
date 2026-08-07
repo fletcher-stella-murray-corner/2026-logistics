@@ -124,7 +124,7 @@ The site also tracks a fixed list of named vehicles used for car travel, for the
 
 Nav bar per *Navigation* above — identical on both views, no per-view variation. Below it, a full-screen, swipe/scroll-through experience, in this order:
 
-1. **The Home view** — the landing page: trip title, and general info (content to be filled in later — see `way-of-working.md` → *Data entry*; the structure below doesn't depend on what that content ends up being).
+1. **The Home view** — the landing page: trip title, general info, and a short list of endorsements (see *Endorsements* below) — the structure below doesn't depend on what any of that content ends up being.
 2. **The transition screen** — a full-viewport slide, the same shape as a quarter screen, sitting between Home and the actual Timeline content. Offers an explicit choice of where to start scrolling into the trip from, since simply continuing to auto-scroll a visitor onto "now" (the old behavior — see *Always the full trip, "now" computed live* below for why that changed) skips past this decision instead of asking it: **"Jump to now"** (computed client-side, the identical logic the "Timeline" nav item's own click uses — see *Navigation*) and **"Aug 1st"** (a plain anchor to the very first quarter screen, `#qc-2026-08-01-00-06` — since scrolling on past this screen without picking anything already leads there, this option is just a shortcut past the choice itself, not a separate code path).
 3. **One quarter screen per day quarter, in order** — the Timeline view, one continuous scroll-through.
 
@@ -133,6 +133,10 @@ All of the above uses CSS scroll-snap on `html` (not `body` — `html`/`document
 Each quarter screen is made of the **day quarter canvas padding** (blank spacer, clears the nav bar) followed by the **day quarter canvas** (the actual content) — see *Terminology* above; these are separate elements, not one padded box.
 
 The Family Tree page does *not* use this full-screen snap layout — see *Navigation* above for its nav, and *Family Tree* → *Layout* below for the rest of its page; it's read top-to-bottom normally as a short reference page.
+
+### Endorsements
+
+Below the trip title/subtitle/scroll-hint on the Home view, a short list of quotes from people who've seen the site — a lightweight bit of social proof for anyone landing on it fresh, not a data-driven feature. Each entry is just a quote and a first name, hand-edited directly in `timeline/scripts/build.py` (an `ENDORSEMENTS` constant, same pattern as `PAGE_TITLE`/`TRIP_SUBTITLE`) rather than a JSON data file — there's no per-person structure to validate and no other script needs to read them, so a data file would be pure overhead. Quotes render in the order listed, styled quietly (italic quote, plain attribution) so they read as a small aside under the title, not competing with it.
 
 ### Time-of-day background
 

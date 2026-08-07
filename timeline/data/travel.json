@@ -14,25 +14,25 @@
   },
   {
     "person_id": 737624,
-    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car", "detail": "Driving up together" },
+    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["16:00", "16:00"], "mode": "car", "detail": "Driving up together" },
     "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station" },
     "room": "Little Shemogue Inn — Room K"
   },
   {
     "person_id": 970384,
-    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car", "detail": "Driving up together" },
+    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["16:00", "16:00"], "mode": "car", "detail": "Driving up together" },
     "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station" },
     "room": "Little Shemogue Inn — Room K"
   },
   {
     "person_id": 256947,
-    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car", "detail": "Driving up together" },
+    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["16:00", "16:00"], "mode": "car", "detail": "Driving up together" },
     "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car" },
     "room": "Little Shemogue Inn — Room K"
   },
   {
     "person_id": 351002,
-    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car", "detail": "Driving up together" },
+    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["16:00", "16:00"], "mode": "car", "detail": "Driving up together" },
     "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car" },
     "room": "Little Shemogue Inn — Room K"
   },

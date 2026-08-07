@@ -652,6 +652,29 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
 
 .trip-title { margin-bottom: 0.25rem; }
 .trip-subtitle { color: var(--secondary); margin-top: 0; }
+
+/* Home view quotes — see requirements/public.md -> Home & Timeline ->
+   Endorsements. Quiet styling on purpose: a small aside under the title,
+   not competing with it. */
+.endorsements {
+  list-style: none;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-width: 32rem;
+}
+.endorsement-quote {
+  font-style: italic;
+  margin: 0;
+}
+.endorsement-author {
+  color: var(--secondary);
+  font-size: 0.9rem;
+  margin: 0.15rem 0 0;
+}
+
 .scroll-hint {
   margin-top: 3rem;
   color: var(--secondary);
@@ -876,6 +899,7 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
 <section class="intro-screen" id="trip-top">
 <h1 class="trip-title">Murray Corner 2026</h1>
 <p class="trip-subtitle">Murray Corner, New Brunswick · August 1–15, 2026</p>
+<ul class="endorsements"><li class="endorsement"><p class="endorsement-quote">“I like the morning afternoon night level of detail a lot 👌🏻”</p><p class="endorsement-author">— Kaylyn</p></li><li class="endorsement"><p class="endorsement-quote">“A very enjoyable read”</p><p class="endorsement-author">— Shannon</p></li><li class="endorsement"><p class="endorsement-quote">“This is great!”</p><p class="endorsement-author">— Kat</p></li></ul>
 <p class="scroll-hint">Scroll or swipe down to start ↓</p>
 </section>
 <section class="transition-screen" id="trip-transition">
@@ -1044,7 +1068,7 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
 <section class="quarter-screen" id="qc-2026-08-07-12-18" data-date="Fri, Aug 7" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Barb — </span><span class="person-line"><span class="mode-tag">🚗 Car</span>Wes, Evie, Kaylyn & JR — 2pm · Driving up together</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Helen P & David M — 2pm · Flew into Moncton, then rented a car</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Brendan's tent</span><span class="room-people">Brendan, Priscilla, Thiago</span></div><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate P</span></div><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Room X</span><span class="room-people">Andy, Cynthia</span></div><div class="room-box"><span class="room-label">Room Zed</span><span class="room-people">Elizabeth, Jeremy</span></div><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lil, Shawn</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Barb — </span><span class="person-line"><span class="mode-tag">🚗 Car</span>Wes, Evie, Kaylyn & JR — 4pm · Driving up together</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Helen P & David M — 2pm · Flew into Moncton, then rented a car</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Brendan's tent</span><span class="room-people">Brendan, Priscilla, Thiago</span></div><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate P</span></div><div class="room-box"><span class="room-label">Rachel's camping tent</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Room X</span><span class="room-people">Andy, Cynthia</span></div><div class="room-box"><span class="room-label">Room Zed</span><span class="room-people">Elizabeth, Jeremy</span></div><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lil, Shawn</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div></div></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-07-18-24" data-date="Fri, Aug 7" data-quarter-name="Evening" data-quarter="18-24">

@@ -139,6 +139,16 @@ TRIP_SUBTITLE = "Murray Corner, New Brunswick · August 1–15, 2026"
 # render_intro_screen() below and shared/nav.py -> render_nav().
 INTRO_SCREEN_ID = "trip-top"
 
+# Short quotes from people who've seen the site — see requirements/public.md
+# -> Home & Timeline -> Endorsements. Hand-edited here, not a JSON data
+# file: no per-person structure to validate and no other script reads
+# these. Rendered in this order.
+ENDORSEMENTS = [
+    ("I like the morning afternoon night level of detail a lot 👌🏻", "Kaylyn"),
+    ("A very enjoyable read", "Shannon"),
+    ("This is great!", "Kat"),
+]
+
 QUARTER_INDEX = {q: i for i, q in enumerate(QUARTERS)}
 # Minute-of-day (0-1440) bounds for each quarter, used to sanity-check an
 # optional time_range against the quarter it's attached to. Inclusive on
@@ -1137,10 +1147,21 @@ data-date="{esc(date_label)}" data-quarter-name="{esc(quarter_name)}" data-quart
 </section>"""
 
 
+def render_endorsements():
+    """See requirements/public.md -> Home & Timeline -> Endorsements."""
+    items = "".join(
+        f'<li class="endorsement"><p class="endorsement-quote">“{esc(quote)}”</p>'
+        f'<p class="endorsement-author">— {esc(author)}</p></li>'
+        for quote, author in ENDORSEMENTS
+    )
+    return f'<ul class="endorsements">{items}</ul>'
+
+
 def render_intro_screen():
     return f"""<section class="intro-screen" id="{INTRO_SCREEN_ID}">
 <h1 class="trip-title">{PAGE_TITLE}</h1>
 <p class="trip-subtitle">{TRIP_SUBTITLE}</p>
+{render_endorsements()}
 <p class="scroll-hint">Scroll or swipe down to start ↓</p>
 </section>"""
 

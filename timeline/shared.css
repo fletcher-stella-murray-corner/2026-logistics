@@ -259,6 +259,29 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
 
 .trip-title { margin-bottom: 0.25rem; }
 .trip-subtitle { color: var(--secondary); margin-top: 0; }
+
+/* Home view quotes — see requirements/public.md -> Home & Timeline ->
+   Endorsements. Quiet styling on purpose: a small aside under the title,
+   not competing with it. */
+.endorsements {
+  list-style: none;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-width: 32rem;
+}
+.endorsement-quote {
+  font-style: italic;
+  margin: 0;
+}
+.endorsement-author {
+  color: var(--secondary);
+  font-size: 0.9rem;
+  margin: 0.15rem 0 0;
+}
+
 .scroll-hint {
   margin-top: 3rem;
   color: var(--secondary);
