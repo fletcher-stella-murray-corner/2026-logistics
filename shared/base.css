@@ -286,6 +286,54 @@ body {
   padding: 0.5rem;
 }
 .jump-person-actions a + a { border-left: 1px solid var(--border); }
+/* The Milestones panel's own two tab buttons (see shared/nav.py ->
+   render_nav()) — plain toggle buttons, not links or a <details> of their
+   own, since switching tabs is a same-panel show/hide (shared/nav.js), not
+   a navigation. Same uppercase/letter-spaced small-caps treatment as a
+   .jump-person-actions link above so it reads as "an action", just sized
+   up slightly since these are the panel's own primary controls, not a
+   secondary per-row link. The active tab is Primary-colored with a
+   bottom border "underline" (echoing this site's plain/no-icon,
+   text-carries-the-signal language — brand-guidelines.md); the inactive
+   one stays Secondary with no border, not just a lighter shade of the
+   same treatment, so active/inactive reads as two distinct states at a
+   glance, not one control with an animated slider. */
+.milestones-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+.milestones-tab {
+  border: none;
+  background: none;
+  padding: 0.2rem 0;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.milestones-tab.is-active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.milestones-list[hidden] { display: none; }
+/* A milestone row is the same .jump-person shape the Folks panel uses
+   (name + actions, see .jump-person above), with one extra middle child
+   for the abbreviated date+time (see shared/nav.py ->
+   render_milestones_menu()) — three children under the same space-between
+   row instead of two, name pinned left and actions pinned right same as
+   before, the time slotting in between them. */
+.milestone-time {
+  color: var(--secondary);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
 /* The one caret component for "this is a disclosure trigger, tapping it
    expands a panel in place" — used by every .jump-menu summary (the
    Timeline's current-quarter-label and "Folks ▾", the Family Tree's own

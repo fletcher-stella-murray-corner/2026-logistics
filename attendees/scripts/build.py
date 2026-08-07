@@ -699,6 +699,7 @@ def main():
     # uses) and the day/quarter jump list (reused from timeline/scripts/
     # build.py, the feature that owns it), not reimplemented here.
     folks_menu = nav.render_folks_menu(people, travel, timeline_prefix="../index.html", attendees_prefix="")
+    milestones_menu = nav.render_milestones_menu(people, travel, timeline_prefix="../index.html", attendees_prefix="")
     nav_row = nav.render_nav(
         mc26_href="../index.html#trip-top",
         timeline_prefix="../index.html",
@@ -707,6 +708,7 @@ def main():
         trip_end=timeline_build.TRIP_END.isoformat(),
         jump_panel_html=timeline_build.render_jump_panel(href_prefix="../index.html"),
         folks_panel_html=folks_menu,
+        milestones_panel_html=milestones_menu,
         attending_people=attending_people,
         attendees_prefix="",
         include_play=False,

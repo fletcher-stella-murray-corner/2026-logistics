@@ -628,6 +628,25 @@ def validate_travel(travel, people_by_id, structures, vehicles):
         for room_date, room in entry.get("room_by_date", {}).items():
             validate_date_str(room_date, f"room_by_date for {person_name!r}")
             validate_room(room, accommodation_structures, f"{person_name!r} on {room_date}")
+        # room_by_quarter — a targeted override for specific quarters of
+        # specific dates, layered on top of room_by_date/room (see
+        # requirements/public.md -> Data -> travel.json -> room_by_quarter
+        # and room_for_quarter() below for the resolution order). Only
+        # exists to override the quarter(s) that actually differ from
+        # what room_by_date/room would otherwise resolve to for that
+        # date — e.g. Brendan/Priscilla/Thiago's pre-dawn 00-06 quarter,
+        # still the Red Shed from the night before, ahead of their own
+        # room_by_date switching them to their tent later that same date.
+        for room_date, by_quarter in entry.get("room_by_quarter", {}).items():
+            validate_date_str(room_date, f"room_by_quarter for {person_name!r}")
+            if not isinstance(by_quarter, dict) or not by_quarter:
+                raise ValueError(
+                    f"room_by_quarter for {person_name!r} on {room_date} must be a non-empty "
+                    f"object mapping quarter keys to a room."
+                )
+            for quarter, room in by_quarter.items():
+                validate_quarter_value(quarter, f"room_by_quarter for {person_name!r} on {room_date}")
+                validate_room(room, accommodation_structures, f"{person_name!r} on {room_date} {quarter}")
         validate_working_from(entry.get("working_from"), person_name, working_structure_names)
         validate_excursions(entry.get("excursions"), person_id, person_name, transit_names, vehicle_names, people_by_id, arrival, departure)
         validate_airport_runs(entry.get("airport_runs"), person_id, person_name, transit_names, vehicle_names, people_by_id, arrival, departure)
@@ -786,7 +805,17 @@ def render_travel_row(label, pairs, people_by_id, driver_label="driving"):
     return f'<div class="quarter-row"><span class="quarter-row-label">{esc(label)}</span>{"".join(lines)}</div>'
 
 
-def room_for_date(entry, iso_date):
+def room_for_quarter(entry, iso_date, quarter):
+    """Resolve the room for one exact day+quarter (see
+    requirements/public.md -> Data -> travel.json -> room_by_quarter):
+    room_by_quarter for that exact quarter, if listed, wins first; then
+    room_by_date for that whole date, if set; then the base room field.
+    Reused by attendees/scripts/build.py's room_milestones() (imported as
+    timeline_build), so the Structures row and the Attendees page's own
+    Sleeping milestones can never resolve a person's room differently."""
+    by_quarter = entry.get("room_by_quarter", {}).get(iso_date, {})
+    if quarter in by_quarter:
+        return by_quarter[quarter]
     return entry.get("room_by_date", {}).get(iso_date, entry.get("room", ""))
 
 
@@ -1024,7 +1053,7 @@ def quarter_membership(key, day_iso, quarter, travel, people_by_id):
         not_departed = True if departure_key is None else key < departure_key
         away = any(d_key <= key < r_key for d_key, r_key in excursion_keys)
         if arrived_by and not_departed and not away:
-            present.append((person, room_for_date(entry, day_iso)))
+            present.append((person, room_for_quarter(entry, day_iso, quarter)))
 
         for structure_name in person_working_here(entry, day_iso, quarter):
             working.append((person, structure_name))
@@ -1198,6 +1227,7 @@ def build_timeline_html(people, travel, meals, activities, accommodation_structu
 def build_page_html(people, travel, meals, activities, structures, shared_base_css, shared_css, shared_nav_js, shared_js):
     jump_panel = render_jump_panel()
     folks_menu = nav.render_folks_menu(people, travel, timeline_prefix="", attendees_prefix="attendees/")
+    milestones_menu = nav.render_milestones_menu(people, travel, timeline_prefix="", attendees_prefix="attendees/")
     attending_people = [p for p in people if p.get("attending")]
     nav_row = nav.render_nav(
         mc26_href=f"#{INTRO_SCREEN_ID}",
@@ -1207,6 +1237,7 @@ def build_page_html(people, travel, meals, activities, structures, shared_base_c
         trip_end=TRIP_END.isoformat(),
         jump_panel_html=jump_panel,
         folks_panel_html=folks_menu,
+        milestones_panel_html=milestones_menu,
         attending_people=attending_people,
         attendees_prefix="attendees/",
         include_play=True,

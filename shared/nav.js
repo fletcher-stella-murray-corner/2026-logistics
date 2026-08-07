@@ -178,6 +178,29 @@ document.addEventListener('DOMContentLoaded', function () {
     people.forEach(function (el) { folksList.appendChild(el); });
   }
 
+  // Milestones panel's own two tabs (Arrivals/Departures — see
+  // requirements/public.md -> Navigation -> Milestones panel) — a same-
+  // panel show/hide, not a navigation: switching tabs never closes the
+  // disclosure (tab buttons are plain <button>s, not <a> links, so the
+  // "clicking a link inside it closes the panel" behavior below never
+  // fires for them) and never remembers state between opens (each
+  // .milestones-panel always starts back on its own first tab, since
+  // nothing here persists a choice). One listener per panel rather than
+  // per button, so it still works if a future page had more than one.
+  document.querySelectorAll('.milestones-panel').forEach(function (panel) {
+    panel.querySelectorAll('.milestones-tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        panel.querySelectorAll('.milestones-tab').forEach(function (t) {
+          t.classList.toggle('is-active', t === tab);
+        });
+        var target = tab.dataset.milestonesTab;
+        panel.querySelectorAll('.milestones-list').forEach(function (list) {
+          list.hidden = list.dataset.milestonesPanel !== target;
+        });
+      });
+    });
+  });
+
   // Closing a split control's panel (see requirements/public.md ->
   // Navigation -> Closing a panel) — a plain <details> does neither of
   // these two on its own: opening one leaves any other already-open panel

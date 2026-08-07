@@ -9,8 +9,9 @@ every page uses — see its own docstring and requirements/public.md ->
 Navigation.
 """
 import json
+from datetime import date
 
-from trip import TRIP_START, QUARTERS, quarter_screen_id
+from trip import TRIP_START, QUARTERS, QUARTER_NAMES, quarter_screen_id, format_date_jump, format_time_range
 
 
 def esc(s):
@@ -93,14 +94,91 @@ def render_folks_menu(people, travel, *, timeline_prefix, attendees_prefix):
     return "".join(entries)
 
 
+def render_milestones_menu(people, travel, *, timeline_prefix, attendees_prefix):
+    """The Milestones panel's two lists — every attending person's own
+    arrival and every attending person's own departure, one flat
+    chronological row per person, oldest first (see
+    requirements/public.md -> Navigation -> Milestones panel). Computed
+    once here and reused identically by every feature's build.py, same
+    reasoning render_folks_menu() above already documents (one shape, one
+    roster, no per-feature copy to drift out of sync).
+
+    An excursion's own `return` leg counts as an arrival and its `depart`
+    leg counts as a departure, same as everywhere else on the site (the
+    Timeline's own Arriving:/Departing: rows, driving_assignments() on the
+    Attendees page) — someone with a mid-stay round trip shows up twice in
+    these two lists. Not-attending people, and anyone with no arrival (or
+    no departure) leg at all, simply don't appear in that one list — no
+    synthesized fallback the way the Folks panel's random-click target
+    needs one.
+
+    Deliberately ONE ROW PER PERSON, never grouped the way the Timeline's
+    own rows combine several people sharing one real trip (see
+    requirements/public.md -> Home & Timeline -> Row-by-row rules ->
+    Arrivals) — this panel is a scannable flat roster of individual facts,
+    not a day-quarter canvas, so there's no "same trip" concept to fold
+    rows into here.
+
+    Returns (arrivals_html, departures_html) — render_nav() below wraps
+    each in its own tab panel."""
+    travel_by_person = {t["person_id"]: t for t in travel}
+    attending = [p for p in people if p.get("attending")]
+
+    def sort_key(item):
+        _, leg = item
+        return (leg["date"], QUARTERS.index(leg["quarter"]), leg.get("time_range") or [""])
+
+    def render_list(events):
+        events.sort(key=sort_key)
+        rows = []
+        for person, leg in events:
+            d = date.fromisoformat(leg["date"])
+            time_range = leg.get("time_range")
+            if time_range:
+                when = f"{esc(format_date_jump(d))} · {esc(format_time_range(time_range))}"
+            else:
+                qname = QUARTER_NAMES[leg["quarter"]]
+                when = esc(format_date_jump(d)) + (f" · {esc(qname)}" if qname else "")
+            timeline_href = f"{timeline_prefix}#{quarter_screen_id(leg['date'], leg['quarter'])}"
+            rows.append(
+                f'<span class="jump-person milestone-row">'
+                f'<span class="jump-person-name">{esc(person["name"])}</span>'
+                f'<span class="milestone-time">{when}</span>'
+                f'<span class="jump-person-actions">'
+                f'<a href="{timeline_href}">Timeline</a>'
+                f'<a href="{attendees_prefix}{person["id"]}.html">Detail</a>'
+                f'</span>'
+                f'</span>'
+            )
+        return "".join(rows)
+
+    arrivals, departures = [], []
+    for person in attending:
+        entry = travel_by_person.get(person["id"])
+        if not entry:
+            continue
+        if entry.get("arrival"):
+            arrivals.append((person, entry["arrival"]))
+        if entry.get("departure"):
+            departures.append((person, entry["departure"]))
+        for exc in entry.get("excursions", []):
+            departures.append((person, exc["depart"]))
+            arrivals.append((person, exc["return"]))
+
+    return render_list(arrivals), render_list(departures)
+
+
 def render_nav(*, mc26_href, timeline_prefix, tree_href, trip_start, trip_end,
-                jump_panel_html, folks_panel_html, attending_people, attendees_prefix,
+                jump_panel_html, folks_panel_html, milestones_panel_html, attending_people, attendees_prefix,
                 include_play):
     """The site's one shared nav bar shape — MC26 (fixed identity + link to
     Home), Timeline (split control: label jumps to "now", caret opens a
     panel with the day/quarter jump list and, on site/index.html only,
     play/pause), Folks (split control: label jumps to a random attending
-    person, caret opens a person-picker panel), Tree (plain link) — see
+    person, caret opens a person-picker panel), Milestones (caret-only
+    disclosure — no default click of its own, see render_milestones_menu()
+    above — opens a panel with two tab-switched flat lists, every
+    arrival/every departure), Tree (plain link) — see
     requirements/public.md -> Navigation. Identical shape on every page;
     only hrefs/prefixes and panel contents differ, supplied by the caller,
     so the three build scripts can never drift apart on what this looks
@@ -113,10 +191,15 @@ def render_nav(*, mc26_href, timeline_prefix, tree_href, trip_start, trip_end,
     the day/quarter jump list is still feature-specific (see
     timeline/scripts/build.py's render_jump_panel()), but the Folks panel
     is now this same module's own render_folks_menu() above, called
-    identically by every feature.
+    identically by every feature. `milestones_panel_html` is a
+    (arrivals_html, departures_html) pair — this module's own
+    render_milestones_menu() above, same "computed once, called
+    identically by every feature" shape as the Folks panel.
     `attending_people` — the full attending roster as a list of dicts with
     at least 'id'/'name', for the Folks split control's random-click (the
-    same roster regardless of which Folks panel variant is shown).
+    same roster regardless of which Folks panel variant is shown), and to
+    decide whether the Milestones item renders at all (no roster, nothing
+    to list).
     `include_play` — True only for site/index.html, the one page with an
     actual scroll sequence to auto-advance through.
     """
@@ -143,9 +226,25 @@ def render_nav(*, mc26_href, timeline_prefix, tree_href, trip_start, trip_end,
 </details>
 </span>"""
 
+    milestones_menu = ""
+    if attending_people:
+        arrivals_html, departures_html = milestones_panel_html
+        milestones_menu = f"""<details class="jump-menu">
+<summary><span class="nav-split-label">Milestones</span> <span class="nav-caret">▾</span></summary>
+<div class="jump-panel milestones-panel">
+<div class="milestones-tabs">
+<button type="button" class="milestones-tab is-active" data-milestones-tab="arrivals">Arrivals</button>
+<button type="button" class="milestones-tab" data-milestones-tab="departures">Departures</button>
+</div>
+<div class="milestones-list" data-milestones-panel="arrivals">{arrivals_html}</div>
+<div class="milestones-list" data-milestones-panel="departures" hidden>{departures_html}</div>
+</div>
+</details>"""
+
     return f"""<nav class="site-nav">
 <a href="{mc26_href}" class="site-title">MC26</a>
 {timeline_split}
 {folks_split}
+{milestones_menu}
 <a href="{tree_href}">Tree</a>
 </nav>"""
