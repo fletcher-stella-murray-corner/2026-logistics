@@ -1,0 +1,12 @@
+/* Milestones feature — inlined into every site/milestones/*.html page at
+   build time. Five flat, day-headed, chronological list pages (Arrivals,
+   Meals, Departures, Arrivals and Departures, All — see
+   requirements/public.md -> Milestones); the actual row/day-heading
+   markup (.fact-day/.fact-line/.fact-time/.fact-label/.fact-detail) and
+   the mode emoji tag (.mode-tag) both live in shared/base.css now, shared
+   with the Attendees page and the Timeline respectively — nothing
+   feature-specific to define here beyond the page's own title/subtitle
+   and its one empty-state message. */
+.milestones-title { margin-bottom: 0.25rem; }
+.milestones-subtitle { color: var(--secondary); margin-top: 0; margin-bottom: 2rem; }
+.milestones-empty { color: var(--secondary); font-style: italic; }

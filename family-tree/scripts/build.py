@@ -364,7 +364,7 @@ def render_standalone_section(people, collected_ids):
 
 def build_page_html(people, travel, collected_ids, shared_base_css, shared_css, shared_nav_js):
     folks_menu = nav.render_folks_menu(people, travel, timeline_prefix="../index.html", attendees_prefix="../attendees/")
-    milestones_menu = nav.render_milestones_menu(people, travel, timeline_prefix="../index.html", attendees_prefix="../attendees/")
+    milestones_menu = nav.render_milestones_menu("../milestones/")
     attending_people = [p for p in people if p.get("attending")]
     nav_row = nav.render_nav(
         mc26_href="../index.html#trip-top",

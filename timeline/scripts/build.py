@@ -1227,7 +1227,7 @@ def build_timeline_html(people, travel, meals, activities, accommodation_structu
 def build_page_html(people, travel, meals, activities, structures, shared_base_css, shared_css, shared_nav_js, shared_js):
     jump_panel = render_jump_panel()
     folks_menu = nav.render_folks_menu(people, travel, timeline_prefix="", attendees_prefix="attendees/")
-    milestones_menu = nav.render_milestones_menu(people, travel, timeline_prefix="", attendees_prefix="attendees/")
+    milestones_menu = nav.render_milestones_menu("milestones/")
     attending_people = [p for p in people if p.get("attending")]
     nav_row = nav.render_nav(
         mc26_href=f"#{INTRO_SCREEN_ID}",

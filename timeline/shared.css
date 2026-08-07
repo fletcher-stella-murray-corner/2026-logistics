@@ -282,7 +282,8 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
   margin-bottom: 0.2rem;
 }
 .person-line { display: block; margin-left: 0.1rem; }
-.mode-tag { margin-right: 0.3rem; }
+/* .mode-tag itself moved to shared/base.css — now shared with the
+   milestones/ feature's own list pages too. */
 .quarter-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
 
 /* Structures row — nested boxes (structure, then room/detail or a

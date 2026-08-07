@@ -11,57 +11,11 @@
    entirely. */
 .attendee-dogs { color: var(--secondary); margin-top: 0; margin-bottom: 1.5rem; }
 
-/* One <h2 class="fact-day"> per distinct date (see render_person_page()
-   in attendees/scripts/build.py), matching brand-guidelines.md ->
-   Typography -> Headlines' own "Day headings" spec (Limelight, Primary)
-   — every fact starting on that date (Arrival, Sleeping, Working from,
-   Departure, Driving) is grouped underneath it as one or more
-   .fact-line rows, instead of each fact repeating its own full date.
-   No font-weight override here — shared/base.css's shared h1/h2/h3 rule
-   already pins this to Limelight's own single weight (400) deliberately,
-   and a 700 here would win the cascade (higher specificity) and force a
-   synthetic bold the font was never designed to render. */
-.fact-day {
-  font-size: 1.25rem;
-  color: var(--primary);
-  margin: 1.4rem 0 0.4rem;
-}
-.fact-day:first-of-type { margin-top: 0; }
-/* Every fact line reads as one flowing sentence — the label leading
-   ("what happened"), then the time (or bare quarter name, "when"), then
-   the detail — rather than a three-column table row: every kind of
-   fact, point-in-time (Arrival/Departure/Driving) or date-range
-   (Sleeping/Working from), starts at .fact-label; a point-in-time fact
-   additionally shows .fact-time right after it (see time_label() in
-   attendees/scripts/build.py), a date-range fact has no single time of
-   day to show at all — see fact_line(). flex-wrap lets a long detail
-   (e.g. a Driving line) wrap onto its own line on a narrow phone without
-   breaking the label away from its time. */
-.fact-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 0.4rem;
-  row-gap: 0.1rem;
-  margin: 0.5rem 0;
-  font-size: 1.05rem;
-}
-.fact-time {
-  font-weight: 700;
-  color: var(--primary);
-  flex: 0 0 auto;
-}
-/* Uppercase + letter-spaced — the one label device used everywhere on
-   the site (see timeline/shared.css -> .quarter-row-label for the fuller
-   rationale), kept at this line's own inline size (not shrunk) since it
-   sits directly beside .fact-time/.fact-detail in one flowing sentence —
-   a smaller label word here would look broken mid-line, not "labelled". */
-.fact-label {
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--secondary);
-  flex: 0 0 auto;
-}
-.fact-detail { flex: 1 1 16rem; min-width: 0; }
+/* .fact-day/.fact-line/.fact-time/.fact-label/.fact-detail — the day-
+   heading + flowing-sentence-row pattern this page's own timeline uses —
+   moved to shared/base.css: the milestones/ feature's own list pages now
+   need the identical pattern (see shared/base.css for the full rules and
+   requirements/public.md -> Milestones), and technical.md's own rule is
+   that a pattern needed by more than one page belongs in shared/base.css,
+   not copied into each feature's own shared.css. */
 .attendee-pending { color: var(--secondary); font-style: italic; }

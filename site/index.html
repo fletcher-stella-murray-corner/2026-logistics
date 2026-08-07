@@ -293,53 +293,20 @@ body {
   padding: 0.5rem;
 }
 .jump-person-actions a + a { border-left: 1px solid var(--border); }
-/* The Milestones panel's own two tab buttons (see shared/nav.py ->
-   render_nav()) — plain toggle buttons, not links or a <details> of their
-   own, since switching tabs is a same-panel show/hide (shared/nav.js), not
-   a navigation. Same uppercase/letter-spaced small-caps treatment as a
-   .jump-person-actions link above so it reads as "an action", just sized
-   up slightly since these are the panel's own primary controls, not a
-   secondary per-row link. The active tab is Primary-colored with a
-   bottom border "underline" (echoing this site's plain/no-icon,
-   text-carries-the-signal language — brand-guidelines.md); the inactive
-   one stays Secondary with no border, not just a lighter shade of the
-   same treatment, so active/inactive reads as two distinct states at a
-   glance, not one control with an animated slider. */
-.milestones-tabs {
+/* The Milestones panel's own content — five plain links to the
+   milestones/ feature's own standalone pages (see shared/nav.py ->
+   render_milestones_menu()), single column like .folks-list above, not
+   the wrapping row .jump-links uses — these are five substantial named
+   destinations to scan top to bottom, not short interchangeable chips. */
+.milestones-links {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 0.6rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid var(--border);
+  flex-direction: column;
+  gap: 0.2rem;
 }
-.milestones-tab {
-  border: none;
-  background: none;
-  padding: 0.2rem 0;
-  font: inherit;
-  font-weight: 700;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--secondary);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-}
-.milestones-tab.is-active {
+.milestones-links a {
   color: var(--primary);
-  border-bottom-color: var(--primary);
-}
-.milestones-list[hidden] { display: none; }
-/* A milestone row is the same .jump-person shape the Folks panel uses
-   (name + actions, see .jump-person above), with one extra middle child
-   for the abbreviated date+time (see shared/nav.py ->
-   render_milestones_menu()) — three children under the same space-between
-   row instead of two, name pinned left and actions pinned right same as
-   before, the time slotting in between them. */
-.milestone-time {
-  color: var(--secondary);
-  font-size: 0.85rem;
-  flex-shrink: 0;
+  font-weight: 600;
+  padding: 0.5rem 0.15rem;
 }
 /* The one caret component for "this is a disclosure trigger, tapping it
    expands a panel in place" — used by every .jump-menu summary (the
@@ -371,6 +338,58 @@ h1, h2, h3 {
   font-weight: 400;
 }
 a { color: var(--secondary); }
+
+/* .fact-day/.fact-line/.fact-time/.fact-label/.fact-detail — a day
+   heading followed by one or more flowing-sentence rows underneath it,
+   originally the Attendees page's own timeline pattern, now shared with
+   the milestones/ feature's list pages too (see requirements/public.md
+   -> Milestones and -> Attendees -> Layout) — moved here rather than
+   duplicated per feature, per technical.md's own "needed by more than
+   one page belongs in shared/base.css" rule. */
+.fact-day {
+  font-size: 1.25rem;
+  color: var(--primary);
+  margin: 1.4rem 0 0.4rem;
+}
+.fact-day:first-of-type { margin-top: 0; }
+/* Every fact line reads as one flowing sentence — the label leading
+   ("what happened"), then the time (or bare quarter name, "when"), then
+   the detail — rather than a three-column table row. flex-wrap lets a
+   long detail wrap onto its own line on a narrow phone without breaking
+   the label away from its time. */
+.fact-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.4rem;
+  row-gap: 0.1rem;
+  margin: 0.5rem 0;
+  font-size: 1.05rem;
+}
+.fact-time {
+  font-weight: 700;
+  color: var(--primary);
+  flex: 0 0 auto;
+}
+/* Uppercase + letter-spaced — the one label device used everywhere on
+   the site (see timeline/shared.css -> .quarter-row-label for the fuller
+   rationale), kept at this line's own inline size (not shrunk) since it
+   sits directly beside .fact-time/.fact-detail in one flowing sentence —
+   a smaller label word here would look broken mid-line, not "labelled". */
+.fact-label {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--secondary);
+  flex: 0 0 auto;
+}
+.fact-detail { flex: 1 1 16rem; min-width: 0; }
+/* The mode emoji tag (✈️/🚆/🚗 — see shared/trip.py -> MODE_TAGS) that
+   rides right before a person's name wherever a leg is rendered —
+   originally timeline/shared.css's own (the Timeline's Arriving:/
+   Departing: rows), now also used by the milestones/ feature's Arrivals/
+   Departures/All pages, same relocation reasoning as .fact-day above. */
+.mode-tag { margin-right: 0.3rem; }
 
 /* Timeline feature — inlined into site/index.html at build time. Full-screen
    swipe/scroll-through layout: an intro screen, then one full-viewport-height
@@ -656,7 +675,8 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
   margin-bottom: 0.2rem;
 }
 .person-line { display: block; margin-left: 0.1rem; }
-.mode-tag { margin-right: 0.3rem; }
+/* .mode-tag itself moved to shared/base.css — now shared with the
+   milestones/ feature's own list pages too. */
 .quarter-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
 
 /* Structures row — nested boxes (structure, then room/detail or a
@@ -848,14 +868,7 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
 </span>
 <details class="jump-menu">
 <summary><span class="nav-split-label">Milestones</span> <span class="nav-caret">▾</span></summary>
-<div class="jump-panel milestones-panel">
-<div class="milestones-tabs">
-<button type="button" class="milestones-tab is-active" data-milestones-tab="arrivals">Arrivals</button>
-<button type="button" class="milestones-tab" data-milestones-tab="departures">Departures</button>
-</div>
-<div class="milestones-list" data-milestones-panel="arrivals"><span class="jump-person milestone-row"><span class="jump-person-name">David S</span><span class="milestone-time">Sat, Aug 1st · 6pm</span><span class="jump-person-actions"><a href="#qc-2026-08-01-18-24">Timeline</a><a href="attendees/477500.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Rachel</span><span class="milestone-time">Sat, Aug 1st · 6pm</span><span class="jump-person-actions"><a href="#qc-2026-08-01-18-24">Timeline</a><a href="attendees/502053.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Susan S</span><span class="milestone-time">Tue, Aug 4th · 2:30pm</span><span class="jump-person-actions"><a href="#qc-2026-08-04-12-18">Timeline</a><a href="attendees/755749.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Jim P</span><span class="milestone-time">Tue, Aug 4th · 9pm</span><span class="jump-person-actions"><a href="#qc-2026-08-04-18-24">Timeline</a><a href="attendees/616311.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Kate P</span><span class="milestone-time">Tue, Aug 4th · 9pm</span><span class="jump-person-actions"><a href="#qc-2026-08-04-18-24">Timeline</a><a href="attendees/821712.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Bob</span><span class="milestone-time">Tue, Aug 4th · 9pm</span><span class="jump-person-actions"><a href="#qc-2026-08-04-18-24">Timeline</a><a href="attendees/716257.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Jim S</span><span class="milestone-time">Wed, Aug 5th · 5:59pm</span><span class="jump-person-actions"><a href="#qc-2026-08-05-12-18">Timeline</a><a href="attendees/374200.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Helen S</span><span class="milestone-time">Wed, Aug 5th · 5:59pm</span><span class="jump-person-actions"><a href="#qc-2026-08-05-12-18">Timeline</a><a href="attendees/448796.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Andy</span><span class="milestone-time">Thu, Aug 6th · 2pm</span><span class="jump-person-actions"><a href="#qc-2026-08-06-12-18">Timeline</a><a href="attendees/680865.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Elizabeth</span><span class="milestone-time">Thu, Aug 6th · 3pm</span><span class="jump-person-actions"><a href="#qc-2026-08-06-12-18">Timeline</a><a href="attendees/420649.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Jeremy</span><span class="milestone-time">Thu, Aug 6th · 3pm</span><span class="jump-person-actions"><a href="#qc-2026-08-06-12-18">Timeline</a><a href="attendees/702536.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Cynthia</span><span class="milestone-time">Thu, Aug 6th · 6:30pm</span><span class="jump-person-actions"><a href="#qc-2026-08-06-18-24">Timeline</a><a href="attendees/509234.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Brendan</span><span class="milestone-time">Thu, Aug 6th · 6:30pm</span><span class="jump-person-actions"><a href="#qc-2026-08-06-18-24">Timeline</a><a href="attendees/597586.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Priscilla</span><span class="milestone-time">Thu, Aug 6th · 6:30pm</span><span class="jump-person-actions"><a href="#qc-2026-08-06-18-24">Timeline</a><a href="attendees/753966.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Thiago</span><span class="milestone-time">Thu, Aug 6th · 6:30pm</span><span class="jump-person-actions"><a href="#qc-2026-08-06-18-24">Timeline</a><a href="attendees/973286.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Shannon</span><span class="milestone-time">Thu, Aug 6th · 11:55pm</span><span class="jump-person-actions"><a href="#qc-2026-08-06-18-24">Timeline</a><a href="attendees/444018.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Matt</span><span class="milestone-time">Thu, Aug 6th · 11:55pm</span><span class="jump-person-actions"><a href="#qc-2026-08-06-18-24">Timeline</a><a href="attendees/881406.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Wes</span><span class="milestone-time">Fri, Aug 7th · Morning</span><span class="jump-person-actions"><a href="#qc-2026-08-07-06-12">Timeline</a><a href="attendees/737624.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Evey</span><span class="milestone-time">Fri, Aug 7th · Morning</span><span class="jump-person-actions"><a href="#qc-2026-08-07-06-12">Timeline</a><a href="attendees/970384.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Shawn</span><span class="milestone-time">Fri, Aug 7th · 9am</span><span class="jump-person-actions"><a href="#qc-2026-08-07-06-12">Timeline</a><a href="attendees/331326.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Lil</span><span class="milestone-time">Fri, Aug 7th · 9am</span><span class="jump-person-actions"><a href="#qc-2026-08-07-06-12">Timeline</a><a href="attendees/739631.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Kaylyn</span><span class="milestone-time">Fri, Aug 7th · 10am</span><span class="jump-person-actions"><a href="#qc-2026-08-07-06-12">Timeline</a><a href="attendees/256947.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">JR</span><span class="milestone-time">Fri, Aug 7th · 10am</span><span class="jump-person-actions"><a href="#qc-2026-08-07-06-12">Timeline</a><a href="attendees/351002.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Helen P</span><span class="milestone-time">Fri, Aug 7th · 11am</span><span class="jump-person-actions"><a href="#qc-2026-08-07-06-12">Timeline</a><a href="attendees/267115.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">David M</span><span class="milestone-time">Fri, Aug 7th · 11am</span><span class="jump-person-actions"><a href="#qc-2026-08-07-06-12">Timeline</a><a href="attendees/254788.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Barb</span><span class="milestone-time">Fri, Aug 7th · Afternoon</span><span class="jump-person-actions"><a href="#qc-2026-08-07-12-18">Timeline</a><a href="attendees/737806.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Moshin</span><span class="milestone-time">Fri, Aug 7th · 6:30pm</span><span class="jump-person-actions"><a href="#qc-2026-08-07-18-24">Timeline</a><a href="attendees/318011.html">Detail</a></span></span></div>
-<div class="milestones-list" data-milestones-panel="departures" hidden><span class="jump-person milestone-row"><span class="jump-person-name">Jim S</span><span class="milestone-time">Tue, Aug 4th · 5pm</span><span class="jump-person-actions"><a href="#qc-2026-08-04-12-18">Timeline</a><a href="attendees/374200.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Helen S</span><span class="milestone-time">Tue, Aug 4th · 5pm</span><span class="jump-person-actions"><a href="#qc-2026-08-04-12-18">Timeline</a><a href="attendees/448796.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Rachel</span><span class="milestone-time">Sun, Aug 9th</span><span class="jump-person-actions"><a href="#qc-2026-08-09-00-06">Timeline</a><a href="attendees/502053.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Elizabeth</span><span class="milestone-time">Sun, Aug 9th · 11am</span><span class="jump-person-actions"><a href="#qc-2026-08-09-06-12">Timeline</a><a href="attendees/420649.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Jeremy</span><span class="milestone-time">Sun, Aug 9th · 11am</span><span class="jump-person-actions"><a href="#qc-2026-08-09-06-12">Timeline</a><a href="attendees/702536.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Moshin</span><span class="milestone-time">Sun, Aug 9th · 11am</span><span class="jump-person-actions"><a href="#qc-2026-08-09-06-12">Timeline</a><a href="attendees/318011.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Shannon</span><span class="milestone-time">Sun, Aug 9th · 3pm</span><span class="jump-person-actions"><a href="#qc-2026-08-09-12-18">Timeline</a><a href="attendees/444018.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Matt</span><span class="milestone-time">Sun, Aug 9th · 3pm</span><span class="jump-person-actions"><a href="#qc-2026-08-09-12-18">Timeline</a><a href="attendees/881406.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Andy</span><span class="milestone-time">Mon, Aug 10th · Afternoon</span><span class="jump-person-actions"><a href="#qc-2026-08-10-12-18">Timeline</a><a href="attendees/680865.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Cynthia</span><span class="milestone-time">Mon, Aug 10th · Afternoon</span><span class="jump-person-actions"><a href="#qc-2026-08-10-12-18">Timeline</a><a href="attendees/509234.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Brendan</span><span class="milestone-time">Mon, Aug 10th · Afternoon</span><span class="jump-person-actions"><a href="#qc-2026-08-10-12-18">Timeline</a><a href="attendees/597586.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Priscilla</span><span class="milestone-time">Mon, Aug 10th · Afternoon</span><span class="jump-person-actions"><a href="#qc-2026-08-10-12-18">Timeline</a><a href="attendees/753966.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Thiago</span><span class="milestone-time">Mon, Aug 10th · Afternoon</span><span class="jump-person-actions"><a href="#qc-2026-08-10-12-18">Timeline</a><a href="attendees/973286.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Barb</span><span class="milestone-time">Mon, Aug 10th · Afternoon</span><span class="jump-person-actions"><a href="#qc-2026-08-10-12-18">Timeline</a><a href="attendees/737806.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Shawn</span><span class="milestone-time">Tue, Aug 11th · 6am</span><span class="jump-person-actions"><a href="#qc-2026-08-11-06-12">Timeline</a><a href="attendees/331326.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Lil</span><span class="milestone-time">Tue, Aug 11th · 6am</span><span class="jump-person-actions"><a href="#qc-2026-08-11-06-12">Timeline</a><a href="attendees/739631.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Susan S</span><span class="milestone-time">Tue, Aug 11th · Afternoon</span><span class="jump-person-actions"><a href="#qc-2026-08-11-12-18">Timeline</a><a href="attendees/755749.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Jim P</span><span class="milestone-time">Wed, Aug 12th · 1pm</span><span class="jump-person-actions"><a href="#qc-2026-08-12-12-18">Timeline</a><a href="attendees/616311.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Kaylyn</span><span class="milestone-time">Wed, Aug 12th · 2pm</span><span class="jump-person-actions"><a href="#qc-2026-08-12-12-18">Timeline</a><a href="attendees/256947.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">JR</span><span class="milestone-time">Wed, Aug 12th · 2pm</span><span class="jump-person-actions"><a href="#qc-2026-08-12-12-18">Timeline</a><a href="attendees/351002.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Helen P</span><span class="milestone-time">Wed, Aug 12th · 3pm</span><span class="jump-person-actions"><a href="#qc-2026-08-12-12-18">Timeline</a><a href="attendees/267115.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">David M</span><span class="milestone-time">Wed, Aug 12th · 3pm</span><span class="jump-person-actions"><a href="#qc-2026-08-12-12-18">Timeline</a><a href="attendees/254788.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Wes</span><span class="milestone-time">Wed, Aug 12th · 3pm</span><span class="jump-person-actions"><a href="#qc-2026-08-12-12-18">Timeline</a><a href="attendees/737624.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Evey</span><span class="milestone-time">Wed, Aug 12th · 3pm</span><span class="jump-person-actions"><a href="#qc-2026-08-12-12-18">Timeline</a><a href="attendees/970384.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Kate P</span><span class="milestone-time">Wed, Aug 12th · 3pm</span><span class="jump-person-actions"><a href="#qc-2026-08-12-12-18">Timeline</a><a href="attendees/821712.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Bob</span><span class="milestone-time">Wed, Aug 12th · 3pm</span><span class="jump-person-actions"><a href="#qc-2026-08-12-12-18">Timeline</a><a href="attendees/716257.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Jim S</span><span class="milestone-time">Thu, Aug 13th · 6am</span><span class="jump-person-actions"><a href="#qc-2026-08-13-06-12">Timeline</a><a href="attendees/374200.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">Helen S</span><span class="milestone-time">Thu, Aug 13th · 6am</span><span class="jump-person-actions"><a href="#qc-2026-08-13-06-12">Timeline</a><a href="attendees/448796.html">Detail</a></span></span><span class="jump-person milestone-row"><span class="jump-person-name">David S</span><span class="milestone-time">Thu, Aug 13th · 6am</span><span class="jump-person-actions"><a href="#qc-2026-08-13-06-12">Timeline</a><a href="attendees/477500.html">Detail</a></span></span></div>
-</div>
+<div class="jump-panel"><div class="milestones-links"><a href="milestones/arrivals.html">Arrivals</a><a href="milestones/meals.html">Meals</a><a href="milestones/departures.html">Departures</a><a href="milestones/arrivals-departures.html">Arrivals and Departures</a><a href="milestones/all.html">All</a></div></div>
 </details>
 <a href="family-tree/index.html">Tree</a>
 </nav>
@@ -1413,29 +1426,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     people.forEach(function (el) { folksList.appendChild(el); });
   }
-
-  // Milestones panel's own two tabs (Arrivals/Departures — see
-  // requirements/public.md -> Navigation -> Milestones panel) — a same-
-  // panel show/hide, not a navigation: switching tabs never closes the
-  // disclosure (tab buttons are plain <button>s, not <a> links, so the
-  // "clicking a link inside it closes the panel" behavior below never
-  // fires for them) and never remembers state between opens (each
-  // .milestones-panel always starts back on its own first tab, since
-  // nothing here persists a choice). One listener per panel rather than
-  // per button, so it still works if a future page had more than one.
-  document.querySelectorAll('.milestones-panel').forEach(function (panel) {
-    panel.querySelectorAll('.milestones-tab').forEach(function (tab) {
-      tab.addEventListener('click', function () {
-        panel.querySelectorAll('.milestones-tab').forEach(function (t) {
-          t.classList.toggle('is-active', t === tab);
-        });
-        var target = tab.dataset.milestonesTab;
-        panel.querySelectorAll('.milestones-list').forEach(function (list) {
-          list.hidden = list.dataset.milestonesPanel !== target;
-        });
-      });
-    });
-  });
 
   // Closing a split control's panel (see requirements/public.md ->
   // Navigation -> Closing a panel) — a plain <details> does neither of
