@@ -8,38 +8,31 @@
   },
   {
     "person_id": 318011,
-    "arrival": { "date": "2026-08-07", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "car" },
+    "arrival": { "date": "2026-08-07", "quarter": "18-24", "time_range": ["19:00", "19:00"], "mode": "car" },
     "departure": { "date": "2026-08-09", "quarter": "06-12", "time_range": ["11:00", "11:00"], "mode": "car" },
     "room": "Cottage — Blue Room"
   },
   {
     "person_id": 737624,
-    "arrival": { "date": "2026-08-07", "quarter": "06-12", "mode": "plane", "hub": "Moncton Airport", "driver_id": 256947 },
+    "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["10:00", "10:00"], "mode": "car", "detail": "Driving up together" },
     "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station" },
     "room": "Little Shemogue Inn — Room K"
   },
   {
     "person_id": 970384,
-    "arrival": { "date": "2026-08-07", "quarter": "06-12", "mode": "plane", "hub": "Moncton Airport", "driver_id": 256947 },
+    "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["10:00", "10:00"], "mode": "car", "detail": "Driving up together" },
     "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station" },
     "room": "Little Shemogue Inn — Room K"
   },
   {
     "person_id": 256947,
-    "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["10:00", "10:00"], "mode": "car" },
+    "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["10:00", "10:00"], "mode": "car", "detail": "Driving up together" },
     "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car" },
-    "room": "Little Shemogue Inn — Room K",
-    "airport_runs": [
-      {
-        "passenger_ids": [737624, 970384],
-        "depart": { "date": "2026-08-07", "quarter": "06-12", "mode": "car", "hub": "Moncton Airport" },
-        "return": { "date": "2026-08-07", "quarter": "06-12", "mode": "car" }
-      }
-    ]
+    "room": "Little Shemogue Inn — Room K"
   },
   {
     "person_id": 351002,
-    "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["10:00", "10:00"], "mode": "car" },
+    "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["10:00", "10:00"], "mode": "car", "detail": "Driving up together" },
     "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car" },
     "room": "Little Shemogue Inn — Room K"
   },
