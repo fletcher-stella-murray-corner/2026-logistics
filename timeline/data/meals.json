@@ -1,1 +1,12 @@
-{}
+{
+  "2026-08-06": {
+    "18-24": { "note": "PEI dinner — Elizabeth, Jeremy & Jim P" }
+  },
+  "2026-08-07": {
+    "18-24": { "note": "Salmon dinner — hosted by Jim P", "structure": "Cottage" }
+  },
+  "2026-08-08": {
+    "12-18": { "note": "Kebab lunch", "structure": "Cottage" },
+    "18-24": { "note": "Lobster dinner", "structure": "Cottage" }
+  }
+}
