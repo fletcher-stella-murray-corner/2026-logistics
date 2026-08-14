@@ -13,50 +13,50 @@
   },
   {
     "person_id": 737624,
-    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["16:00", "16:00"], "mode": "car", "detail": "Driving up together" },
-    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station" },
+    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["16:00", "16:00"], "mode": "car", "vehicle": "Black SUV", "detail": "Driving up together" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "mode": "train", "hub": "Moncton Station" },
     "room": "Little Shemogue Inn — Room K"
   },
   {
     "person_id": 970384,
-    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["16:00", "16:00"], "mode": "car", "detail": "Driving up together" },
-    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station" },
+    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["16:00", "16:00"], "mode": "car", "vehicle": "Black SUV", "detail": "Driving up together" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "mode": "train", "hub": "Moncton Station" },
     "room": "Little Shemogue Inn — Room K"
   },
   {
     "person_id": 256947,
-    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["16:00", "16:00"], "mode": "car", "detail": "Driving up together" },
-    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car" },
+    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["16:00", "16:00"], "mode": "car", "vehicle": "Black SUV", "detail": "Driving up together" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "mode": "car" },
     "room": "Little Shemogue Inn — Room K"
   },
   {
     "person_id": 351002,
-    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["16:00", "16:00"], "mode": "car", "detail": "Driving up together" },
-    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car" },
+    "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["16:00", "16:00"], "mode": "car", "vehicle": "Black SUV", "detail": "Driving up together" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "mode": "car" },
     "room": "Little Shemogue Inn — Room K"
   },
   {
     "person_id": 331326,
     "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["11:45", "11:45"], "mode": "car", "detail": "Then over to the cottage around 1pm" },
-    "departure": { "date": "2026-08-11", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car" },
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "mode": "car" },
     "room": "Little Shemogue Inn — Room T"
   },
   {
     "person_id": 739631,
     "arrival": { "date": "2026-08-07", "quarter": "06-12", "time_range": ["11:45", "11:45"], "mode": "car", "detail": "Then over to the cottage around 1pm" },
-    "departure": { "date": "2026-08-11", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car" },
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "mode": "car" },
     "room": "Little Shemogue Inn — Room T"
   },
   {
     "person_id": 267115,
     "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car", "detail": "Flew into Moncton, then rented a car" },
-    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station", "detail": "Returning the rental car in Moncton before the train" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "mode": "train", "hub": "Moncton Station" },
     "room": "Little Shemogue Inn — Room Y"
   },
   {
     "person_id": 254788,
     "arrival": { "date": "2026-08-07", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car", "detail": "Flew into Moncton, then rented a car" },
-    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "train", "hub": "Sackville Station", "detail": "Returning the rental car in Moncton before the train" },
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "mode": "train", "hub": "Moncton Station" },
     "room": "Little Shemogue Inn — Room Y"
   },
   {
@@ -73,75 +73,73 @@
   },
   {
     "person_id": 444018,
-    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["23:55", "23:55"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
-    "departure": { "date": "2026-08-09", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
-    "room": "Lakes General Store — Top Room"
+    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["22:00", "22:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "mode": "plane", "hub": "Moncton Airport", "detail": "Left Lakes General Store Sunday evening — stayed at Moncton Hotel overnight" },
+    "room": "Lakes General Store — Top Room",
+    "room_by_date": { "2026-08-10": "Moncton Hotel" },
+    "room_by_quarter": { "2026-08-09": { "18-24": "Moncton Hotel" } }
   },
   {
     "person_id": 881406,
-    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["23:55", "23:55"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
-    "departure": { "date": "2026-08-09", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
-    "room": "Lakes General Store — Top Room"
+    "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["22:00", "22:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "mode": "plane", "hub": "Moncton Airport", "detail": "Left Lakes General Store Sunday evening — stayed at Moncton Hotel overnight" },
+    "room": "Lakes General Store — Top Room",
+    "room_by_date": { "2026-08-10": "Moncton Hotel" },
+    "room_by_quarter": { "2026-08-09": { "18-24": "Moncton Hotel" } }
   },
   {
     "person_id": 821712,
     "arrival": { "date": "2026-08-04", "quarter": "18-24", "time_range": ["21:00", "21:00"], "mode": "car" },
-    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car" },
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "mode": "car" },
     "room": "The Field — Kate & Bob's Revel camper van",
     "airport_runs": [
       {
         "passenger_ids": [444018, 881406],
         "depart": { "date": "2026-08-06", "quarter": "18-24", "mode": "car", "hub": "Moncton Airport" },
-        "return": { "date": "2026-08-07", "quarter": "00-06", "time_range": ["01:00", "01:00"], "mode": "car" }
+        "return": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["23:00", "23:00"], "mode": "car" }
       },
       {
         "passenger_ids": [444018, 881406],
-        "depart": { "date": "2026-08-09", "quarter": "12-18", "mode": "car", "hub": "Moncton Airport" },
-        "return": { "date": "2026-08-09", "quarter": "12-18", "mode": "car" }
+        "depart": { "date": "2026-08-09", "quarter": "18-24", "mode": "car", "hub": "Moncton Airport", "detail": "Bob came along" },
+        "return": { "date": "2026-08-09", "quarter": "18-24", "mode": "car" }
       }
     ]
   },
   {
     "person_id": 716257,
     "arrival": { "date": "2026-08-04", "quarter": "18-24", "time_range": ["21:00", "21:00"], "mode": "car" },
-    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["15:00", "15:00"], "mode": "car" },
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "mode": "car" },
     "room": "The Field — Kate & Bob's Revel camper van"
   },
   {
     "person_id": 616311,
     "arrival": { "date": "2026-08-04", "quarter": "18-24", "time_range": ["21:00", "21:00"], "mode": "car" },
-    "departure": { "date": "2026-08-12", "quarter": "12-18", "time_range": ["13:00", "13:00"], "mode": "car" },
+    "departure": { "date": "2026-08-11", "quarter": "06-12", "mode": "car" },
     "room": "Cottage — Green Room"
   },
   {
     "person_id": 509234,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
-    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["07:00", "07:00"], "mode": "plane", "hub": "Moncton Airport", "detail": "Leaving the cottage around 5am — drive to Moncton still unclear" },
-    "room": "Little Shemogue Inn — Room X"
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["07:00", "07:00"], "mode": "plane", "hub": "Moncton Airport", "detail": "Left Little Shemogue Inn at 6am", "driver_id": 680865 },
+    "room": "Little Shemogue Inn — The Apartment"
   },
   {
     "person_id": 597586,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
-    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["07:00", "07:00"], "mode": "plane", "hub": "Moncton Airport", "detail": "Leaving the cottage around 5am — drive to Moncton still unclear" },
-    "room": "The Field — Brendan's tent",
-    "room_by_date": { "2026-08-06": "Red Shed" },
-    "room_by_quarter": { "2026-08-07": { "00-06": "Red Shed" } }
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["07:00", "07:00"], "mode": "plane", "hub": "Moncton Airport", "detail": "Left Little Shemogue Inn at 6am", "driver_id": 680865 },
+    "room": "Red Shed"
   },
   {
     "person_id": 753966,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
-    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["07:00", "07:00"], "mode": "plane", "hub": "Moncton Airport", "detail": "Leaving the cottage around 5am — drive to Moncton still unclear" },
-    "room": "The Field — Brendan's tent",
-    "room_by_date": { "2026-08-06": "Red Shed" },
-    "room_by_quarter": { "2026-08-07": { "00-06": "Red Shed" } }
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["07:00", "07:00"], "mode": "plane", "hub": "Moncton Airport", "detail": "Left Little Shemogue Inn at 6am", "driver_id": 680865 },
+    "room": "Red Shed"
   },
   {
     "person_id": 973286,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["18:30", "18:30"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 680865 },
-    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["07:00", "07:00"], "mode": "plane", "hub": "Moncton Airport", "detail": "Leaving the cottage around 5am — drive to Moncton still unclear" },
-    "room": "The Field — Brendan's tent",
-    "room_by_date": { "2026-08-06": "Red Shed" },
-    "room_by_quarter": { "2026-08-07": { "00-06": "Red Shed" } }
+    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["07:00", "07:00"], "mode": "plane", "hub": "Moncton Airport", "detail": "Left Little Shemogue Inn at 6am", "driver_id": 680865 },
+    "room": "Red Shed"
   },
   {
     "person_id": 755749,
@@ -164,12 +162,17 @@
   {
     "person_id": 680865,
     "arrival": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["14:00", "14:00"], "mode": "car" },
-    "departure": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["09:00", "09:00"], "mode": "car" },
-    "room": "Little Shemogue Inn — Room X",
+    "departure": { "date": "2026-08-11", "quarter": "06-12", "mode": "car" },
+    "room": "Little Shemogue Inn — The Apartment",
     "airport_runs": [
       {
         "depart": { "date": "2026-08-06", "quarter": "12-18", "time_range": ["17:00", "17:00"], "mode": "car", "hub": "Moncton Airport" },
         "return": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["19:30", "19:30"], "mode": "car" },
+        "passenger_ids": [509234, 597586, 753966, 973286]
+      },
+      {
+        "depart": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "hub": "Moncton Airport" },
+        "return": { "date": "2026-08-10", "quarter": "06-12", "time_range": ["08:00", "08:00"], "mode": "car" },
         "passenger_ids": [509234, 597586, 753966, 973286]
       }
     ]
@@ -184,7 +187,7 @@
         "return": { "date": "2026-08-05", "quarter": "12-18", "time_range": ["17:59", "17:59"], "mode": "car" }
       }
     ],
-    "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "vehicle": "White Toyota Camry" }
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "mode": "car", "vehicle": "White Dodge Caravan" }
   },
   {
     "person_id": 448796,
@@ -196,12 +199,12 @@
         "return": { "date": "2026-08-05", "quarter": "12-18", "time_range": ["17:59", "17:59"], "mode": "car" }
       }
     ],
-    "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "vehicle": "White Toyota Camry" }
+    "departure": { "date": "2026-08-12", "quarter": "12-18", "mode": "car", "vehicle": "White Dodge Caravan" }
   },
   {
     "person_id": 477500,
     "arrival": { "date": "2026-08-01", "quarter": "18-24", "time_range": ["18:00", "18:00"], "mode": "car", "vehicle": "White Toyota Camry", "detail": "" },
-    "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "vehicle": "White Dodge Caravan" },
+    "departure": { "date": "2026-08-13", "quarter": "06-12", "time_range": ["06:00", "06:00"], "mode": "car", "vehicle": "White Toyota Camry" },
     "room": "Cottage — Blue Room",
     "room_by_date": {
       "2026-08-07": "The Field — old worn out tent",
@@ -209,8 +212,8 @@
       "2026-08-09": "The Field — old worn out tent",
       "2026-08-10": "The Field — old worn out tent",
       "2026-08-11": "The Field — old worn out tent",
-      "2026-08-12": "The Field — old worn out tent",
-      "2026-08-13": "The Field — old worn out tent"
+      "2026-08-12": "Cottage — Green Room",
+      "2026-08-13": "Cottage — Green Room"
     },
     "room_by_quarter": { "2026-08-07": { "00-06": "Cottage — Blue Room" } },
     "working_from": [

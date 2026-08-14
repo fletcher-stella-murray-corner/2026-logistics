@@ -1,11 +1,13 @@
 [
-  { "id": "cottage", "name": "Cottage", "category": "accommodation", "rooms": ["Master Suite", "Green Room", "Blue Room"], "spaces": [{ "kind": "kitchen" }] },
-  { "id": "red-shed", "name": "Red Shed", "category": "accommodation", "always_shown": true, "spaces": [{ "kind": "working" }] },
-  { "id": "the-field", "name": "The Field", "category": "accommodation", "instances": ["old worn out tent", "Caravan", "Brendan's tent", "Kate & Bob's Revel camper van"] },
+  { "id": "cottage", "name": "Cottage", "category": "accommodation", "permanent": true, "rooms": ["Master Suite", "Green Room", "Blue Room"], "spaces": [{ "kind": "kitchen" }] },
+  { "id": "red-shed", "name": "Red Shed", "category": "accommodation", "permanent": true, "spaces": [{ "kind": "working" }] },
+  { "id": "the-field", "name": "The Field", "category": "accommodation", "instances": ["old worn out tent", "Caravan", "Kate & Bob's Revel camper van"] },
   { "id": "barbs-cottage", "name": "Barb's Cottage", "category": "accommodation" },
   { "id": "lakes-general-store", "name": "Lakes General Store", "category": "accommodation", "rooms": ["Top Room"] },
-  { "id": "sheogue-inn", "name": "Little Shemogue Inn", "category": "accommodation", "buildings": [{ "name": "Log Point", "rooms": ["Room T", "Room Y", "Room K", "Room 9"] }, { "name": "The Apartment", "rooms": ["Room X"] }] },
+  { "id": "moncton-hotel", "name": "Moncton Hotel", "category": "accommodation" },
+  { "id": "sheogue-inn", "name": "Little Shemogue Inn", "category": "accommodation", "buildings": [{ "name": "Log Point", "rooms": ["Room T", "Room Y", "Room K", "Room 9"] }, { "name": "The Apartment", "rooms": ["The Apartment"] }] },
   { "id": "halifax-airport", "name": "Halifax Airport", "category": "transit" },
   { "id": "moncton-airport", "name": "Moncton Airport", "category": "transit" },
+  { "id": "moncton-station", "name": "Moncton Station", "category": "transit" },
   { "id": "sackville-station", "name": "Sackville Station", "category": "transit" }
 ]

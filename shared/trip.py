@@ -14,7 +14,7 @@ or a day-quarter label.
 from datetime import date
 
 TRIP_START = date(2026, 8, 1)
-TRIP_END = date(2026, 8, 15)
+TRIP_END = date(2026, 8, 13)
 
 # 00-06 deliberately has no name of its own — see requirements/public.md
 # -> Terminology for why: night reads as the tail end of the day before

@@ -391,14 +391,13 @@ def main():
         (g["leg"]["date"], sort_triple(g["leg"]["date"], g["leg"]["quarter"], g["leg"].get("time_range")), "Arrival", g)
         for g in arrival_groups
     ]
-    # Sorted first (quarter index -1, before even 00-06) among Aug 1st's
-    # own entries — "here for an unclear amount of time" reads best as
-    # the very first thing on the list, not slotted in wherever a real
-    # leg happened to land that day.
-    arrival_entries += [
-        (timeline_build.TRIP_START.isoformat(), (timeline_build.TRIP_START.isoformat(), -1, [""]), "Arrival", g)
-        for g in no_arrival_groups
-    ]
+    # Kept as its own separate list, NOT folded into arrival_entries —
+    # "here for an unclear amount of time" isn't a dated fact at all (no
+    # real arrival leg exists to hang a day heading off of), so it reads
+    # best rendered before every day-headed entry, with no heading of its
+    # own, rather than nested under an August 1st heading it doesn't
+    # really belong to (see page_content() below).
+    no_arrival_entries = [("Arrival", g) for g in no_arrival_groups]
     departure_entries = [
         (g["leg"]["date"], sort_triple(g["leg"]["date"], g["leg"]["quarter"], g["leg"].get("time_range")), "Departure", g)
         for g in departure_groups
@@ -411,8 +410,6 @@ def main():
     def render_entry(entry, show_label):
         date_iso, _, kind, payload = entry
         label = kind if show_label else None
-        if isinstance(payload, list):
-            return date_iso, render_no_arrival_row(payload, kind_label=label)
         if kind == "Meal":
             return date_iso, render_meal_row(payload, href_for(payload["date"], payload["quarter"]), kind_label=label)
         leg = payload["leg"]
@@ -423,12 +420,21 @@ def main():
         rows = [render_entry(e, show_label) for e in entries]
         return render_day_grouped(rows)
 
+    # Rendered directly, no date sort key and no <h2> day heading — see
+    # no_arrival_entries above for why this floats above every day-headed
+    # entry instead of nesting under one.
+    def no_arrival_block(show_label):
+        return "".join(
+            render_no_arrival_row(g, kind_label=(kind if show_label else None))
+            for kind, g in no_arrival_entries
+        )
+
     content_by_page = {
-        "arrivals.html": page_content(arrival_entries, False),
+        "arrivals.html": no_arrival_block(False) + page_content(arrival_entries, False),
         "meals.html": page_content(meal_entries, False),
         "departures.html": page_content(departure_entries, False),
-        "arrivals-departures.html": page_content(arrival_entries + departure_entries, True),
-        "all.html": page_content(arrival_entries + departure_entries + meal_entries, True),
+        "arrivals-departures.html": no_arrival_block(True) + page_content(arrival_entries + departure_entries, True),
+        "all.html": no_arrival_block(True) + page_content(arrival_entries + departure_entries + meal_entries, True),
     }
 
     out_dir = PROJECT_ROOT / "site" / "milestones"

@@ -5,7 +5,7 @@ encompasses the Home view (see requirements/public.md -> Home & Timeline).
 Reads shared/data/people.json, shared/data/structures.json,
 shared/data/vehicles.json, timeline/data/travel.json,
 timeline/data/meals.json, and timeline/data/activities.json. Renders
-August 1-15, 2026 split into four day quarters (6-hour segments) per
+August 1-13, 2026 split into four day quarters (6-hour segments) per
 day, one full-viewport-height "quarter screen" per quarter, ALWAYS in
 full — every day, every quarter, regardless of the real-world date at
 build time. This script no longer looks at the clock at all: which
@@ -31,12 +31,20 @@ everywhere a bare name is shown); every `room`/`room_by_date`/`hub` value in tra
 shared/data/structures.json — including, for a structure with a fixed
 `rooms` list (e.g. Cottage) or a validated `instances` list (e.g. The Field),
 that the room detail is one of the declared names, not arbitrary free
-text (the two lists differ only in whether the structure always shows in
-the Structures row — see requirements/public.md -> Structures — and are
-mutually exclusive on a single structure); a structure's optional
-`always_shown` is a boolean when present (the same always-shown behavior
-`rooms` grants, for a structure with no fixed sub-rooms to declare, e.g.
-Red Shed); a structure's optional `spaces` list (see requirements/public.md
+text (the two lists differ in whether the structure's room boxes are
+fixed/always-together or occupancy-only — see requirements/public.md ->
+Structures — and are mutually exclusive on a single structure); a
+structure's optional `permanent` is a boolean when present, and can't be
+combined with `instances` (there's no fixed instance list to force-show
+placeholders for) — the only two structures that always show in the
+Structures row regardless of occupancy (Cottage, Red Shed) set this;
+every other structure, `rooms`/`buildings` or not, instead only shows
+across its own relevance window, computed from the actual data (see
+compute_structure_relevance_windows() below and requirements/public.md ->
+Structures -> `permanent`/*Relevance window*) — `active_from`/`active_to`
+are a build error on any structure that isn't `permanent`, since a
+non-permanent structure's window is never hand-set; a structure's
+optional `spaces` list (see requirements/public.md
 -> Structures -> spaces) has only valid, non-repeated `kind` values
 (`"kitchen"`/`"working"` today); an entry's optional `working_from` blocks
 (someone working from a structure during the day, independent of where
@@ -78,7 +86,7 @@ a split control whose label jumps straight to whichever quarter screen is
 current at the cottage (Murray Corner, New Brunswick — Atlantic Time, not
 the visitor's own device timezone), computed fresh in their browser at
 click time (see shared/nav.js) — clamped to the trip's last quarter if
-"now" is already past August 15 — showing the static word "Timeline"
+"now" is already past August 13 — showing the static word "Timeline"
 normally, or the live "current day quarter" label instead once actually
 scrolled into a quarter screen (updated by shared.js via
 IntersectionObserver — the abbreviated weekday+date smaller/secondary
@@ -134,7 +142,7 @@ import nav  # noqa: E402
 from trip import TRIP_START, TRIP_END, QUARTERS, QUARTER_LABELS, QUARTER_NAMES, MODE_TAGS, WORK_QUARTERS, format_time_range, format_date_abbrev, format_date_jump, quarter_screen_id  # noqa: E402
 
 PAGE_TITLE = "Murray Corner 2026"
-TRIP_SUBTITLE = "Murray Corner, New Brunswick · August 1–15, 2026"
+TRIP_SUBTITLE = "Murray Corner, New Brunswick · August 1–13, 2026"
 # Anchor target for the permanent "MC26" nav link — see
 # render_intro_screen() below and shared/nav.py -> render_nav().
 INTRO_SCREEN_ID = "trip-top"
@@ -302,11 +310,17 @@ def validate_structures_file(structures):
                     f"repeated across more than one of its 'buildings' — every room name must "
                     f"be unique across the whole structure, not just within its own building."
                 )
-        always_shown = s.get("always_shown")
-        if always_shown is not None and not isinstance(always_shown, bool):
+        permanent = s.get("permanent")
+        if permanent is not None and not isinstance(permanent, bool):
             raise ValueError(
                 f"Structure {s['name']!r} in shared/data/structures.json has a non-boolean "
-                f"'always_shown' — must be true or false."
+                f"'permanent' — must be true or false."
+            )
+        if permanent and instances is not None:
+            raise ValueError(
+                f"Structure {s['name']!r} in shared/data/structures.json sets 'permanent' "
+                f"alongside 'instances' — there's no fixed instance list to force-show "
+                f"placeholders for, so a structure with 'instances' can't be 'permanent'."
             )
         active_from = s.get("active_from")
         active_to = s.get("active_to")
@@ -318,6 +332,14 @@ def validate_structures_file(structures):
             raise ValueError(
                 f"Structure {s['name']!r} in shared/data/structures.json has active_to "
                 f"({active_to}) before active_from ({active_from})."
+            )
+        if (active_from is not None or active_to is not None) and not permanent:
+            raise ValueError(
+                f"Structure {s['name']!r} in shared/data/structures.json sets 'active_from'/"
+                f"'active_to' but isn't 'permanent' — those fields only bound a permanent "
+                f"structure's always-shown window; a non-permanent structure's window is "
+                f"always the computed relevance window instead (see requirements/public.md -> "
+                f"Structures -> permanent). Mark it 'permanent': true, or remove the dates."
             )
         spaces = s.get("spaces")
         if spaces is not None:
@@ -849,10 +871,18 @@ def render_travel_row(label, pairs, people_by_id, driver_label="driving"):
             if p.get("dogs"):
                 name += f' (+ {esc(", ".join(p["dogs"]))})'
             names.append(name)
+        # No " — <detail>" suffix at all when there's nothing to show (no
+        # time_range, hub, vehicle, free-text detail, or driver) — per
+        # requirements/public.md -> Home & Timeline -> Row-by-row rules ->
+        # Arrivals: "otherwise no time shown here, since the quarter
+        # itself is already the time context." Appending the em dash
+        # unconditionally left a dangling "Name — " with nothing after it
+        # whenever a leg genuinely had none of that detail set.
+        suffix = f" — {esc(group['detail'])}" if group["detail"] else ""
         lines.append(
             f'<span class="person-line">'
             f'<span class="mode-tag">{esc(MODE_TAGS.get(group["mode"], group["mode"]))}</span>'
-            f'{nav.join_names(names)} — {esc(group["detail"])}'
+            f'{nav.join_names(names)}{suffix}'
             f"</span>"
         )
     return f'<div class="quarter-row"><span class="quarter-row-label">{esc(label)}</span>{"".join(lines)}</div>'
@@ -900,7 +930,116 @@ def person_working_here(entry, day_iso, quarter):
     return hits
 
 
-def render_structures_row(present, working, kitchen_by_structure, accommodation_structures, day_iso):
+def compute_structure_relevance_windows(travel, people_by_id, meals, accommodation_structures):
+    """Two precomputed lookups, both walking every quarter of the trip
+    exactly once, up front, so render_structures_row() never has to
+    recompute either per quarter screen:
+
+    1. STRUCTURE windows — for every non-`permanent` `rooms`/`buildings`
+       structure (see requirements/public.md -> Structures ->
+       `permanent`/*Relevance window*), the earliest and latest (date,
+       quarter) `quarter_key()` across the WHOLE trip that structure is
+       ever named by one of the same three sources render_structures_row()
+       below already merges into the row: someone sleeping in one of its
+       declared rooms (via `present`, resolved the identical way
+       quarter_membership() does — parse_room() strips off the room
+       detail down to the structure name), someone `working_from` it, or
+       a meals.json entry's own kitchen `structure` tag. `permanent`
+       structures are skipped here — they're always shown via
+       structure_active() instead (see structure_relevant() below), so a
+       window for them would be wasted work nobody reads.
+
+    2. ROOM windows — the exact same first/last idea, one level deeper:
+       for every declared room in EVERY `rooms`/`buildings` structure
+       (permanent or not — a specific room can still empty out for good
+       even inside a structure whose OWN outer box never disappears,
+       e.g. Cottage), the earliest and latest quarter anyone's actually
+       sleeping in that specific room. Only `present` feeds this one —
+       `working_from` and a meal's kitchen tag both name a structure, not
+       a room, so they only ever touch the structure-level window above.
+       A room nobody's ever slept in has no window and never renders (a
+       declared room that's simply never used — the room-level window
+       existing at all still requires at least one real occupant, exactly
+       like the structure-level one).
+
+    A structure/room never named by any of the relevant sources is simply
+    absent from the returned dict (no window at all, never shown)."""
+    windowed_structure_names = {
+        s["name"] for s in accommodation_structures
+        if (s.get("rooms") or s.get("buildings")) and not s.get("permanent")
+    }
+    roomed_structure_names = {
+        s["name"] for s in accommodation_structures if s.get("rooms") or s.get("buildings")
+    }
+    structure_windows = {}
+    room_windows = {}
+
+    def touch(windows, key_name, key):
+        lo, hi = windows.get(key_name, (key, key))
+        windows[key_name] = (min(lo, key), max(hi, key))
+
+    for d in daterange(TRIP_START, TRIP_END):
+        day_iso = d.isoformat()
+        for quarter in QUARTERS:
+            key = quarter_key(day_iso, quarter)
+            _, _, present, working = quarter_membership(key, day_iso, quarter, travel, people_by_id)
+            for _p, room in present:
+                structure, detail = parse_room(room, accommodation_structures)
+                if structure in windowed_structure_names:
+                    touch(structure_windows, structure, key)
+                if detail is not None and structure in roomed_structure_names:
+                    touch(room_windows, (structure, detail), key)
+            for _p, structure_name in working:
+                if structure_name in windowed_structure_names:
+                    touch(structure_windows, structure_name, key)
+            meal_entry = meals.get(day_iso, {}).get(quarter)
+            if meal_entry and meal_entry.get("structure") in windowed_structure_names:
+                touch(structure_windows, meal_entry["structure"], key)
+
+    return structure_windows, room_windows
+
+
+def structure_relevant(structure, day_iso, quarter, relevance_windows):
+    """Whether a structure's outer box should force-render this exact
+    day+quarter — the single gate render_structures_row() below checks in
+    place of the old blanket "has rooms/buildings/always_shown" rule (see
+    requirements/public.md -> Structures -> `permanent`/*Relevance
+    window*). A `permanent` structure (Cottage, Red Shed) uses
+    structure_active() — its whole active_from/active_to window,
+    regardless of occupancy. Every other structure uses its own
+    precomputed relevance_windows entry (see
+    compute_structure_relevance_windows() above) — absent entirely if
+    it's never once been relevant anywhere in the trip. Doesn't decide
+    any individual DECLARED ROOM's own visibility within the box — see
+    room_relevant() below for that, one level deeper."""
+    if structure.get("permanent"):
+        return structure_active(structure, day_iso)
+    window = relevance_windows.get(structure["name"])
+    if window is None:
+        return False
+    first_key, last_key = window
+    return first_key <= quarter_key(day_iso, quarter) <= last_key
+
+
+def room_relevant(structure_name, room_name, day_iso, quarter, room_windows):
+    """Whether one specific DECLARED room (inside a `rooms`/`buildings`
+    structure) should get a force-rendered box this exact day+quarter —
+    independent of structure_relevant() above, and independent of whether
+    the structure itself is `permanent`: a room's own window is always the
+    computed earliest-to-latest stretch anyone's actually slept in THAT
+    room (see compute_structure_relevance_windows() above), even inside a
+    permanent structure whose outer box never disappears (e.g. Cottage's
+    Green Room can still empty out for good once its own last guest
+    leaves, same as any other room, while Cottage itself keeps showing).
+    A room nobody's ever slept in has no window and never renders."""
+    window = room_windows.get((structure_name, room_name))
+    if window is None:
+        return False
+    first_key, last_key = window
+    return first_key <= quarter_key(day_iso, quarter) <= last_key
+
+
+def render_structures_row(present, working, kitchen_by_structure, accommodation_structures, day_iso, quarter, relevance_windows, room_windows):
     """Labeled "Structures", not "Sleeping" — deliberately reframed away
     from an overnight-only concept to "who's associated with which
     structure right now, and why" (see requirements/public.md -> Homepage
@@ -930,33 +1069,44 @@ def render_structures_row(present, working, kitchen_by_structure, accommodation_
     for p, structure_name in working:
         working_by_structure.setdefault(structure_name, []).append(p["name"])
 
-    # A structure with a fixed `rooms` list, `buildings`, or `always_shown:
-    # true`, is a real, physical place that doesn't disappear just because
-    # nobody's currently associated with it — it always gets a box (empty
-    # or not) for as long as the structure itself is active (see
-    # requirements/public.md -> Structures -> Active range and Structures
-    # -> Nested box display). A `rooms` structure also always shows every
-    # declared room; `buildings` is the same, just with every declared room
-    # across every declared building; `always_shown` alone (no `rooms`/
-    # `buildings`, e.g. Red Shed) just guarantees the outer box, with no
-    # forced-empty room boxes inside it. Structures with none of the three
-    # keep the old occupancy-only behavior (e.g. The Field/Camper Van,
-    # which are free-text-instance places).
+    # A structure with a fixed `rooms` list or `buildings` is a real,
+    # physical place that doesn't disappear just because nobody's
+    # currently associated with it — it always gets a box (empty or not)
+    # for as long as it's SHOWING at all: the whole trip if it's
+    # `permanent` (Cottage, Red Shed), otherwise only within its own
+    # computed relevance window (see structure_relevant() and
+    # compute_structure_relevance_windows() above, and
+    # requirements/public.md -> Structures -> `permanent`/*Relevance
+    # window*). But a room inside that structure is its OWN, one-level-
+    # deeper relevance window (see room_relevant() above) — a specific
+    # room only gets its own force-rendered box across the stretch
+    # someone's actually slept in THAT room, even inside a structure
+    # (Cottage) whose outer box never disappears; a room nobody's ever
+    # used doesn't render at all, same as a whole never-used structure. A
+    # `permanent` structure with neither `rooms` nor `buildings` (Red
+    # Shed) just guarantees the outer box, with no room boxes to gate. A
+    # non-permanent structure with neither (Barb's Cottage, Moncton
+    # Hotel, The Field's `instances`) never hits this loop at all —
+    # structure_relevant() has no window to check for it, so it keeps
+    # the old occupancy-only behavior straight from
+    # by_structure/working_by_structure/kitchen_by_structure above.
     for s in accommodation_structures:
-        if not structure_active(s, day_iso):
+        if not structure_relevant(s, day_iso, quarter, relevance_windows):
             continue
         rooms = s.get("rooms")
         buildings = s.get("buildings")
         if rooms:
             bucket = by_structure.setdefault(s["name"], {})
             for room_name in rooms:
-                bucket.setdefault(room_name, [])
+                if room_relevant(s["name"], room_name, day_iso, quarter, room_windows):
+                    bucket.setdefault(room_name, [])
         elif buildings:
             bucket = by_structure.setdefault(s["name"], {})
             for b in buildings:
                 for room_name in b["rooms"]:
-                    bucket.setdefault(room_name, [])
-        elif s.get("always_shown"):
+                    if room_relevant(s["name"], room_name, day_iso, quarter, room_windows):
+                        bucket.setdefault(room_name, [])
+        elif s.get("permanent"):
             by_structure.setdefault(s["name"], {})
 
     # working_by_structure/kitchen_by_structure can each name a structure
@@ -984,6 +1134,7 @@ def render_structures_row(present, working, kitchen_by_structure, accommodation_
     # from validated data) sorts after every declared one rather than
     # crashing; "Unassigned" (None) always sorts last regardless.
     structure_order_index = {s["name"]: i for i, s in enumerate(accommodation_structures)}
+    permanent_names = {s["name"] for s in accommodation_structures if s.get("permanent")}
 
     def structure_display_key(k):
         if k is None:
@@ -1029,16 +1180,27 @@ def render_structures_row(present, working, kitchen_by_structure, accommodation_
 
         declared_buildings = buildings_by_structure.get(structure)
         if declared_buildings:
-            # One box per declared building, in declared order, each always
-            # rendered with an inner room box for every one of its declared
-            # rooms (see requirements/public.md -> Structures -> Nested box
-            # display) — Working/Kitchen sub-boxes stay outside this, as
-            # siblings of the building boxes, added below.
+            # One box per declared building, in declared order, each shown
+            # for as long as at least one of its declared rooms is itself
+            # currently relevant (see room_relevant() above) — a room
+            # outside its own relevance window is simply not a key in
+            # by_detail at all (render_structures_row() never force-added
+            # it there), so `if detail in by_detail` is the same "only what
+            # actually has a box" filter the flat `rooms` branch below
+            # already uses. A building with EVERY one of its rooms
+            # currently irrelevant renders no room boxes and is skipped
+            # entirely — an empty building shell is exactly the clutter
+            # this whole mechanism exists to remove (see
+            # requirements/public.md -> Structures -> Nested box display).
+            # Working/Kitchen sub-boxes stay outside this, as siblings of
+            # the building boxes, added below.
             inner = []
             declared_flat = set()
             for b in declared_buildings:
                 declared_flat.update(b["rooms"])
-                room_boxes = "".join(render_room_box(detail) for detail in b["rooms"])
+                room_boxes = "".join(render_room_box(detail) for detail in b["rooms"] if detail in by_detail)
+                if not room_boxes:
+                    continue
                 inner.append(
                     '<div class="building-box">'
                     f'<span class="building-label">{esc(b["name"])}</span>'
@@ -1092,6 +1254,21 @@ def render_structures_row(present, working, kitchen_by_structure, accommodation_
                 f'<span class="room-people">{esc(", ".join(working_names))}</span>'
                 '</div>'
             )
+        # A NON-permanent `rooms`/`buildings` structure whose every
+        # declared room is currently outside its own relevance window (see
+        # room_relevant() above), with no Kitchen/Working sub-box either,
+        # renders no outer box at all — an empty "Little Shemogue Inn"
+        # shell with literally nothing inside it is exactly the clutter
+        # the whole relevance-window mechanism exists to remove. A
+        # `permanent` structure (Cottage, Red Shed) is exempt from this —
+        # its whole POINT is to always render regardless of occupancy, so
+        # an empty Cottage box on a quarter where every room has emptied
+        # out is correct, not clutter; only its individual room boxes
+        # come and go (see room_relevant() above), never the outer box
+        # itself, for as long as `permanent` keeps it active.
+        has_declared_rooms = bool(rooms_order_by_structure.get(structure) or buildings_by_structure.get(structure))
+        if has_declared_rooms and not inner and structure not in permanent_names:
+            continue
         boxes.append(
             '<div class="structure-box">'
             f'<span class="structure-label">{esc(structure)}</span>'
@@ -1162,7 +1339,7 @@ def quarter_membership(key, day_iso, quarter, travel, people_by_id):
     return arrivals, departures, present, working
 
 
-def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities, accommodation_structures, is_first=False):
+def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities, accommodation_structures, relevance_windows, is_first=False):
     key = quarter_key(day.isoformat(), quarter)
     arrivals, departures, present, working = quarter_membership(key, day.isoformat(), quarter, travel, people_by_id)
 
@@ -1188,7 +1365,8 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
     if meal_entry and meal_entry.get("structure"):
         kitchen_by_structure[meal_entry["structure"]] = meal_entry["note"]
 
-    structures_row = render_structures_row(present, working, kitchen_by_structure, accommodation_structures, day.isoformat())
+    structure_windows, room_windows = relevance_windows
+    structures_row = render_structures_row(present, working, kitchen_by_structure, accommodation_structures, day.isoformat(), quarter, structure_windows, room_windows)
     if structures_row:
         rows.append(structures_row)
 
@@ -1327,11 +1505,17 @@ def render_transition_screen():
 def build_timeline_html(people, travel, meals, activities, accommodation_structures):
     people_by_id = {p["id"]: p for p in people}
 
+    # Computed once, up front — not per quarter screen — since a
+    # structure's relevance window depends on occupancy across the WHOLE
+    # trip, not just the one quarter being rendered right now (see
+    # compute_structure_relevance_windows() above).
+    relevance_windows = compute_structure_relevance_windows(travel, people_by_id, meals, accommodation_structures)
+
     screens = [render_intro_screen(), render_transition_screen()]
     is_first = True
     for d in daterange(TRIP_START, TRIP_END):
         for q in QUARTERS:
-            screens.append(render_quarter_screen(d, q, travel, people_by_id, meals, activities, accommodation_structures, is_first=is_first))
+            screens.append(render_quarter_screen(d, q, travel, people_by_id, meals, activities, accommodation_structures, relevance_windows, is_first=is_first))
             is_first = False
 
     return "\n".join(screens)

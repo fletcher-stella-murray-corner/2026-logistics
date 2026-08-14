@@ -1,4 +1,5 @@
 [
   { "id": "camry", "name": "White Toyota Camry" },
-  { "id": "caravan", "name": "White Dodge Caravan" }
+  { "id": "caravan", "name": "White Dodge Caravan" },
+  { "id": "black-suv", "name": "Black SUV" }
 ]

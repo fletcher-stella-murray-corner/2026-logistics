@@ -445,6 +445,38 @@ def driving_assignments(person_id, travel, people_by_id):
     return assignments
 
 
+def group_driving_assignments(assignments):
+    """Collapse driving_assignments() results that are actually the same
+    real-world leg — several travelers this driver ferries on one flight/
+    car, e.g. four people landing on the same plane — into a single
+    combined Driving line, instead of one near-identical line per
+    traveler (see requirements/public.md -> Attendees -> Layout ->
+    Driving). Same problem timeline/scripts/build.py's own
+    group_legs_by_detail() solves for the Timeline's Arrivals/Departures
+    rows, applied here to driver_id assignments instead: bucketed by
+    (field, date, quarter, mode, hub, vehicle, time_range, detail) — the
+    same structural signature that rule matches on, plus `field` so an
+    arrival-type leg never merges with a departure-type one even if they
+    coincidentally share a date. Unlike group_legs_by_detail(), there's no
+    "does this bucket have distinguishing detail" gate to apply first:
+    every leg reaching this function already has `driver_id` set to this
+    page's own owner (that's what made it a driving assignment at all),
+    and driver_id alone already counts as distinguishing detail under
+    that same rule, so a structural match is always sufficient here.
+    Order-preserving: a group renders at the position of its first
+    member's first appearance in `assignments`."""
+    buckets = {}
+    order = []
+    for traveler, field, leg in assignments:
+        time_range = leg.get("time_range")
+        key = (field, leg["date"], leg["quarter"], leg["mode"], leg.get("hub"), leg.get("vehicle"), tuple(time_range) if time_range else None, leg.get("detail"))
+        if key not in buckets:
+            buckets[key] = {"field": field, "leg": leg, "travelers": []}
+            order.append(key)
+        buckets[key]["travelers"].append(traveler)
+    return [(buckets[key]["travelers"], buckets[key]["field"], buckets[key]["leg"]) for key in order]
+
+
 def co_travelers(person, leg, field, travel, people_by_id):
     """Everyone else on the same real trip as this leg (see
     requirements/public.md -> Attendees -> Layout -> Arrival/Departure) —
@@ -612,7 +644,7 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
     # whether this person has their own travel.json entry, since driving
     # someone else doesn't depend on your own travel status. Keyed by the
     # leg's own date, so it lands in the same timeline as everything else.
-    for traveler, field, leg in driving_assignments(person["id"], travel, people_by_id):
+    for travelers, field, leg in group_driving_assignments(driving_assignments(person["id"], travel, people_by_id)):
         # Pickup for a leg that brings the traveler TO the trip (an
         # arrival, or an excursion's return); driving for one that takes
         # them away from it (a departure, or an excursion's own depart) —
@@ -620,7 +652,9 @@ def render_person_page(person, entry, travel, people_by_id, shared_base_css, sha
         # above, just keyed off driving_assignments()'s `field` instead of
         # a literal arrival/departure leg reference.
         driver_label = "pickup" if field in ("arrival", "excursion return") else "driving"
-        detail_html = f"{esc(traveler['name'])}’s {field} — {format_leg_body(leg, people_by_id, driver_label=driver_label)}"
+        names = nav.join_names([esc(t["name"]) for t in travelers])
+        field_label = f"{field}s" if len(travelers) > 1 else field
+        detail_html = f"{names}’s {field_label} — {format_leg_body(leg, people_by_id, driver_label=driver_label)}"
         items.append((leg["date"], FACT_RANK["Driving"], fact_line(time_label(leg), "Driving", detail_html)))
 
     if entry is None and not items:

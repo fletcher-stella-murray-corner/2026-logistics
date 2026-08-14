@@ -15,7 +15,7 @@ Walks every day quarter of the trip and, for each one where an arrival,
 a departure, or the resulting room/structure occupancy actually CHANGES
 from the quarter before, prints who's arriving, departing, and where
 everyone stands afterward. Every unchanged quarter is skipped, so a
-15-day/4-quarter trip (60 screens) compresses down to just its actual
+13-day/4-quarter trip (52 screens) compresses down to just its actual
 transition points — the places a forgotten update on someone else's
 entry would show up as a lopsided or missing name.
 

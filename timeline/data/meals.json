@@ -6,7 +6,10 @@
     "18-24": { "note": "Salmon dinner — hosted by Jim P", "structure": "Cottage" }
   },
   "2026-08-08": {
-    "12-18": { "note": "Kebab lunch", "structure": "Cottage" },
-    "18-24": { "note": "Lobster dinner", "structure": "Cottage" }
+    "12-18": { "note": "Kebab lunch — Jeremy chef", "structure": "Cottage" },
+    "18-24": { "note": "Lobster dinner — sponsored by Andy", "structure": "Cottage" }
+  },
+  "2026-08-10": {
+    "18-24": { "note": "Campfire chili — JR & Kaylyn cooking" }
   }
 }
