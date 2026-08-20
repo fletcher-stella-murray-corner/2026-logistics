@@ -610,7 +610,8 @@ function currentQuarterSectionId(tripStart, tripEnd) {
 // no color changes at all for its duration and settles in one clean
 // step on the destination's own correct color the instant it lands —
 // nothing skipped for a single-screen jump or organic scrolling, since
-// those never set this flag in the first place.
+// isMultiScreenJump() below only sets the flag for a jump that actually
+// crosses more than one quarter screen.
 //
 // Also suspends scroll-snap for the duration, same fix and same reason
 // timeline/shared.js's play/pause run already applies (see its own
@@ -626,21 +627,58 @@ function currentQuarterSectionId(tripStart, tripEnd) {
 // the Timeline nav item) actually goes through. Harmless on any page
 // other than site/index.html — .auto-scrolling only matches CSS scoped
 // under html.timeline-page (timeline/shared.css), which no other page's
-// <html> carries.
+// <html> carries. Unlike the blend suspension above, this part is NOT
+// scoped to multi-screen jumps only — a single-screen jump goes through
+// this exact same scrollIntoView(smooth) call and hits the identical
+// Safari/iOS snap bug, so scroll-snap is suspended for every jump
+// regardless of distance.
+//
+// isMultiScreenJump() reads target's own current bounding rect rather
+// than tracking "which screen is current" as a separate piece of state:
+// quarter screens stack at one viewport height each (100svh — see
+// timeline/shared.css), so before any scrolling starts, a target at most
+// one screen away always sits within about one viewport height of the
+// current scroll position (roughly 0 for the same screen, roughly
+// +/-100vh for an adjacent one); anything further is unambiguously a
+// multi-screen jump. The 1.5x margin absorbs the small, expected slack
+// from the nav bar's own height and mobile toolbar collapse/expand,
+// without ever mistaking a genuinely-adjacent screen for a far one.
+function isMultiScreenJump(target) {
+  var top = target.getBoundingClientRect().top;
+  return Math.abs(top) > window.innerHeight * 1.5;
+}
 var scrollJumpSettleTimer = null;
 function jumpToSection(target) {
   if (!target) return;
-  window.__scrollJumpActive = true;
+  var suspendBlend = isMultiScreenJump(target);
+  if (suspendBlend) {
+    window.__scrollJumpActive = true;
+  }
   document.documentElement.classList.add('auto-scrolling');
   if (scrollJumpSettleTimer) clearTimeout(scrollJumpSettleTimer);
   var settle = function () {
-    window.__scrollJumpActive = false;
+    if (suspendBlend) {
+      window.__scrollJumpActive = false;
+    }
     document.documentElement.classList.remove('auto-scrolling');
     document.removeEventListener('scrollend', settle);
+    // A one-off, definitive correction for the Structures stage (and the
+    // nav label alongside it) — timeline/shared.js exposes this only on
+    // site/index.html (the one page with quarter screens/a stage to
+    // correct), so it's guarded here rather than assumed to exist; see
+    // that file's own window.__syncStructuresStage comment for why this
+    // can't just piggyback on the synthetic 'scroll' event below the way
+    // the blend does — IntersectionObserver doesn't listen for 'scroll'
+    // at all, so nudging one wouldn't reach it.
+    if (typeof window.__syncStructuresStage === 'function') {
+      window.__syncStructuresStage();
+    }
     // Nudge timeline/shared.js's own scroll listener to recompute now
-    // that we've landed — without this, the blend would stay frozen at
-    // whatever it was showing right before the jump until the visitor's
-    // next real scroll/swipe.
+    // that we've landed — without this, a suspended blend would stay
+    // frozen at whatever it was showing right before the jump until the
+    // visitor's next real scroll/swipe. Harmless to dispatch even when
+    // suspendBlend was false (the blend was never frozen in the first
+    // place, so this just repaints with the same answer it already had).
     window.dispatchEvent(new Event('scroll'));
   };
   // 'scrollend' (supported in every current evergreen browser) fires the
@@ -707,35 +745,51 @@ document.addEventListener('DOMContentLoaded', function () {
     people.forEach(function (el) { folksList.appendChild(el); });
   }
 
-  // Closing a split control's panel (see requirements/public.md ->
-  // Navigation -> Closing a panel) — a plain <details> does neither of
-  // these two on its own: opening one leaves any other already-open panel
-  // (Timeline's and Folks') sitting open too, overlapping on screen, and
-  // clicking anywhere outside an open panel does nothing at all — the
-  // only way to close it is clicking the exact same tiny caret again.
-  // Both read as "hard to close." Lives here (not timeline/shared.js) so
-  // it applies on every page with one of these panels, including Family
-  // Tree and Details pages, which have no other JS of their own.
-  var jumpMenus = document.querySelectorAll('.jump-menu');
-  if (jumpMenus.length) {
-    // Opening a panel closes any other open one first — 'toggle' fires
+  // Closing a disclosure (see requirements/public.md -> Navigation ->
+  // Closing a panel) — a plain <details> does neither of these two on
+  // its own: opening one leaves any other already-open one (a nav panel,
+  // or — see below — a person-chip's revealed name) sitting open too,
+  // overlapping on screen, and clicking anywhere outside an open one
+  // does nothing at all — the only way to close it is clicking the exact
+  // same tiny trigger again. Both read as "hard to close." Lives here
+  // (not timeline/shared.js) so it applies on every page with one of
+  // these, including Family Tree and Attendees pages, which have no
+  // other JS of their own.
+  //
+  // Covers two visually different but mechanically identical things:
+  // the nav's own split-control panels (.jump-menu — Timeline's day/
+  // quarter jump list, Folks, Milestones) and a person-chip's tap-to-
+  // reveal name (.person-chip — render_person_chip() in
+  // timeline/scripts/build.py, see requirements/public.md -> The
+  // Structures stage -> Nested box display and -> Row-by-row rules ->
+  // Arrivals) — both are just <details>/<summary>, so one shared "only
+  // one open at a time, click away or Escape closes it" rule covers
+  // every one of them site-wide, not a second bespoke mechanism for
+  // chips. A page can have a couple hundred person-chips (every occupant
+  // ever shown on the Structures stage, every traveler on every Arrivals/
+  // Departures row, all pre-rendered — see technical.md -> The
+  // Structures stage) — trivial to attach one listener each on a static
+  // page this size.
+  var disclosures = document.querySelectorAll('.jump-menu, .person-chip');
+  if (disclosures.length) {
+    // Opening one closes any other open one first — 'toggle' fires
     // whenever a <details>'s own open state changes, native or scripted,
-    // so this also catches a menu opened programmatically (e.g. a future
-    // change), not just a direct click on its own caret.
-    jumpMenus.forEach(function (menu) {
+    // so this also catches one opened programmatically (e.g. a future
+    // change), not just a direct click on its own trigger.
+    disclosures.forEach(function (menu) {
       menu.addEventListener('toggle', function () {
         if (!menu.open) return;
-        jumpMenus.forEach(function (other) {
+        disclosures.forEach(function (other) {
           if (other !== menu) other.open = false;
         });
       });
     });
-    // A click anywhere outside every open panel closes it — checked via
-    // .contains() so a click on the panel's own trigger or a link inside
-    // it is correctly left alone (the trigger's native toggle, or
+    // A click anywhere outside every open one closes it — checked via
+    // .contains() so a click on its own trigger or a link inside it is
+    // correctly left alone (the trigger's native toggle, or
     // timeline/shared.js's own close-after-acting logic, handle those).
     document.addEventListener('click', function (event) {
-      jumpMenus.forEach(function (menu) {
+      disclosures.forEach(function (menu) {
         if (menu.open && !menu.contains(event.target)) {
           menu.open = false;
         }
@@ -745,7 +799,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // clicking away, for anyone not using touch/mouse.
     document.addEventListener('keydown', function (event) {
       if (event.key !== 'Escape') return;
-      jumpMenus.forEach(function (menu) { menu.open = false; });
+      disclosures.forEach(function (menu) { menu.open = false; });
     });
   }
 });

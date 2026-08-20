@@ -103,23 +103,203 @@ document.addEventListener('DOMContentLoaded', function () {
   var dateEl = document.getElementById('cq-date');
   var navEl = document.querySelector('.site-nav');
   var screens = document.querySelectorAll('.quarter-screen[data-date]');
+
+  // The current-section geometry lookup — shared by the play/pause
+  // control further down (currentSectionIndex()) and the settle-time
+  // correction below (window.__syncStructuresStage()), not a second
+  // live-tracking mechanism running alongside the observer below: this
+  // is a plain, on-demand answer, computed fresh only when actually
+  // called, same rootMargin logic as the observer just applied as a
+  // one-off walk instead of a live subscription.
+  function currentQuarterScreen() {
+    var current = null;
+    for (var i = 0; i < screens.length; i++) {
+      if (screens[i].getBoundingClientRect().top <= NAV_HEIGHT_PX + 1) {
+        current = screens[i];
+      } else {
+        break;
+      }
+    }
+    return current;
+  }
+
+  // Structures stage (see requirements/public.md -> Home & Timeline ->
+  // The Structures stage, and technical.md -> The Structures stage) — a
+  // complete, fixed map (structure > [building >] room/instance/Working/
+  // Kitchen, plus Unassigned) decided once, in full, at build time: every
+  // element that will EVER be relevant anywhere in the trip is already in
+  // the DOM, in its own permanent layout position, before this code ever
+  // runs — nothing here adds or removes anything from the page, only
+  // toggles visibility. Each carries its own data-mount-from/
+  // data-mount-to (timeline/scripts/build.py -> compute_structures_
+  // stage()). Every such element is cached once into a plain array, not
+  // re-queried on every scroll — there are at most a couple hundred of
+  // these across the whole page (a handful of structures, a few rooms
+  // each, a handful of text variants per room), trivial to walk on every
+  // quarter change.
+  var stageEl = document.getElementById('structures-stage');
+  var mountRangeEls = stageEl
+    ? Array.prototype.slice.call(document.querySelectorAll('[data-mount-from]'))
+    : [];
+  // The one generic rule applied to every such element regardless of
+  // nesting depth: a whole structure box, a room/Working/Kitchen sub-box,
+  // and a single pre-rendered occupant-text variant span are all just "is
+  // the current quarter inside my own [from, to] range" — see
+  // requirements/public.md -> The Structures stage -> "The map is decided
+  // once, in full, before the stage is ever shown" for why one mechanism
+  // covers every level rather than a different one per nesting depth.
+  // Plain string comparison works directly on "qc-..." ids with no
+  // parsing — the zero-padded ISO date and fixed quarter suffixes already
+  // sort in chronological order as strings (see quarter_screen_id() in
+  // shared/trip.py).
+  //
+  // #structures-stage itself is the one exception: it still uses the
+  // native `hidden` property (display:none) for the whole-strip Home/
+  // transition-screen-vs-Timeline swap, same as before — safe there
+  // specifically because it's `position: fixed`, already outside document
+  // flow. Every DESCENDANT instead gets a `slot-dark` class toggled
+  // (`visibility: hidden` in timeline/shared.css, never `display: none`),
+  // so its own reserved space in the grid/flex layout stays reserved
+  // whether it's lit or dark — see that file's own comment on
+  // `.slot-dark` for why that one substitution is the actual fix.
+  function applyStructuresMountRanges(currentId) {
+    mountRangeEls.forEach(function (el) {
+      var from = el.getAttribute('data-mount-from');
+      var to = el.getAttribute('data-mount-to');
+      var inRange = !!(currentId && from <= currentId && currentId <= to);
+      if (el === stageEl) {
+        el.hidden = !inRange;
+      } else {
+        el.classList.toggle('slot-dark', !inRange);
+      }
+    });
+  }
+
+  // Keeps .quarter-canvas's own bottom-padding reservation (timeline/
+  // shared.css) in sync with the stage's REAL current height. The stage
+  // still has no height cap — it reserves space for every structure/room/
+  // etc that will EVER be relevant across the whole trip, all at once,
+  // from the moment it first renders (see requirements/public.md -> The
+  // Structures stage -> Layout and technical.md -> The Structures stage
+  // for the concrete numbers) — so a static guess could never stay
+  // correct there; this is the live mechanism that guess's own CSS
+  // fallback only covers briefly, before this runs. Its job is narrower
+  // than it used to be, though: the stage's height no longer changes as a
+  // CONSEQUENCE of scrolling through quarters at all (nothing mounts or
+  // unmounts anymore, ever, once first rendered — going lit/dark is a
+  // pure visibility change, see applyStructuresMountRanges() above), so
+  // this observer is only still doing real work for a genuine viewport-
+  // driven reflow: a window resize crossing one of .structures-stage-
+  // inner's own column-count breakpoints, a font loading late, mobile
+  // browser chrome collapsing/expanding. Entirely independent of the
+  // quarter-change logic above either way; "how tall is the stage right
+  // now" and "which quarter is current" don't need to be the same
+  // trigger.
+  if (stageEl && 'ResizeObserver' in window) {
+    var stageResizeObserver = new ResizeObserver(function (entries) {
+      document.documentElement.style.setProperty('--stage-height', entries[0].contentRect.height + 'px');
+    });
+    stageResizeObserver.observe(stageEl);
+  }
+
+  // Applies `current` (a .quarter-screen element, or null) to both the
+  // nav label and the Structures stage in one place — used by the live
+  // observer below AND by window.__syncStructuresStage()'s one-off
+  // settle-time correction, so the two can't drift into applying the
+  // "current screen -> visible state" rule slightly differently.
+  function applyCurrentScreen(current) {
+    if (current) {
+      if (dateEl) dateEl.textContent = current.getAttribute('data-date');
+      if (dayEl) {
+        var quarterName = current.getAttribute('data-quarter-name');
+        dayEl.textContent = quarterName ? ' · ' + quarterName : '';
+      }
+      if (navEl) {
+        navEl.setAttribute('data-quarter', current.getAttribute('data-quarter'));
+      }
+      applyStructuresMountRanges(current.id);
+    } else {
+      // Scrolled back off every quarter screen (Home, or the transition
+      // screen) — nothing here has a "now" to report, so both the label
+      // and the stage revert. cq-day reverts to the literal static
+      // "Timeline" text (must match shared/nav.py -> render_nav()'s own
+      // build-time default on the same span), NOT an empty string — an
+      // empty cq-date alongside an empty cq-day would leave the split
+      // control's label reading as nothing at all, rather than the
+      // static word every other view is supposed to show (see
+      // requirements/public.md -> Navigation -> Timeline's panel).
+      if (dateEl) dateEl.textContent = '';
+      if (dayEl) dayEl.textContent = 'Timeline';
+      // Clears the nav's own stale data-quarter too, falling back to its
+      // CSS default (--grove, shared/base.css -> .site-nav) — left set to
+      // whatever quarter you scrolled away from otherwise, which is wrong
+      // on Home/the transition screen per requirements/public.md -> Time-
+      // of-day background ("Grove... for anything that isn't a specific
+      // day/quarter").
+      if (navEl) navEl.removeAttribute('data-quarter');
+      applyStructuresMountRanges('');
+    }
+  }
+
   if (dayEl && dateEl && screens.length && 'IntersectionObserver' in window) {
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          dateEl.textContent = entry.target.getAttribute('data-date');
-          var quarterName = entry.target.getAttribute('data-quarter-name');
-          dayEl.textContent = quarterName ? ' · ' + quarterName : '';
-          if (navEl) {
-            navEl.setAttribute('data-quarter', entry.target.getAttribute('data-quarter'));
-          }
-        }
-      });
+    var observer = new IntersectionObserver(function () {
+      // Deliberately ignores the `entries` argument entirely — a real,
+      // confirmed bug (found live: the stage/label would flash correctly
+      // on scrolling into a new quarter, then immediately revert to
+      // empty, inconsistently, worse scrolling down than up) came from
+      // trusting it. An IntersectionObserver batch only reports elements
+      // whose OWN intersection state changed since the last callback —
+      // NOT "the full current truth of every observed element" — so when
+      // the outgoing screen's exit and the incoming screen's entry land
+      // in two SEPARATE callback invocations (common enough while
+      // scrolling, and not something this code controls), a batch
+      // containing only the exit looks — by the old logic — like "nothing
+      // is intersecting anywhere," incorrectly reverting the stage/label
+      // a moment after the correct one had already been shown by the
+      // entry's own (earlier or later) callback. The observer firing at
+      // all is only a "something changed, go check" trigger now — the
+      // actual answer always comes from currentQuarterScreen()'s own
+      // synchronous geometry walk (same helper the settle-time
+      // correction and play/pause use), which has no notion of "this
+      // batch" to be incomplete about: it re-derives the true current
+      // screen from scratch, every time.
+      //
+      // Skipped for the duration of a suspended multi-screen jump (see
+      // shared/nav.js -> jumpToSection() and window.__scrollJumpActive)
+      // so the stage doesn't flicker lit/dark through every structure
+      // relevant to the screens crossed in between — window.
+      // __syncStructuresStage() below settles it directly on the correct
+      // destination the instant the jump actually finishes, regardless
+      // of what this observer did or didn't fire in the meantime. The
+      // label freezing too for that same short window is a deliberate
+      // side effect, not a separate fix — it was already prone to the
+      // identical flicker-through-intermediate-quarters risk during a
+      // fast jump, just for text instead of color.
+      if (window.__scrollJumpActive) return;
+      applyCurrentScreen(currentQuarterScreen());
     }, { rootMargin: '-' + NAV_HEIGHT_PX + 'px 0px -90% 0px', threshold: 0 });
     screens.forEach(function (el) {
       observer.observe(el);
     });
   }
+
+  // A one-off, definitive correction run once a multi-screen jump
+  // actually finishes — called from shared/nav.js -> jumpToSection()'s
+  // own settle(), after window.__scrollJumpActive has already cleared.
+  // Not a second live-tracking mechanism: currentQuarterScreen()'s same
+  // one-off geometry lookup, applied once, so the label and stage end up
+  // definitively correct regardless of exactly when (or whether) the
+  // IntersectionObserver above managed to fire around the jump settling
+  // — see requirements/public.md -> The Structures stage -> "The map is
+  // decided once, in full, before the stage is ever shown". Exposed as a
+  // global (rather than staying a private
+  // closure variable) specifically so shared/nav.js, loaded and run
+  // before this file, can still reach it from its own settle() callback,
+  // which fires long after both files' own DOMContentLoaded setup has
+  // already completed.
+  window.__syncStructuresStage = function () {
+    applyCurrentScreen(currentQuarterScreen());
+  };
 
   // Time-of-day background blend — see requirements/public.md -> Time-of-
   // day background and timeline/shared.css -> .quarter-screen[data-quarter]
@@ -178,6 +358,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var lastOverridden = null;
     function updateQuarterBlend() {
       blendRafId = null;
+      // Closes a race scheduleQuarterBlendUpdate()'s own check can't catch
+      // alone: a frame can already be queued (blendRafId set from a
+      // 'scroll' event fired a moment before the jump started) and still
+      // fire after window.__scrollJumpActive flips true — bail here too
+      // rather than let that one stray frame paint a mid-jump color.
+      if (window.__scrollJumpActive) return;
       // The entering/current screen: among every quarter screen whose top
       // hasn't yet scrolled past the viewport top, the one closest to it.
       // At rest this is exactly the settled screen (its own top sits at
@@ -208,6 +394,21 @@ document.addEventListener('DOMContentLoaded', function () {
       navEl.style.setProperty('--quarter-bg', color);
     }
     function scheduleQuarterBlendUpdate() {
+      // window.__scrollJumpActive (set by jumpToSection() in shared/nav.js
+      // for a genuine multi-screen jump — see that function's own comment)
+      // is the fix for a real bug: without this check, every 'scroll'
+      // event fired during the browser's own smooth-scroll animation
+      // across several quarter screens used to schedule (and run) a fresh
+      // blend computation, racing through each crossed screen's color in
+      // well under a second — a strobe, not the gentle cross-fade this
+      // effect is supposed to be (see requirements/public.md -> Time-of-
+      // day background). The flag is never set for organic scrolling or a
+      // one-screen jump, so neither loses the live blend — only an actual
+      // multi-screen jump skips it, and jumpToSection()'s own settle()
+      // callback fires one final synthetic 'scroll' once the flag clears,
+      // so the destination still ends up painted correctly the instant
+      // the jump finishes, just without any of the in-between repaints.
+      if (window.__scrollJumpActive) return;
       if (blendRafId === null) {
         blendRafId = requestAnimationFrame(updateQuarterBlend);
       }
@@ -251,27 +452,23 @@ document.addEventListener('DOMContentLoaded', function () {
   var runButton = document.getElementById('run-toggle');
   var timelineCaret = document.getElementById('timeline-caret');
   var scrollRoot = document.documentElement;
-  var runSections = document.querySelectorAll('.quarter-screen');
-  if (runButton && runSections.length) {
+  if (runButton && screens.length) {
     var PAUSE_MS = 1800;
     var runTimerId = null;
     var runIndex = 0;
 
-    // The section whose top edge has scrolled up to (or past) the nav —
-    // i.e. whichever screen is currently occupying the viewport below the
-    // sticky nav — found by walking forward while sections keep starting
-    // at/above that line, same rootMargin logic as the nav-label observer
-    // above just applied as a one-off lookup instead of a live observer.
+    // Delegates to the shared currentQuarterScreen() lookup above (same
+    // one the Structures stage's settle-time correction uses) and turns
+    // its answer into an index into `screens` — falls back to 0 (the
+    // very first quarter screen) when nothing's currently in view, e.g.
+    // Play clicked from Home, matching this function's own original
+    // default before the geometry walk itself moved into the shared
+    // helper.
     function currentSectionIndex() {
-      var idx = 0;
-      for (var i = 0; i < runSections.length; i++) {
-        if (runSections[i].getBoundingClientRect().top <= NAV_HEIGHT_PX + 1) {
-          idx = i;
-        } else {
-          break;
-        }
-      }
-      return idx;
+      var current = currentQuarterScreen();
+      if (!current) return 0;
+      var idx = Array.prototype.indexOf.call(screens, current);
+      return idx < 0 ? 0 : idx;
     }
 
     function stopRun() {
@@ -288,11 +485,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function advanceRun() {
-      if (runIndex >= runSections.length) {
+      if (runIndex >= screens.length) {
         stopRun();
         return;
       }
-      runSections[runIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      screens[runIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
       runIndex++;
       runTimerId = setTimeout(advanceRun, PAUSE_MS);
     }

@@ -110,7 +110,24 @@ html.timeline-page.auto-scrolling {
    clearance — that's the padding spacer's job alone. */
 .quarter-canvas {
   flex: 1;
-  padding: 1rem 0 2rem;
+  /* Bottom padding is 2rem (breathing room, as before) plus --stage-
+     height — a live pixel value timeline/shared.js keeps in sync with
+     #structures-stage's ACTUAL current height via ResizeObserver, not a
+     static guess: the stage has no height cap (see that element's own
+     CSS below) and reserves space for every structure/room/etc that will
+     EVER be relevant across the whole trip, all at once, from the moment
+     it first appears — a fixed but genuinely large quantity a static
+     guess could never get right (see technical.md -> The Structures
+     stage for the concrete numbers). The observer no longer exists to
+     track the stage growing/shrinking as quarters scroll by, though —
+     that no longer happens, ever, once the stage first renders (see
+     .slot-dark below) — only a real viewport-driven reflow (a resize
+     crossing .structures-stage-inner's own column-count breakpoints, a
+     late-loading font, mobile browser chrome collapsing) still needs it.
+     The 9rem fallback only matters before JS has run, or in a browser
+     without ResizeObserver (vanishingly rare today) — a close-enough
+     guess for that brief/rare window, not the real mechanism. */
+  padding: 1rem 0 calc(2rem + var(--stage-height, 9rem));
 }
 
 /* Jump menu lives directly in the single-row nav (shared/base.css ->
@@ -314,66 +331,310 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
 .person-line { display: block; margin-left: 0.1rem; }
 /* .mode-tag itself moved to shared/base.css — now shared with the
    milestones/ feature's own list pages too. */
-.quarter-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
 
-/* Structures row — nested boxes (structure, then room/detail or a
-   "Working" sub-box inside it), same plain flat-box motif as the Family
-   Tree page's person boxes (see family-tree/shared.css -> .person), reused
-   here for one visual language site-wide. See requirements/public.md ->
-   Structures -> Nested box display. */
-.structure-boxes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.3rem; }
-.structure-box {
-  padding: 0.5rem 0.6rem;
+/* Person-chip — a tap-to-reveal initials disclosure standing in for a
+   person's name (render_person_chip() in timeline/scripts/build.py) —
+   see requirements/public.md -> The Structures stage -> Nested box
+   display and Row-by-row rules -> Arrivals, and brand-guidelines.md ->
+   Illustration / Imagery Style. Used in two places: inline in an
+   Arrivals/Departures .person-line (here), and inside a Structures-
+   stage occupant list (.room-people-variants below, via
+   render_variant_chips()) — one shared shape either way.
+
+   Plain <details>/<summary>, the same disclosure element shared/nav.py's
+   own jump-menu already uses for the nav's panels — shared/nav.js's
+   existing "only one disclosure open at a time" handling (close others
+   on open, close on outside click, close on Escape) now covers this
+   class too, not a second mechanism (see that file). The revealed name
+   is `position: absolute`, so opening/closing a chip never changes that
+   chip's OWN layout size — inside the Structures stage specifically,
+   that's what keeps a slot's own fixed reservation (.room-people-
+   variants below) intact regardless of which chips are open; in an
+   Arrivals/Departures row there's no such reservation to protect (each
+   quarter screen sizes itself independently), but the same non-
+   reflowing behavior is still correct there, just not load-bearing.
+
+   The one deliberate exception to "no background on the site is dark
+   enough to need light-on-dark text" (brand-guidelines.md -> Colours ->
+   Backgrounds) — a chip's own Primary fill is intentionally the
+   darkest surface on the page, so it pairs with --bg (Parchment) for
+   its own text/circle-fill contrast instead of --text, the only place
+   on the site that does. */
+.person-chip {
+  position: relative;
+  display: inline-block;
+}
+.person-chip + .person-chip { margin-left: 0.15rem; }
+.person-chip > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--bg);
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  list-style: none;
+}
+.person-chip > summary::-webkit-details-marker { display: none; }
+.person-chip > summary:hover { opacity: 0.8; }
+.person-chip-name {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  background: var(--primary);
+  color: var(--bg);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border-radius: 4px;
+  z-index: 3;
+}
+
+/* The Structures stage — a persistent strip fixed to the viewport, not
+   part of the quarter-screen scroll-snap flow at all (see
+   requirements/public.md -> Home & Timeline -> The Structures stage, and
+   technical.md -> The Structures stage for the full mechanism). Built
+   once by timeline/scripts/build.py -> compute_structures_stage() as a
+   complete, fixed map — structure > [building >] room/instance/Working/
+   Kitchen, plus Unassigned — decided in full before the stage is ever
+   shown: every one that's EVER relevant anywhere in the trip gets its
+   own permanent element, ALWAYS present in the DOM and ALWAYS in this
+   exact layout position from build time on (see .slot-dark below — no
+   element is ever added to or removed from the layout after the page is
+   built). timeline/shared.js's one generic range-toggle function flips
+   each one's `slot-dark` class based on whether the currently-tracked
+   quarter falls inside that element's own data-mount-from/data-mount-to
+   — see that file. */
+#structures-stage {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Below .site-nav's z-index: 10 (shared/base.css) — the two are pinned
+     to opposite edges of the screen so they'd rarely if ever overlap,
+     but the nav should still win if they ever do. */
+  z-index: 9;
+  /* Deliberately NO background/border here (an earlier version set
+     `background: var(--bg)` — Parchment — plus a hairline top border,
+     making the stage read as its own separate opaque panel sitting over
+     the canvas). #structures-stage is `position: fixed`, painted on top
+     of whatever's really there — since .quarter-canvas already reserves
+     its own bottom padding matching the stage's height (see that rule),
+     nothing but that quarter-screen's own full-bleed time-of-day
+     background (.quarter-screen[data-quarter]::before) is ever actually
+     behind it. Leaving this transparent lets that color show straight
+     through: one continuous sea of the current quarter's own blue, with
+     the boxes (still Parchment — see .structure-slot/.room-slot/
+     .building-slot below, unchanged) floating visibly on it, not a
+     separate cream shelf bolted on underneath. See brand-guidelines.md
+     -> Signature visual conventions for the reasoning. */
+}
+/* [hidden] on the stage container itself (not just its slots) is what
+   makes the whole strip absent on Home/the transition screen, per
+   requirements/public.md -> Layout — timeline/shared.js adds/removes
+   this the moment scroll enters/leaves the quarter-screen portion of the
+   page. This is the ONE place in the stage that still uses `hidden`/
+   `display: none` rather than the `.slot-dark` class every descendant
+   below uses — safe here specifically because #structures-stage is
+   `position: fixed`, already outside document flow, so removing IT from
+   layout can't reflow anything else on the page the way removing a
+   flow-participating descendant would (see .slot-dark below for why
+   that distinction is the entire point of this file). */
+#structures-stage[hidden] { display: none; }
+
+/* A vertical list on a phone (width is the scarce resource there); a
+   responsive grid on a wider screen, since there's width to spare — see
+   requirements/public.md -> The Structures stage -> Layout. Deliberately
+   NOT a horizontal scrolling row: that read as a second, sideways
+   interaction competing with the page's one deliberately simple
+   gesture (scroll = time passing), and was an earlier, retired version's
+   own direct mechanical cause of structures visibly shifting as content
+   changed underneath them — see that same section for the full
+   reasoning review settled on. Still no height cap and no scroll region
+   of its own — but the stage no longer grows/shrinks AT ALL once
+   rendered (see .slot-dark below): every structure/room/etc that will
+   EVER be relevant across the whole trip is reserved here from the
+   start, a fixed (and, for this trip's real data, genuinely tall — see
+   technical.md -> The Structures stage) quantity, not a moving target.
+   .quarter-canvas above still keeps its own clearance in sync with the
+   stage's real height via ResizeObserver (see timeline/shared.js and
+   that rule's own comment), now purely for viewport-driven reflow (a
+   resize, a late-loading font), not for anything quarter-change-driven. */
+.structures-stage-inner {
+  max-width: 760px; /* matches body's own centered content column, shared/base.css */
+  margin: 0 auto;
+  /* Tightened from an earlier 0.6rem 1.25rem / 0.5rem gap — see
+     .structure-slot/.room-slot/.building-slot below for the fuller
+     reasoning: since the redesign now reserves EVERY structure/room the
+     whole trip will ever use, all at once, permanently (technical.md ->
+     The Structures stage), the per-box "shell" (padding, gaps, label
+     size), not any one occupant's text length, is what actually
+     dominates the stage's now-much-bigger total height on a phone —
+     chips alone (render_person_chip()) only trimmed it slightly, since
+     most occupant lists were already short. Every value on this page is
+     shrunk together for that reason, not styling taste. */
+  padding: 0.3rem 0.75rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.3rem;
+  align-items: start;
+}
+@media (min-width: 640px) {
+  .structures-stage-inner { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 960px) {
+  .structures-stage-inner { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* The lit/dark toggle — the ONE mechanism every mountable element in the
+   stage uses to go from "not currently relevant" to "currently relevant"
+   and back, regardless of nesting depth (a whole structure box, a
+   building, a room/instance/Working/Kitchen sub-box, or a single
+   pre-rendered text variant span — see requirements/public.md -> The
+   Structures stage -> "The map is decided once, in full, before the
+   stage is ever shown": "is this element's own range showing right now"
+   is the same question at every level, and going lit or dark is now a
+   PURE VISIBILITY change, never a layout one). `visibility: hidden`, not
+   `display: none`, is the entire fix this file exists to make: unlike
+   `display: none`, it still hides the element from view, from screen
+   readers, and from the tab order, but it does NOT remove the element
+   from layout — its reserved space stays reserved whether the element is
+   lit or dark, which is exactly what "a place never moves, even when a
+   neighbor mounts or unmounts" requires (see technical.md -> The
+   Structures stage for the full before/after). Relies on one real
+   invariant enforced in Python, not CSS — a lit descendant's range is
+   always inside its ancestor's own lit range, so a dark ancestor never
+   actually contains a lit descendant needing an explicit override — see
+   timeline/scripts/build.py -> compute_structures_stage()'s own comment
+   on this. */
+[data-mount-from].slot-dark { visibility: hidden; }
+
+/* Structures stage boxes — nested (structure, then room/detail or a
+   "Working"/"Kitchen" sub-box inside it), same plain flat-box motif as
+   the Family Tree page's person boxes (see family-tree/shared.css ->
+   .person), reused here for one visual language site-wide. See
+   requirements/public.md -> The Structures stage -> Nested box display.
+   A room/instance/sub-box's own text wraps inside its box rather than
+   growing it — see .room-slot below — which is what actually keeps a
+   longer occupant list from shoving neighboring boxes around; the grid
+   layout above is what removes the sideways-scroll gesture, this is
+   what removes the box-shifting itself. */
+.structure-slot {
+  padding: 0.35rem 0.45rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
 }
-.structure-box.unassigned-box { border-style: dashed; color: var(--secondary); }
+.structure-slot.unassigned-slot { border-style: dashed; color: var(--secondary); }
 .structure-label {
   display: block;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--primary);
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.2rem;
 }
-.structure-rooms { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.3rem; }
-.room-box {
-  padding: 0.3rem 0.5rem;
+/* A bare structure's (or Unassigned's) own direct occupant text — no
+   room-slot wrapper, since there's no declared room to nest it under —
+   sits right under the label the same way a room's own .room-people-
+   variants sits under its .room-label. */
+.structure-slot > .room-people-variants {
+  margin-top: 0.15rem;
+}
+/* align-items: flex-start (NOT the flex default of `stretch`) is load-
+   bearing for the "minimize total area" principle (brand-guidelines.md
+   -> Materials / Design Language): without it, every room-slot in the
+   same flex-wrap ROW silently stretches to match whichever sibling in
+   that row is tallest (e.g. a Kitchen box whose meal note wraps to 3
+   lines was quietly inflating a short, unrelated room-slot sharing its
+   row to match) — the exact opposite of each box sizing to its own
+   content. Caught only by directly measuring a room-slot's own
+   getBoundingClientRect() and finding ~48px of unexplained empty space
+   below its actual content, not by reading the CSS (stretch is the
+   default, so its absence isn't visible by scanning the rule itself). */
+.structure-rooms { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.3rem; margin-top: 0.2rem; }
+.room-slot {
+  padding: 0.2rem 0.35rem;
   border: 1px solid var(--accent);
   border-radius: 5px;
   background: var(--bg);
+  /* Caps a room's own box at whichever is narrower: its parent grid
+     cell's real available width (100%, unchanged from before — so a
+     long occupant list still wraps onto a second line inside the box
+     rather than growing it wider and shoving whatever's next to it), OR
+     9.5rem outright — a real, absolute cap, not just "don't exceed your
+     parent." Without that second cap, a long STATIC label ("Kate & Bob's
+     Revel camper van") stretched its own box wide enough to fit the
+     whole name on one line, using far more total AREA than wrapping the
+     same label across two lines in a narrower box would — see
+     brand-guidelines.md -> Materials / Design Language for the "minimize
+     total area covered" principle this is the first application of.
+     Driven entirely by each room's own fixed, build-time-known label
+     text (never by occupancy, which changes per quarter), so this never
+     conflicts with the "never moves" guarantee below — a room's own
+     wrap point is exactly as fixed as everything else about it. See
+     requirements/public.md -> The Structures stage -> "The map is
+     decided once...". Wrapping alone isn't what keeps a room's own
+     WIDTH/HEIGHT stable as its occupant TEXT changes over time though —
+     see .room-people-variants below for that, a separate mechanism. */
+  max-width: min(9.5rem, 100%);
 }
 .room-label {
   display: block;
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: 0.66rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--secondary);
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.1rem;
+}
+/* One slot's own occupant text, sized for its LONGEST-EVER variant, not
+   whichever one happens to be current — see timeline/scripts/build.py ->
+   render_variant_spans() for the full reasoning. Every pre-rendered
+   <span class="room-people"> variant for this slot lands in the exact
+   same grid cell (`grid-area: 1 / 1` below), so they visually overlap —
+   only the one WITHOUT `.slot-dark` (see that class above) actually
+   paints — but a CSS grid track auto-sizes to the largest intrinsic
+   size among every item placed in it regardless of that item's own
+   visibility, so the wrapper's width/height are permanently the max
+   across every variant this slot will EVER show, fixed from the first
+   render. A shorter variant just leaves visible blank space inside an
+   otherwise-unchanging box — the identical "reserve ahead of need"
+   trade-off as a whole dark structure/room, one level deeper. */
+.room-people-variants {
+  display: grid;
+}
+.room-people-variants > .room-people {
+  grid-area: 1 / 1;
 }
 .room-people { font-size: 0.95rem; }
-/* Working and Kitchen sub-boxes — same room-box shape, but dashed (the
+/* Working and Kitchen sub-boxes — same room-slot shape, but dashed (the
    site's existing "different category" signal, also used for
-   .unassigned-box and the Family Tree's married-in boxes) so a name (or,
+   .unassigned-slot and the Family Tree's married-in boxes) so a name (or,
    for Kitchen, a meal note) here reads as clearly different from someone
    actually sleeping in this structure, without introducing a new icon or
    color per brand-guidelines.md. See requirements/public.md -> Structures
    -> Nested box display. */
-.room-box.working-box, .room-box.kitchen-box { border-style: dashed; }
+.room-slot.working-box, .room-slot.kitchen-box { border-style: dashed; }
 
 /* Building sub-box — the one extra nesting level a structure gets when it
    declares `buildings` instead of a flat `rooms` list (e.g. Little
    Shemogue Inn's Log Point/The Apartment) — see requirements/public.md ->
-   Structures -> Nested box display. Sits between the outer .structure-box
-   and its inner .room-box list: a step up from .room-box's own border
-   weight/padding (it's one level further out) but still visually lighter
-   than .structure-box, so the structure > building > room hierarchy reads
-   at a glance. */
-.building-box {
-  padding: 0.4rem 0.5rem;
+   Structures -> Nested box display. Sits between the outer .structure-
+   slot and its inner .room-slot list: a step up from .room-slot's own
+   border weight/padding (it's one level further out) but still visually
+   lighter than .structure-slot, so the structure > building > room
+   hierarchy reads at a glance. */
+.building-slot {
+  padding: 0.3rem 0.4rem;
   border: 1px solid var(--border);
   border-radius: 5px;
   background: var(--bg);
@@ -381,13 +642,13 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
 .building-label {
   display: block;
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--primary);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.15rem;
 }
-.building-rooms { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.building-rooms { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.25rem; }
 
 /* Time-of-day background — a tint per day quarter (see
    requirements/public.md -> Homepage = Timeline -> Time-of-day

@@ -503,7 +503,24 @@ html.timeline-page.auto-scrolling {
    clearance — that's the padding spacer's job alone. */
 .quarter-canvas {
   flex: 1;
-  padding: 1rem 0 2rem;
+  /* Bottom padding is 2rem (breathing room, as before) plus --stage-
+     height — a live pixel value timeline/shared.js keeps in sync with
+     #structures-stage's ACTUAL current height via ResizeObserver, not a
+     static guess: the stage has no height cap (see that element's own
+     CSS below) and reserves space for every structure/room/etc that will
+     EVER be relevant across the whole trip, all at once, from the moment
+     it first appears — a fixed but genuinely large quantity a static
+     guess could never get right (see technical.md -> The Structures
+     stage for the concrete numbers). The observer no longer exists to
+     track the stage growing/shrinking as quarters scroll by, though —
+     that no longer happens, ever, once the stage first renders (see
+     .slot-dark below) — only a real viewport-driven reflow (a resize
+     crossing .structures-stage-inner's own column-count breakpoints, a
+     late-loading font, mobile browser chrome collapsing) still needs it.
+     The 9rem fallback only matters before JS has run, or in a browser
+     without ResizeObserver (vanishingly rare today) — a close-enough
+     guess for that brief/rare window, not the real mechanism. */
+  padding: 1rem 0 calc(2rem + var(--stage-height, 9rem));
 }
 
 /* Jump menu lives directly in the single-row nav (shared/base.css ->
@@ -707,66 +724,310 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
 .person-line { display: block; margin-left: 0.1rem; }
 /* .mode-tag itself moved to shared/base.css — now shared with the
    milestones/ feature's own list pages too. */
-.quarter-empty-hint { color: #8a8378; font-size: 0.95rem; font-style: italic; }
 
-/* Structures row — nested boxes (structure, then room/detail or a
-   "Working" sub-box inside it), same plain flat-box motif as the Family
-   Tree page's person boxes (see family-tree/shared.css -> .person), reused
-   here for one visual language site-wide. See requirements/public.md ->
-   Structures -> Nested box display. */
-.structure-boxes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.3rem; }
-.structure-box {
-  padding: 0.5rem 0.6rem;
+/* Person-chip — a tap-to-reveal initials disclosure standing in for a
+   person's name (render_person_chip() in timeline/scripts/build.py) —
+   see requirements/public.md -> The Structures stage -> Nested box
+   display and Row-by-row rules -> Arrivals, and brand-guidelines.md ->
+   Illustration / Imagery Style. Used in two places: inline in an
+   Arrivals/Departures .person-line (here), and inside a Structures-
+   stage occupant list (.room-people-variants below, via
+   render_variant_chips()) — one shared shape either way.
+
+   Plain <details>/<summary>, the same disclosure element shared/nav.py's
+   own jump-menu already uses for the nav's panels — shared/nav.js's
+   existing "only one disclosure open at a time" handling (close others
+   on open, close on outside click, close on Escape) now covers this
+   class too, not a second mechanism (see that file). The revealed name
+   is `position: absolute`, so opening/closing a chip never changes that
+   chip's OWN layout size — inside the Structures stage specifically,
+   that's what keeps a slot's own fixed reservation (.room-people-
+   variants below) intact regardless of which chips are open; in an
+   Arrivals/Departures row there's no such reservation to protect (each
+   quarter screen sizes itself independently), but the same non-
+   reflowing behavior is still correct there, just not load-bearing.
+
+   The one deliberate exception to "no background on the site is dark
+   enough to need light-on-dark text" (brand-guidelines.md -> Colours ->
+   Backgrounds) — a chip's own Primary fill is intentionally the
+   darkest surface on the page, so it pairs with --bg (Parchment) for
+   its own text/circle-fill contrast instead of --text, the only place
+   on the site that does. */
+.person-chip {
+  position: relative;
+  display: inline-block;
+}
+.person-chip + .person-chip { margin-left: 0.15rem; }
+.person-chip > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--bg);
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  list-style: none;
+}
+.person-chip > summary::-webkit-details-marker { display: none; }
+.person-chip > summary:hover { opacity: 0.8; }
+.person-chip-name {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 0.3rem;
+  padding: 0.2rem 0.5rem;
+  background: var(--primary);
+  color: var(--bg);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border-radius: 4px;
+  z-index: 3;
+}
+
+/* The Structures stage — a persistent strip fixed to the viewport, not
+   part of the quarter-screen scroll-snap flow at all (see
+   requirements/public.md -> Home & Timeline -> The Structures stage, and
+   technical.md -> The Structures stage for the full mechanism). Built
+   once by timeline/scripts/build.py -> compute_structures_stage() as a
+   complete, fixed map — structure > [building >] room/instance/Working/
+   Kitchen, plus Unassigned — decided in full before the stage is ever
+   shown: every one that's EVER relevant anywhere in the trip gets its
+   own permanent element, ALWAYS present in the DOM and ALWAYS in this
+   exact layout position from build time on (see .slot-dark below — no
+   element is ever added to or removed from the layout after the page is
+   built). timeline/shared.js's one generic range-toggle function flips
+   each one's `slot-dark` class based on whether the currently-tracked
+   quarter falls inside that element's own data-mount-from/data-mount-to
+   — see that file. */
+#structures-stage {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Below .site-nav's z-index: 10 (shared/base.css) — the two are pinned
+     to opposite edges of the screen so they'd rarely if ever overlap,
+     but the nav should still win if they ever do. */
+  z-index: 9;
+  /* Deliberately NO background/border here (an earlier version set
+     `background: var(--bg)` — Parchment — plus a hairline top border,
+     making the stage read as its own separate opaque panel sitting over
+     the canvas). #structures-stage is `position: fixed`, painted on top
+     of whatever's really there — since .quarter-canvas already reserves
+     its own bottom padding matching the stage's height (see that rule),
+     nothing but that quarter-screen's own full-bleed time-of-day
+     background (.quarter-screen[data-quarter]::before) is ever actually
+     behind it. Leaving this transparent lets that color show straight
+     through: one continuous sea of the current quarter's own blue, with
+     the boxes (still Parchment — see .structure-slot/.room-slot/
+     .building-slot below, unchanged) floating visibly on it, not a
+     separate cream shelf bolted on underneath. See brand-guidelines.md
+     -> Signature visual conventions for the reasoning. */
+}
+/* [hidden] on the stage container itself (not just its slots) is what
+   makes the whole strip absent on Home/the transition screen, per
+   requirements/public.md -> Layout — timeline/shared.js adds/removes
+   this the moment scroll enters/leaves the quarter-screen portion of the
+   page. This is the ONE place in the stage that still uses `hidden`/
+   `display: none` rather than the `.slot-dark` class every descendant
+   below uses — safe here specifically because #structures-stage is
+   `position: fixed`, already outside document flow, so removing IT from
+   layout can't reflow anything else on the page the way removing a
+   flow-participating descendant would (see .slot-dark below for why
+   that distinction is the entire point of this file). */
+#structures-stage[hidden] { display: none; }
+
+/* A vertical list on a phone (width is the scarce resource there); a
+   responsive grid on a wider screen, since there's width to spare — see
+   requirements/public.md -> The Structures stage -> Layout. Deliberately
+   NOT a horizontal scrolling row: that read as a second, sideways
+   interaction competing with the page's one deliberately simple
+   gesture (scroll = time passing), and was an earlier, retired version's
+   own direct mechanical cause of structures visibly shifting as content
+   changed underneath them — see that same section for the full
+   reasoning review settled on. Still no height cap and no scroll region
+   of its own — but the stage no longer grows/shrinks AT ALL once
+   rendered (see .slot-dark below): every structure/room/etc that will
+   EVER be relevant across the whole trip is reserved here from the
+   start, a fixed (and, for this trip's real data, genuinely tall — see
+   technical.md -> The Structures stage) quantity, not a moving target.
+   .quarter-canvas above still keeps its own clearance in sync with the
+   stage's real height via ResizeObserver (see timeline/shared.js and
+   that rule's own comment), now purely for viewport-driven reflow (a
+   resize, a late-loading font), not for anything quarter-change-driven. */
+.structures-stage-inner {
+  max-width: 760px; /* matches body's own centered content column, shared/base.css */
+  margin: 0 auto;
+  /* Tightened from an earlier 0.6rem 1.25rem / 0.5rem gap — see
+     .structure-slot/.room-slot/.building-slot below for the fuller
+     reasoning: since the redesign now reserves EVERY structure/room the
+     whole trip will ever use, all at once, permanently (technical.md ->
+     The Structures stage), the per-box "shell" (padding, gaps, label
+     size), not any one occupant's text length, is what actually
+     dominates the stage's now-much-bigger total height on a phone —
+     chips alone (render_person_chip()) only trimmed it slightly, since
+     most occupant lists were already short. Every value on this page is
+     shrunk together for that reason, not styling taste. */
+  padding: 0.3rem 0.75rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.3rem;
+  align-items: start;
+}
+@media (min-width: 640px) {
+  .structures-stage-inner { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 960px) {
+  .structures-stage-inner { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* The lit/dark toggle — the ONE mechanism every mountable element in the
+   stage uses to go from "not currently relevant" to "currently relevant"
+   and back, regardless of nesting depth (a whole structure box, a
+   building, a room/instance/Working/Kitchen sub-box, or a single
+   pre-rendered text variant span — see requirements/public.md -> The
+   Structures stage -> "The map is decided once, in full, before the
+   stage is ever shown": "is this element's own range showing right now"
+   is the same question at every level, and going lit or dark is now a
+   PURE VISIBILITY change, never a layout one). `visibility: hidden`, not
+   `display: none`, is the entire fix this file exists to make: unlike
+   `display: none`, it still hides the element from view, from screen
+   readers, and from the tab order, but it does NOT remove the element
+   from layout — its reserved space stays reserved whether the element is
+   lit or dark, which is exactly what "a place never moves, even when a
+   neighbor mounts or unmounts" requires (see technical.md -> The
+   Structures stage for the full before/after). Relies on one real
+   invariant enforced in Python, not CSS — a lit descendant's range is
+   always inside its ancestor's own lit range, so a dark ancestor never
+   actually contains a lit descendant needing an explicit override — see
+   timeline/scripts/build.py -> compute_structures_stage()'s own comment
+   on this. */
+[data-mount-from].slot-dark { visibility: hidden; }
+
+/* Structures stage boxes — nested (structure, then room/detail or a
+   "Working"/"Kitchen" sub-box inside it), same plain flat-box motif as
+   the Family Tree page's person boxes (see family-tree/shared.css ->
+   .person), reused here for one visual language site-wide. See
+   requirements/public.md -> The Structures stage -> Nested box display.
+   A room/instance/sub-box's own text wraps inside its box rather than
+   growing it — see .room-slot below — which is what actually keeps a
+   longer occupant list from shoving neighboring boxes around; the grid
+   layout above is what removes the sideways-scroll gesture, this is
+   what removes the box-shifting itself. */
+.structure-slot {
+  padding: 0.35rem 0.45rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
 }
-.structure-box.unassigned-box { border-style: dashed; color: var(--secondary); }
+.structure-slot.unassigned-slot { border-style: dashed; color: var(--secondary); }
 .structure-label {
   display: block;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--primary);
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.2rem;
 }
-.structure-rooms { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.3rem; }
-.room-box {
-  padding: 0.3rem 0.5rem;
+/* A bare structure's (or Unassigned's) own direct occupant text — no
+   room-slot wrapper, since there's no declared room to nest it under —
+   sits right under the label the same way a room's own .room-people-
+   variants sits under its .room-label. */
+.structure-slot > .room-people-variants {
+  margin-top: 0.15rem;
+}
+/* align-items: flex-start (NOT the flex default of `stretch`) is load-
+   bearing for the "minimize total area" principle (brand-guidelines.md
+   -> Materials / Design Language): without it, every room-slot in the
+   same flex-wrap ROW silently stretches to match whichever sibling in
+   that row is tallest (e.g. a Kitchen box whose meal note wraps to 3
+   lines was quietly inflating a short, unrelated room-slot sharing its
+   row to match) — the exact opposite of each box sizing to its own
+   content. Caught only by directly measuring a room-slot's own
+   getBoundingClientRect() and finding ~48px of unexplained empty space
+   below its actual content, not by reading the CSS (stretch is the
+   default, so its absence isn't visible by scanning the rule itself). */
+.structure-rooms { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.3rem; margin-top: 0.2rem; }
+.room-slot {
+  padding: 0.2rem 0.35rem;
   border: 1px solid var(--accent);
   border-radius: 5px;
   background: var(--bg);
+  /* Caps a room's own box at whichever is narrower: its parent grid
+     cell's real available width (100%, unchanged from before — so a
+     long occupant list still wraps onto a second line inside the box
+     rather than growing it wider and shoving whatever's next to it), OR
+     9.5rem outright — a real, absolute cap, not just "don't exceed your
+     parent." Without that second cap, a long STATIC label ("Kate & Bob's
+     Revel camper van") stretched its own box wide enough to fit the
+     whole name on one line, using far more total AREA than wrapping the
+     same label across two lines in a narrower box would — see
+     brand-guidelines.md -> Materials / Design Language for the "minimize
+     total area covered" principle this is the first application of.
+     Driven entirely by each room's own fixed, build-time-known label
+     text (never by occupancy, which changes per quarter), so this never
+     conflicts with the "never moves" guarantee below — a room's own
+     wrap point is exactly as fixed as everything else about it. See
+     requirements/public.md -> The Structures stage -> "The map is
+     decided once...". Wrapping alone isn't what keeps a room's own
+     WIDTH/HEIGHT stable as its occupant TEXT changes over time though —
+     see .room-people-variants below for that, a separate mechanism. */
+  max-width: min(9.5rem, 100%);
 }
 .room-label {
   display: block;
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: 0.66rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--secondary);
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.1rem;
+}
+/* One slot's own occupant text, sized for its LONGEST-EVER variant, not
+   whichever one happens to be current — see timeline/scripts/build.py ->
+   render_variant_spans() for the full reasoning. Every pre-rendered
+   <span class="room-people"> variant for this slot lands in the exact
+   same grid cell (`grid-area: 1 / 1` below), so they visually overlap —
+   only the one WITHOUT `.slot-dark` (see that class above) actually
+   paints — but a CSS grid track auto-sizes to the largest intrinsic
+   size among every item placed in it regardless of that item's own
+   visibility, so the wrapper's width/height are permanently the max
+   across every variant this slot will EVER show, fixed from the first
+   render. A shorter variant just leaves visible blank space inside an
+   otherwise-unchanging box — the identical "reserve ahead of need"
+   trade-off as a whole dark structure/room, one level deeper. */
+.room-people-variants {
+  display: grid;
+}
+.room-people-variants > .room-people {
+  grid-area: 1 / 1;
 }
 .room-people { font-size: 0.95rem; }
-/* Working and Kitchen sub-boxes — same room-box shape, but dashed (the
+/* Working and Kitchen sub-boxes — same room-slot shape, but dashed (the
    site's existing "different category" signal, also used for
-   .unassigned-box and the Family Tree's married-in boxes) so a name (or,
+   .unassigned-slot and the Family Tree's married-in boxes) so a name (or,
    for Kitchen, a meal note) here reads as clearly different from someone
    actually sleeping in this structure, without introducing a new icon or
    color per brand-guidelines.md. See requirements/public.md -> Structures
    -> Nested box display. */
-.room-box.working-box, .room-box.kitchen-box { border-style: dashed; }
+.room-slot.working-box, .room-slot.kitchen-box { border-style: dashed; }
 
 /* Building sub-box — the one extra nesting level a structure gets when it
    declares `buildings` instead of a flat `rooms` list (e.g. Little
    Shemogue Inn's Log Point/The Apartment) — see requirements/public.md ->
-   Structures -> Nested box display. Sits between the outer .structure-box
-   and its inner .room-box list: a step up from .room-box's own border
-   weight/padding (it's one level further out) but still visually lighter
-   than .structure-box, so the structure > building > room hierarchy reads
-   at a glance. */
-.building-box {
-  padding: 0.4rem 0.5rem;
+   Structures -> Nested box display. Sits between the outer .structure-
+   slot and its inner .room-slot list: a step up from .room-slot's own
+   border weight/padding (it's one level further out) but still visually
+   lighter than .structure-slot, so the structure > building > room
+   hierarchy reads at a glance. */
+.building-slot {
+  padding: 0.3rem 0.4rem;
   border: 1px solid var(--border);
   border-radius: 5px;
   background: var(--bg);
@@ -774,13 +1035,13 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
 .building-label {
   display: block;
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--primary);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.15rem;
 }
-.building-rooms { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.building-rooms { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.25rem; }
 
 /* Time-of-day background — a tint per day quarter (see
    requirements/public.md -> Homepage = Timeline -> Time-of-day
@@ -927,6 +1188,7 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
 </details>
 <a href="family-tree/index.html">Tree</a>
 </nav>
+<div id="structures-stage" hidden aria-label="Structures" aria-live="polite" data-mount-from="qc-2026-08-01-00-06" data-mount-to="qc-2026-08-13-18-24"><div class="structures-stage-inner"><div class="structure-slot slot-dark" data-mount-from="qc-2026-08-01-00-06" data-mount-to="qc-2026-08-13-18-24"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-slot slot-dark" data-mount-from="qc-2026-08-01-00-06" data-mount-to="qc-2026-08-12-06-12"><span class="room-label">Master Suite</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-01-00-06" data-mount-to="qc-2026-08-04-06-12"><details class="person-chip"><summary>HS</summary><span class="person-chip-name">Helen S</span></details><details class="person-chip"><summary>JS</summary><span class="person-chip-name">Jim S</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-04-12-18" data-mount-to="qc-2026-08-04-18-24"><details class="person-chip"><summary>SS</summary><span class="person-chip-name">Susan S</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-05-00-06" data-mount-to="qc-2026-08-05-06-12"></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-05-12-18" data-mount-to="qc-2026-08-12-06-12"><details class="person-chip"><summary>HS</summary><span class="person-chip-name">Helen S</span></details><details class="person-chip"><summary>JS</summary><span class="person-chip-name">Jim S</span></details></span></span></div><div class="room-slot slot-dark" data-mount-from="qc-2026-08-04-18-24" data-mount-to="qc-2026-08-13-00-06"><span class="room-label">Green Room</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-04-18-24" data-mount-to="qc-2026-08-11-00-06"><details class="person-chip"><summary>JP</summary><span class="person-chip-name">Jim P</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-11-06-12" data-mount-to="qc-2026-08-12-12-18"></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-12-18-24" data-mount-to="qc-2026-08-13-00-06"><details class="person-chip"><summary>DS</summary><span class="person-chip-name">David S</span></details></span></span></div><div class="room-slot slot-dark" data-mount-from="qc-2026-08-01-18-24" data-mount-to="qc-2026-08-11-06-12"><span class="room-label">Blue Room</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-01-18-24" data-mount-to="qc-2026-08-07-06-12"><details class="person-chip"><summary>DS</summary><span class="person-chip-name">David S</span></details><details class="person-chip"><summary>RA</summary><span class="person-chip-name">Rachel</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-07-12-18" data-mount-to="qc-2026-08-07-12-18"><details class="person-chip"><summary>SS</summary><span class="person-chip-name">Susan S</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-07-18-24" data-mount-to="qc-2026-08-09-00-06"><details class="person-chip"><summary>MO</summary><span class="person-chip-name">Mohsin</span></details><details class="person-chip"><summary>SS</summary><span class="person-chip-name">Susan S</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-09-06-12" data-mount-to="qc-2026-08-11-06-12"><details class="person-chip"><summary>SS</summary><span class="person-chip-name">Susan S</span></details></span></span></div><div class="room-slot slot-dark kitchen-box" data-mount-from="qc-2026-08-07-18-24" data-mount-to="qc-2026-08-08-18-24"><span class="room-label">Kitchen</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-07-18-24" data-mount-to="qc-2026-08-07-18-24">Salmon dinner — hosted by Jim P</span><span class="room-people slot-dark" data-mount-from="qc-2026-08-08-00-06" data-mount-to="qc-2026-08-08-06-12"></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-08-12-18" data-mount-to="qc-2026-08-08-12-18">Kebab lunch — Jeremy chef</span><span class="room-people slot-dark" data-mount-from="qc-2026-08-08-18-24" data-mount-to="qc-2026-08-08-18-24">Lobster dinner — sponsored by Andy</span></span></div></div></div><div class="structure-slot slot-dark" data-mount-from="qc-2026-08-01-00-06" data-mount-to="qc-2026-08-13-18-24"><span class="structure-label">Red Shed</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-01-00-06" data-mount-to="qc-2026-08-06-12-18"></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-06-18-24" data-mount-to="qc-2026-08-10-00-06"><details class="person-chip"><summary>BR</summary><span class="person-chip-name">Brendan</span></details><details class="person-chip"><summary>PR</summary><span class="person-chip-name">Pricila</span></details><details class="person-chip"><summary>TH</summary><span class="person-chip-name">Thiago</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-10-06-12" data-mount-to="qc-2026-08-13-18-24"></span></span><div class="structure-rooms"><div class="room-slot slot-dark working-box" data-mount-from="qc-2026-08-03-06-12" data-mount-to="qc-2026-08-12-12-18"><span class="room-label">Working</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-03-06-12" data-mount-to="qc-2026-08-03-12-18"><details class="person-chip"><summary>RA</summary><span class="person-chip-name">Rachel</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-03-18-24" data-mount-to="qc-2026-08-04-00-06"></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-04-06-12" data-mount-to="qc-2026-08-04-12-18"><details class="person-chip"><summary>DS</summary><span class="person-chip-name">David S</span></details><details class="person-chip"><summary>RA</summary><span class="person-chip-name">Rachel</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-04-18-24" data-mount-to="qc-2026-08-05-00-06"></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-05-06-12" data-mount-to="qc-2026-08-05-12-18"><details class="person-chip"><summary>DS</summary><span class="person-chip-name">David S</span></details><details class="person-chip"><summary>RA</summary><span class="person-chip-name">Rachel</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-05-18-24" data-mount-to="qc-2026-08-06-00-06"></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-06-06-12" data-mount-to="qc-2026-08-06-12-18"><details class="person-chip"><summary>DS</summary><span class="person-chip-name">David S</span></details><details class="person-chip"><summary>RA</summary><span class="person-chip-name">Rachel</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-06-18-24" data-mount-to="qc-2026-08-07-00-06"></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-07-06-12" data-mount-to="qc-2026-08-07-06-12"><details class="person-chip"><summary>RA</summary><span class="person-chip-name">Rachel</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-07-12-18" data-mount-to="qc-2026-08-11-00-06"></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-11-06-12" data-mount-to="qc-2026-08-11-12-18"><details class="person-chip"><summary>DS</summary><span class="person-chip-name">David S</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-11-18-24" data-mount-to="qc-2026-08-12-00-06"></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-12-06-12" data-mount-to="qc-2026-08-12-12-18"><details class="person-chip"><summary>DS</summary><span class="person-chip-name">David S</span></details></span></span></div></div></div><div class="structure-slot slot-dark" data-mount-from="qc-2026-08-04-18-24" data-mount-to="qc-2026-08-12-12-18"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-slot slot-dark" data-mount-from="qc-2026-08-05-00-06" data-mount-to="qc-2026-08-12-12-18"><span class="room-label">old worn out tent</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-05-00-06" data-mount-to="qc-2026-08-07-06-12"><details class="person-chip"><summary>SS</summary><span class="person-chip-name">Susan S</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-07-12-18" data-mount-to="qc-2026-08-08-18-24"><details class="person-chip"><summary>DS</summary><span class="person-chip-name">David S</span></details><details class="person-chip"><summary>RA</summary><span class="person-chip-name">Rachel</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-09-00-06" data-mount-to="qc-2026-08-12-12-18"><details class="person-chip"><summary>DS</summary><span class="person-chip-name">David S</span></details></span></span></div><div class="room-slot slot-dark" data-mount-from="qc-2026-08-04-18-24" data-mount-to="qc-2026-08-10-00-06"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-04-18-24" data-mount-to="qc-2026-08-10-00-06"><details class="person-chip"><summary>BO</summary><span class="person-chip-name">Bob</span></details><details class="person-chip"><summary>KA</summary><span class="person-chip-name">Kate</span></details></span></span></div></div></div><div class="structure-slot slot-dark" data-mount-from="qc-2026-08-07-12-18" data-mount-to="qc-2026-08-10-06-12"><span class="structure-label">Barb's Cottage</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-07-12-18" data-mount-to="qc-2026-08-10-06-12"><details class="person-chip"><summary>BA</summary><span class="person-chip-name">Barb</span></details></span></span><div class="structure-rooms"></div></div><div class="structure-slot slot-dark" data-mount-from="qc-2026-08-06-18-24" data-mount-to="qc-2026-08-09-12-18"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-slot slot-dark" data-mount-from="qc-2026-08-06-18-24" data-mount-to="qc-2026-08-09-12-18"><span class="room-label">Top Room</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-06-18-24" data-mount-to="qc-2026-08-09-12-18"><details class="person-chip"><summary>MA</summary><span class="person-chip-name">Matt</span></details><details class="person-chip"><summary>SH</summary><span class="person-chip-name">Shannon</span></details></span></span></div></div></div><div class="structure-slot slot-dark" data-mount-from="qc-2026-08-09-18-24" data-mount-to="qc-2026-08-10-00-06"><span class="structure-label">Moncton Hotel</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-09-18-24" data-mount-to="qc-2026-08-10-00-06"><details class="person-chip"><summary>MA</summary><span class="person-chip-name">Matt</span></details><details class="person-chip"><summary>SH</summary><span class="person-chip-name">Shannon</span></details></span></span><div class="structure-rooms"></div></div><div class="structure-slot slot-dark" data-mount-from="qc-2026-08-06-12-18" data-mount-to="qc-2026-08-12-06-12"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-slot slot-dark" data-mount-from="qc-2026-08-06-12-18" data-mount-to="qc-2026-08-12-06-12"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-slot slot-dark" data-mount-from="qc-2026-08-07-06-12" data-mount-to="qc-2026-08-10-00-06"><span class="room-label">Room T</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-07-06-12" data-mount-to="qc-2026-08-10-00-06"><details class="person-chip"><summary>LI</summary><span class="person-chip-name">Lill</span></details><details class="person-chip"><summary>SH</summary><span class="person-chip-name">Shawn</span></details></span></span></div><div class="room-slot slot-dark" data-mount-from="qc-2026-08-07-12-18" data-mount-to="qc-2026-08-12-06-12"><span class="room-label">Room Y</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-07-12-18" data-mount-to="qc-2026-08-12-06-12"><details class="person-chip"><summary>DM</summary><span class="person-chip-name">David M</span></details><details class="person-chip"><summary>HP</summary><span class="person-chip-name">Helen P</span></details></span></span></div><div class="room-slot slot-dark" data-mount-from="qc-2026-08-07-12-18" data-mount-to="qc-2026-08-12-06-12"><span class="room-label">Room K</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-07-12-18" data-mount-to="qc-2026-08-12-06-12"><details class="person-chip"><summary>EV</summary><span class="person-chip-name">Evie</span></details><details class="person-chip"><summary>JR</summary><span class="person-chip-name">JR</span></details><details class="person-chip"><summary>KA</summary><span class="person-chip-name">Kaylyn</span></details><details class="person-chip"><summary>WE</summary><span class="person-chip-name">Wes</span></details></span></span></div><div class="room-slot slot-dark" data-mount-from="qc-2026-08-06-12-18" data-mount-to="qc-2026-08-09-00-06"><span class="room-label">Room 9</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-06-12-18" data-mount-to="qc-2026-08-09-00-06"><details class="person-chip"><summary>EL</summary><span class="person-chip-name">Elizabeth</span></details><details class="person-chip"><summary>JE</summary><span class="person-chip-name">Jeremy</span></details></span></span></div></div></div><div class="building-slot slot-dark" data-mount-from="qc-2026-08-06-12-18" data-mount-to="qc-2026-08-11-00-06"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-slot slot-dark" data-mount-from="qc-2026-08-06-12-18" data-mount-to="qc-2026-08-11-00-06"><span class="room-label">The Apartment</span><span class="room-people-variants"><span class="room-people slot-dark" data-mount-from="qc-2026-08-06-12-18" data-mount-to="qc-2026-08-06-12-18"><details class="person-chip"><summary>AN</summary><span class="person-chip-name">Andy</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-06-18-24" data-mount-to="qc-2026-08-10-00-06"><details class="person-chip"><summary>AN</summary><span class="person-chip-name">Andy</span></details><details class="person-chip"><summary>CY</summary><span class="person-chip-name">Cynthia</span></details></span><span class="room-people slot-dark" data-mount-from="qc-2026-08-10-06-12" data-mount-to="qc-2026-08-11-00-06"><details class="person-chip"><summary>AN</summary><span class="person-chip-name">Andy</span></details></span></span></div></div></div></div></div></div></div>
 <main>
 <section class="intro-screen" id="trip-top">
 <h1 class="trip-title">Murray Corner 2026</h1>
@@ -945,313 +1207,313 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
 <section class="quarter-screen first-quarter-screen" id="qc-2026-08-01-00-06" data-date="Sat, Aug 1" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-01-06-12" data-date="Sat, Aug 1" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-01-12-18" data-date="Sat, Aug 1" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-01-18-24" data-date="Sat, Aug 1" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>David S & Rachel — 6pm · White Toyota Camry</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>DS</summary><span class="person-chip-name">David S</span></details> & <details class="person-chip"><summary>RA</summary><span class="person-chip-name">Rachel</span></details> — 6pm · White Toyota Camry</span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-02-00-06" data-date="Sun, Aug 2" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-02-06-12" data-date="Sun, Aug 2" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-02-12-18" data-date="Sun, Aug 2" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-02-18-24" data-date="Sun, Aug 2" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-03-00-06" data-date="Mon, Aug 3" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-03-06-12" data-date="Mon, Aug 3" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">Rachel</span></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-03-12-18" data-date="Mon, Aug 3" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">Rachel</span></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-03-18-24" data-date="Mon, Aug 3" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-04-00-06" data-date="Tue, Aug 4" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-04-06-12" data-date="Tue, Aug 4" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-04-12-18" data-date="Tue, Aug 4" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Susan S — 2:30pm</span></div><div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Jim S & Helen S — 5pm</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Susan S</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S, Rachel</span></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>SS</summary><span class="person-chip-name">Susan S</span></details> — 2:30pm</span></div><div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>JS</summary><span class="person-chip-name">Jim S</span></details> & <details class="person-chip"><summary>HS</summary><span class="person-chip-name">Helen S</span></details> — 5pm</span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-04-18-24" data-date="Tue, Aug 4" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Kate & Bob — 9pm</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Jim P — 9pm</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Susan S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>KA</summary><span class="person-chip-name">Kate</span></details> & <details class="person-chip"><summary>BO</summary><span class="person-chip-name">Bob</span></details> — 9pm</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>JP</summary><span class="person-chip-name">Jim P</span></details> — 9pm</span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-05-00-06" data-date="Wed, Aug 5" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan S</span></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-05-06-12" data-date="Wed, Aug 5" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan S</span></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-05-12-18" data-date="Wed, Aug 5" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Jim S & Helen S — 5:59pm</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan S</span></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>JS</summary><span class="person-chip-name">Jim S</span></details> & <details class="person-chip"><summary>HS</summary><span class="person-chip-name">Helen S</span></details> — 5:59pm</span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-05-18-24" data-date="Wed, Aug 5" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan S</span></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-06-00-06" data-date="Thu, Aug 6" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan S</span></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-06-06-12" data-date="Thu, Aug 6" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan S</span></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-06-12-18" data-date="Thu, Aug 6" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Elizabeth & Jeremy — 3pm · Flew into Halifax at 2pm, rented a car, then drove to the cottage</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Andy — 2pm</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room 9</span><span class="room-people">Elizabeth, Jeremy</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy</span></div></div></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>EL</summary><span class="person-chip-name">Elizabeth</span></details> & <details class="person-chip"><summary>JE</summary><span class="person-chip-name">Jeremy</span></details> — 3pm · Flew into Halifax at 2pm, rented a car, then drove to the cottage</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>AN</summary><span class="person-chip-name">Andy</span></details> — 2pm</span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-06-18-24" data-date="Thu, Aug 6" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">✈️ Plane</span>Shannon & Matt — 10pm · Moncton Airport · Kate pickup</span><span class="person-line"><span class="mode-tag">✈️ Plane</span>Cynthia (+ Zoro), Brendan, Pricila & Thiago — 6:30pm · Moncton Airport · Andy pickup</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room 9</span><span class="room-people">Elizabeth, Jeremy</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div><div class="quarter-row"><span class="quarter-row-label">Meal:</span> PEI dinner — Elizabeth, Jeremy &amp; Jim P</div>
+<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">✈️ Plane</span><details class="person-chip"><summary>SH</summary><span class="person-chip-name">Shannon</span></details> & <details class="person-chip"><summary>MA</summary><span class="person-chip-name">Matt</span></details> — 10pm · Moncton Airport · Kate pickup</span><span class="person-line"><span class="mode-tag">✈️ Plane</span><details class="person-chip"><summary>CY</summary><span class="person-chip-name">Cynthia</span></details> (+ Zoro), <details class="person-chip"><summary>BR</summary><span class="person-chip-name">Brendan</span></details>, <details class="person-chip"><summary>PR</summary><span class="person-chip-name">Pricila</span></details> & <details class="person-chip"><summary>TH</summary><span class="person-chip-name">Thiago</span></details> — 6:30pm · Moncton Airport · Andy pickup</span></div><div class="quarter-row"><span class="quarter-row-label">Meal:</span> PEI dinner — Elizabeth, Jeremy &amp; Jim P</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-07-00-06" data-date="Fri, Aug 7" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room 9</span><span class="room-people">Elizabeth, Jeremy</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-07-06-12" data-date="Fri, Aug 7" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Shawn & Lill (+ Kiki) — 11:45am · Then over to the cottage around 1pm</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S, Rachel, Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lill, Shawn</span></div><div class="room-box"><span class="room-label">Room 9</span><span class="room-people">Elizabeth, Jeremy</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>SH</summary><span class="person-chip-name">Shawn</span></details> & <details class="person-chip"><summary>LI</summary><span class="person-chip-name">Lill</span></details> (+ Kiki) — 11:45am · Then over to the cottage around 1pm</span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-07-12-18" data-date="Fri, Aug 7" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Barb</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Wes, Evie, Kaylyn & JR — 4pm · Black SUV · Driving up together</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Helen P & David M — 2pm · Flew into Moncton, then rented a car</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lill, Shawn</span></div><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div><div class="room-box"><span class="room-label">Room 9</span><span class="room-people">Elizabeth, Jeremy</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>BA</summary><span class="person-chip-name">Barb</span></details></span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>WE</summary><span class="person-chip-name">Wes</span></details>, <details class="person-chip"><summary>EV</summary><span class="person-chip-name">Evie</span></details>, <details class="person-chip"><summary>KA</summary><span class="person-chip-name">Kaylyn</span></details> & <details class="person-chip"><summary>JR</summary><span class="person-chip-name">JR</span></details> — 4pm · Black SUV · Driving up together</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>HP</summary><span class="person-chip-name">Helen P</span></details> & <details class="person-chip"><summary>DM</summary><span class="person-chip-name">David M</span></details> — 2pm · Flew into Moncton, then rented a car</span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-07-18-24" data-date="Fri, Aug 7" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Mohsin — 7pm</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Mohsin, Susan S</span></div><div class="room-box kitchen-box"><span class="room-label">Kitchen</span><span class="room-people">Salmon dinner — hosted by Jim P</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lill, Shawn</span></div><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div><div class="room-box"><span class="room-label">Room 9</span><span class="room-people">Elizabeth, Jeremy</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div><div class="quarter-row"><span class="quarter-row-label">Meal:</span> Salmon dinner — hosted by Jim P</div>
+<div class="quarter-row"><span class="quarter-row-label">Arriving:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>MO</summary><span class="person-chip-name">Mohsin</span></details> — 7pm</span></div><div class="quarter-row"><span class="quarter-row-label">Meal:</span> Salmon dinner — hosted by Jim P</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-08-00-06" data-date="Sat, Aug 8" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Mohsin, Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lill, Shawn</span></div><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div><div class="room-box"><span class="room-label">Room 9</span><span class="room-people">Elizabeth, Jeremy</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-08-06-12" data-date="Sat, Aug 8" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Mohsin, Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lill, Shawn</span></div><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div><div class="room-box"><span class="room-label">Room 9</span><span class="room-people">Elizabeth, Jeremy</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div><div class="quarter-row"><span class="quarter-row-label">Activities:</span> Bake sale at the craft store — 10am</div>
+<div class="quarter-row"><span class="quarter-row-label">Activities:</span> Bake sale at the craft store — 10am</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-08-12-18" data-date="Sat, Aug 8" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Mohsin, Susan S</span></div><div class="room-box kitchen-box"><span class="room-label">Kitchen</span><span class="room-people">Kebab lunch — Jeremy chef</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lill, Shawn</span></div><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div><div class="room-box"><span class="room-label">Room 9</span><span class="room-people">Elizabeth, Jeremy</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div><div class="quarter-row"><span class="quarter-row-label">Meal:</span> Kebab lunch — Jeremy chef</div><div class="quarter-row"><span class="quarter-row-label">Activities:</span> Concert on the raft on the point, The Field — hosted by Susan S, Jim S &amp; Jim P</div>
+<div class="quarter-row"><span class="quarter-row-label">Meal:</span> Kebab lunch — Jeremy chef</div><div class="quarter-row"><span class="quarter-row-label">Activities:</span> Concert on the raft on the point, The Field — hosted by Susan S, Jim S &amp; Jim P</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-08-18-24" data-date="Sat, Aug 8" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Mohsin, Susan S</span></div><div class="room-box kitchen-box"><span class="room-label">Kitchen</span><span class="room-people">Lobster dinner — sponsored by Andy</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S, Rachel</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lill, Shawn</span></div><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div><div class="room-box"><span class="room-label">Room 9</span><span class="room-people">Elizabeth, Jeremy</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div><div class="quarter-row"><span class="quarter-row-label">Meal:</span> Lobster dinner — sponsored by Andy</div>
+<div class="quarter-row"><span class="quarter-row-label">Meal:</span> Lobster dinner — sponsored by Andy</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-09-00-06" data-date="Sun, Aug 9" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">✈️ Plane</span>Rachel — Moncton Airport · 6am flight · Departing Cottage at 3am · David S driving</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Mohsin, Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lill, Shawn</span></div><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div><div class="room-box"><span class="room-label">Room 9</span><span class="room-people">Elizabeth, Jeremy</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">✈️ Plane</span><details class="person-chip"><summary>RA</summary><span class="person-chip-name">Rachel</span></details> — Moncton Airport · 6am flight · Departing Cottage at 3am · David S driving</span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-09-06-12" data-date="Sun, Aug 9" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Mohsin — 11am</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Elizabeth & Jeremy — 11am · Returning the rental car at Halifax before flying out at 3pm</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lill, Shawn</span></div><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>MO</summary><span class="person-chip-name">Mohsin</span></details> — 11am</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>EL</summary><span class="person-chip-name">Elizabeth</span></details> & <details class="person-chip"><summary>JE</summary><span class="person-chip-name">Jeremy</span></details> — 11am · Returning the rental car at Halifax before flying out at 3pm</span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-09-12-18" data-date="Sun, Aug 9" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Lakes General Store</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Top Room</span><span class="room-people">Matt, Shannon</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lill, Shawn</span></div><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-09-18-24" data-date="Sun, Aug 9" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Moncton Hotel</span><div class="structure-rooms"><span class="room-people">Matt, Shannon</span></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lill, Shawn</span></div><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-10-00-06" data-date="Mon, Aug 10" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><span class="room-people">Brendan, Pricila, Thiago</span></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Kate &amp; Bob's Revel camper van</span><span class="room-people">Bob, Kate</span></div><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Moncton Hotel</span><div class="structure-rooms"><span class="room-people">Matt, Shannon</span></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room T</span><span class="room-people">Lill, Shawn</span></div><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy, Cynthia</span></div></div></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-10-06-12" data-date="Mon, Aug 10" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Shawn & Lill (+ Kiki)</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Kate & Bob</span><span class="person-line"><span class="mode-tag">✈️ Plane</span>Shannon & Matt — Moncton Airport · Left Lakes General Store Sunday evening — stayed at Moncton Hotel overnight</span><span class="person-line"><span class="mode-tag">✈️ Plane</span>Cynthia (+ Zoro), Brendan, Pricila & Thiago — 7am · Moncton Airport · Left Little Shemogue Inn at 6am · Andy driving</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Barb's Cottage</span><div class="structure-rooms"><span class="room-people">Barb</span></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy</span></div></div></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>SH</summary><span class="person-chip-name">Shawn</span></details> & <details class="person-chip"><summary>LI</summary><span class="person-chip-name">Lill</span></details> (+ Kiki)</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>KA</summary><span class="person-chip-name">Kate</span></details> & <details class="person-chip"><summary>BO</summary><span class="person-chip-name">Bob</span></details></span><span class="person-line"><span class="mode-tag">✈️ Plane</span><details class="person-chip"><summary>SH</summary><span class="person-chip-name">Shannon</span></details> & <details class="person-chip"><summary>MA</summary><span class="person-chip-name">Matt</span></details> — Moncton Airport · Left Lakes General Store Sunday evening — stayed at Moncton Hotel overnight</span><span class="person-line"><span class="mode-tag">✈️ Plane</span><details class="person-chip"><summary>CY</summary><span class="person-chip-name">Cynthia</span></details> (+ Zoro), <details class="person-chip"><summary>BR</summary><span class="person-chip-name">Brendan</span></details>, <details class="person-chip"><summary>PR</summary><span class="person-chip-name">Pricila</span></details> & <details class="person-chip"><summary>TH</summary><span class="person-chip-name">Thiago</span></details> — 7am · Moncton Airport · Left Little Shemogue Inn at 6am · Andy driving</span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-10-12-18" data-date="Mon, Aug 10" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Barb</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy</span></div></div></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>BA</summary><span class="person-chip-name">Barb</span></details></span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-10-18-24" data-date="Mon, Aug 10" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy</span></div></div></div></div></div></div></div><div class="quarter-row"><span class="quarter-row-label">Meal:</span> Campfire chili — JR &amp; Kaylyn cooking</div>
+<div class="quarter-row"><span class="quarter-row-label">Meal:</span> Campfire chili — JR &amp; Kaylyn cooking</div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-11-00-06" data-date="Tue, Aug 11" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">Jim P</span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div><div class="building-box"><span class="building-label">The Apartment</span><div class="building-rooms"><div class="room-box"><span class="room-label">The Apartment</span><span class="room-people">Andy</span></div></div></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-11-06-12" data-date="Tue, Aug 11" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Jim P</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Andy</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div><div class="room-box"><span class="room-label">Blue Room</span><span class="room-people">Susan S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>JP</summary><span class="person-chip-name">Jim P</span></details></span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>AN</summary><span class="person-chip-name">Andy</span></details></span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-11-12-18" data-date="Tue, Aug 11" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Susan S</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>SS</summary><span class="person-chip-name">Susan S</span></details></span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-11-18-24" data-date="Tue, Aug 11" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people"></span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">The Field</span><div class="structure-rooms"><div class="room-box"><span class="room-label">old worn out tent</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-12-00-06" data-date="Wed, Aug 12" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-12-06-12" data-date="Wed, Aug 12" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Master Suite</span><span class="room-people">Helen S, Jim S</span></div><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Little Shemogue Inn</span><div class="structure-rooms"><div class="building-box"><span class="building-label">Log Point</span><div class="building-rooms"><div class="room-box"><span class="room-label">Room Y</span><span class="room-people">David M, Helen P</span></div><div class="room-box"><span class="room-label">Room K</span><span class="room-people">Evie, JR, Kaylyn, Wes</span></div></div></div></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-12-12-18" data-date="Wed, Aug 12" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚆 Train</span>Wes, Evie, Helen P & David M — Moncton Station</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Kaylyn & JR</span><span class="person-line"><span class="mode-tag">🚗 Car</span>Jim S & Helen S — White Dodge Caravan</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"><div class="room-box working-box"><span class="room-label">Working</span><span class="room-people">David S</span></div></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚆 Train</span><details class="person-chip"><summary>WE</summary><span class="person-chip-name">Wes</span></details>, <details class="person-chip"><summary>EV</summary><span class="person-chip-name">Evie</span></details>, <details class="person-chip"><summary>HP</summary><span class="person-chip-name">Helen P</span></details> & <details class="person-chip"><summary>DM</summary><span class="person-chip-name">David M</span></details> — Moncton Station</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>KA</summary><span class="person-chip-name">Kaylyn</span></details> & <details class="person-chip"><summary>JR</summary><span class="person-chip-name">JR</span></details></span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>JS</summary><span class="person-chip-name">Jim S</span></details> & <details class="person-chip"><summary>HS</summary><span class="person-chip-name">Helen S</span></details> — White Dodge Caravan</span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-12-18-24" data-date="Wed, Aug 12" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-13-00-06" data-date="Thu, Aug 13" data-quarter-name="" data-quarter="00-06">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"><div class="room-box"><span class="room-label">Green Room</span><span class="room-people">David S</span></div></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-13-06-12" data-date="Thu, Aug 13" data-quarter-name="Morning" data-quarter="06-12">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span>David S — 6am · White Toyota Camry</span></div><div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+<div class="quarter-row"><span class="quarter-row-label">Departing:</span><span class="person-line"><span class="mode-tag">🚗 Car</span><details class="person-chip"><summary>DS</summary><span class="person-chip-name">David S</span></details> — 6am · White Toyota Camry</span></div>
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-13-12-18" data-date="Thu, Aug 13" data-quarter-name="Afternoon" data-quarter="12-18">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 <section class="quarter-screen" id="qc-2026-08-13-18-24" data-date="Thu, Aug 13" data-quarter-name="Evening" data-quarter="18-24">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
-<div class="quarter-row"><span class="quarter-row-label">Structures:</span><div class="structure-boxes"><div class="structure-box"><span class="structure-label">Cottage</span><div class="structure-rooms"></div></div><div class="structure-box"><span class="structure-label">Red Shed</span><div class="structure-rooms"></div></div></div></div>
+
 </div>
 </section>
 </main>
@@ -1339,7 +1601,8 @@ function currentQuarterSectionId(tripStart, tripEnd) {
 // no color changes at all for its duration and settles in one clean
 // step on the destination's own correct color the instant it lands —
 // nothing skipped for a single-screen jump or organic scrolling, since
-// those never set this flag in the first place.
+// isMultiScreenJump() below only sets the flag for a jump that actually
+// crosses more than one quarter screen.
 //
 // Also suspends scroll-snap for the duration, same fix and same reason
 // timeline/shared.js's play/pause run already applies (see its own
@@ -1355,21 +1618,58 @@ function currentQuarterSectionId(tripStart, tripEnd) {
 // the Timeline nav item) actually goes through. Harmless on any page
 // other than site/index.html — .auto-scrolling only matches CSS scoped
 // under html.timeline-page (timeline/shared.css), which no other page's
-// <html> carries.
+// <html> carries. Unlike the blend suspension above, this part is NOT
+// scoped to multi-screen jumps only — a single-screen jump goes through
+// this exact same scrollIntoView(smooth) call and hits the identical
+// Safari/iOS snap bug, so scroll-snap is suspended for every jump
+// regardless of distance.
+//
+// isMultiScreenJump() reads target's own current bounding rect rather
+// than tracking "which screen is current" as a separate piece of state:
+// quarter screens stack at one viewport height each (100svh — see
+// timeline/shared.css), so before any scrolling starts, a target at most
+// one screen away always sits within about one viewport height of the
+// current scroll position (roughly 0 for the same screen, roughly
+// +/-100vh for an adjacent one); anything further is unambiguously a
+// multi-screen jump. The 1.5x margin absorbs the small, expected slack
+// from the nav bar's own height and mobile toolbar collapse/expand,
+// without ever mistaking a genuinely-adjacent screen for a far one.
+function isMultiScreenJump(target) {
+  var top = target.getBoundingClientRect().top;
+  return Math.abs(top) > window.innerHeight * 1.5;
+}
 var scrollJumpSettleTimer = null;
 function jumpToSection(target) {
   if (!target) return;
-  window.__scrollJumpActive = true;
+  var suspendBlend = isMultiScreenJump(target);
+  if (suspendBlend) {
+    window.__scrollJumpActive = true;
+  }
   document.documentElement.classList.add('auto-scrolling');
   if (scrollJumpSettleTimer) clearTimeout(scrollJumpSettleTimer);
   var settle = function () {
-    window.__scrollJumpActive = false;
+    if (suspendBlend) {
+      window.__scrollJumpActive = false;
+    }
     document.documentElement.classList.remove('auto-scrolling');
     document.removeEventListener('scrollend', settle);
+    // A one-off, definitive correction for the Structures stage (and the
+    // nav label alongside it) — timeline/shared.js exposes this only on
+    // site/index.html (the one page with quarter screens/a stage to
+    // correct), so it's guarded here rather than assumed to exist; see
+    // that file's own window.__syncStructuresStage comment for why this
+    // can't just piggyback on the synthetic 'scroll' event below the way
+    // the blend does — IntersectionObserver doesn't listen for 'scroll'
+    // at all, so nudging one wouldn't reach it.
+    if (typeof window.__syncStructuresStage === 'function') {
+      window.__syncStructuresStage();
+    }
     // Nudge timeline/shared.js's own scroll listener to recompute now
-    // that we've landed — without this, the blend would stay frozen at
-    // whatever it was showing right before the jump until the visitor's
-    // next real scroll/swipe.
+    // that we've landed — without this, a suspended blend would stay
+    // frozen at whatever it was showing right before the jump until the
+    // visitor's next real scroll/swipe. Harmless to dispatch even when
+    // suspendBlend was false (the blend was never frozen in the first
+    // place, so this just repaints with the same answer it already had).
     window.dispatchEvent(new Event('scroll'));
   };
   // 'scrollend' (supported in every current evergreen browser) fires the
@@ -1436,35 +1736,51 @@ document.addEventListener('DOMContentLoaded', function () {
     people.forEach(function (el) { folksList.appendChild(el); });
   }
 
-  // Closing a split control's panel (see requirements/public.md ->
-  // Navigation -> Closing a panel) — a plain <details> does neither of
-  // these two on its own: opening one leaves any other already-open panel
-  // (Timeline's and Folks') sitting open too, overlapping on screen, and
-  // clicking anywhere outside an open panel does nothing at all — the
-  // only way to close it is clicking the exact same tiny caret again.
-  // Both read as "hard to close." Lives here (not timeline/shared.js) so
-  // it applies on every page with one of these panels, including Family
-  // Tree and Details pages, which have no other JS of their own.
-  var jumpMenus = document.querySelectorAll('.jump-menu');
-  if (jumpMenus.length) {
-    // Opening a panel closes any other open one first — 'toggle' fires
+  // Closing a disclosure (see requirements/public.md -> Navigation ->
+  // Closing a panel) — a plain <details> does neither of these two on
+  // its own: opening one leaves any other already-open one (a nav panel,
+  // or — see below — a person-chip's revealed name) sitting open too,
+  // overlapping on screen, and clicking anywhere outside an open one
+  // does nothing at all — the only way to close it is clicking the exact
+  // same tiny trigger again. Both read as "hard to close." Lives here
+  // (not timeline/shared.js) so it applies on every page with one of
+  // these, including Family Tree and Attendees pages, which have no
+  // other JS of their own.
+  //
+  // Covers two visually different but mechanically identical things:
+  // the nav's own split-control panels (.jump-menu — Timeline's day/
+  // quarter jump list, Folks, Milestones) and a person-chip's tap-to-
+  // reveal name (.person-chip — render_person_chip() in
+  // timeline/scripts/build.py, see requirements/public.md -> The
+  // Structures stage -> Nested box display and -> Row-by-row rules ->
+  // Arrivals) — both are just <details>/<summary>, so one shared "only
+  // one open at a time, click away or Escape closes it" rule covers
+  // every one of them site-wide, not a second bespoke mechanism for
+  // chips. A page can have a couple hundred person-chips (every occupant
+  // ever shown on the Structures stage, every traveler on every Arrivals/
+  // Departures row, all pre-rendered — see technical.md -> The
+  // Structures stage) — trivial to attach one listener each on a static
+  // page this size.
+  var disclosures = document.querySelectorAll('.jump-menu, .person-chip');
+  if (disclosures.length) {
+    // Opening one closes any other open one first — 'toggle' fires
     // whenever a <details>'s own open state changes, native or scripted,
-    // so this also catches a menu opened programmatically (e.g. a future
-    // change), not just a direct click on its own caret.
-    jumpMenus.forEach(function (menu) {
+    // so this also catches one opened programmatically (e.g. a future
+    // change), not just a direct click on its own trigger.
+    disclosures.forEach(function (menu) {
       menu.addEventListener('toggle', function () {
         if (!menu.open) return;
-        jumpMenus.forEach(function (other) {
+        disclosures.forEach(function (other) {
           if (other !== menu) other.open = false;
         });
       });
     });
-    // A click anywhere outside every open panel closes it — checked via
-    // .contains() so a click on the panel's own trigger or a link inside
-    // it is correctly left alone (the trigger's native toggle, or
+    // A click anywhere outside every open one closes it — checked via
+    // .contains() so a click on its own trigger or a link inside it is
+    // correctly left alone (the trigger's native toggle, or
     // timeline/shared.js's own close-after-acting logic, handle those).
     document.addEventListener('click', function (event) {
-      jumpMenus.forEach(function (menu) {
+      disclosures.forEach(function (menu) {
         if (menu.open && !menu.contains(event.target)) {
           menu.open = false;
         }
@@ -1474,7 +1790,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // clicking away, for anyone not using touch/mouse.
     document.addEventListener('keydown', function (event) {
       if (event.key !== 'Escape') return;
-      jumpMenus.forEach(function (menu) { menu.open = false; });
+      disclosures.forEach(function (menu) { menu.open = false; });
     });
   }
 });
@@ -1584,23 +1900,203 @@ document.addEventListener('DOMContentLoaded', function () {
   var dateEl = document.getElementById('cq-date');
   var navEl = document.querySelector('.site-nav');
   var screens = document.querySelectorAll('.quarter-screen[data-date]');
+
+  // The current-section geometry lookup — shared by the play/pause
+  // control further down (currentSectionIndex()) and the settle-time
+  // correction below (window.__syncStructuresStage()), not a second
+  // live-tracking mechanism running alongside the observer below: this
+  // is a plain, on-demand answer, computed fresh only when actually
+  // called, same rootMargin logic as the observer just applied as a
+  // one-off walk instead of a live subscription.
+  function currentQuarterScreen() {
+    var current = null;
+    for (var i = 0; i < screens.length; i++) {
+      if (screens[i].getBoundingClientRect().top <= NAV_HEIGHT_PX + 1) {
+        current = screens[i];
+      } else {
+        break;
+      }
+    }
+    return current;
+  }
+
+  // Structures stage (see requirements/public.md -> Home & Timeline ->
+  // The Structures stage, and technical.md -> The Structures stage) — a
+  // complete, fixed map (structure > [building >] room/instance/Working/
+  // Kitchen, plus Unassigned) decided once, in full, at build time: every
+  // element that will EVER be relevant anywhere in the trip is already in
+  // the DOM, in its own permanent layout position, before this code ever
+  // runs — nothing here adds or removes anything from the page, only
+  // toggles visibility. Each carries its own data-mount-from/
+  // data-mount-to (timeline/scripts/build.py -> compute_structures_
+  // stage()). Every such element is cached once into a plain array, not
+  // re-queried on every scroll — there are at most a couple hundred of
+  // these across the whole page (a handful of structures, a few rooms
+  // each, a handful of text variants per room), trivial to walk on every
+  // quarter change.
+  var stageEl = document.getElementById('structures-stage');
+  var mountRangeEls = stageEl
+    ? Array.prototype.slice.call(document.querySelectorAll('[data-mount-from]'))
+    : [];
+  // The one generic rule applied to every such element regardless of
+  // nesting depth: a whole structure box, a room/Working/Kitchen sub-box,
+  // and a single pre-rendered occupant-text variant span are all just "is
+  // the current quarter inside my own [from, to] range" — see
+  // requirements/public.md -> The Structures stage -> "The map is decided
+  // once, in full, before the stage is ever shown" for why one mechanism
+  // covers every level rather than a different one per nesting depth.
+  // Plain string comparison works directly on "qc-..." ids with no
+  // parsing — the zero-padded ISO date and fixed quarter suffixes already
+  // sort in chronological order as strings (see quarter_screen_id() in
+  // shared/trip.py).
+  //
+  // #structures-stage itself is the one exception: it still uses the
+  // native `hidden` property (display:none) for the whole-strip Home/
+  // transition-screen-vs-Timeline swap, same as before — safe there
+  // specifically because it's `position: fixed`, already outside document
+  // flow. Every DESCENDANT instead gets a `slot-dark` class toggled
+  // (`visibility: hidden` in timeline/shared.css, never `display: none`),
+  // so its own reserved space in the grid/flex layout stays reserved
+  // whether it's lit or dark — see that file's own comment on
+  // `.slot-dark` for why that one substitution is the actual fix.
+  function applyStructuresMountRanges(currentId) {
+    mountRangeEls.forEach(function (el) {
+      var from = el.getAttribute('data-mount-from');
+      var to = el.getAttribute('data-mount-to');
+      var inRange = !!(currentId && from <= currentId && currentId <= to);
+      if (el === stageEl) {
+        el.hidden = !inRange;
+      } else {
+        el.classList.toggle('slot-dark', !inRange);
+      }
+    });
+  }
+
+  // Keeps .quarter-canvas's own bottom-padding reservation (timeline/
+  // shared.css) in sync with the stage's REAL current height. The stage
+  // still has no height cap — it reserves space for every structure/room/
+  // etc that will EVER be relevant across the whole trip, all at once,
+  // from the moment it first renders (see requirements/public.md -> The
+  // Structures stage -> Layout and technical.md -> The Structures stage
+  // for the concrete numbers) — so a static guess could never stay
+  // correct there; this is the live mechanism that guess's own CSS
+  // fallback only covers briefly, before this runs. Its job is narrower
+  // than it used to be, though: the stage's height no longer changes as a
+  // CONSEQUENCE of scrolling through quarters at all (nothing mounts or
+  // unmounts anymore, ever, once first rendered — going lit/dark is a
+  // pure visibility change, see applyStructuresMountRanges() above), so
+  // this observer is only still doing real work for a genuine viewport-
+  // driven reflow: a window resize crossing one of .structures-stage-
+  // inner's own column-count breakpoints, a font loading late, mobile
+  // browser chrome collapsing/expanding. Entirely independent of the
+  // quarter-change logic above either way; "how tall is the stage right
+  // now" and "which quarter is current" don't need to be the same
+  // trigger.
+  if (stageEl && 'ResizeObserver' in window) {
+    var stageResizeObserver = new ResizeObserver(function (entries) {
+      document.documentElement.style.setProperty('--stage-height', entries[0].contentRect.height + 'px');
+    });
+    stageResizeObserver.observe(stageEl);
+  }
+
+  // Applies `current` (a .quarter-screen element, or null) to both the
+  // nav label and the Structures stage in one place — used by the live
+  // observer below AND by window.__syncStructuresStage()'s one-off
+  // settle-time correction, so the two can't drift into applying the
+  // "current screen -> visible state" rule slightly differently.
+  function applyCurrentScreen(current) {
+    if (current) {
+      if (dateEl) dateEl.textContent = current.getAttribute('data-date');
+      if (dayEl) {
+        var quarterName = current.getAttribute('data-quarter-name');
+        dayEl.textContent = quarterName ? ' · ' + quarterName : '';
+      }
+      if (navEl) {
+        navEl.setAttribute('data-quarter', current.getAttribute('data-quarter'));
+      }
+      applyStructuresMountRanges(current.id);
+    } else {
+      // Scrolled back off every quarter screen (Home, or the transition
+      // screen) — nothing here has a "now" to report, so both the label
+      // and the stage revert. cq-day reverts to the literal static
+      // "Timeline" text (must match shared/nav.py -> render_nav()'s own
+      // build-time default on the same span), NOT an empty string — an
+      // empty cq-date alongside an empty cq-day would leave the split
+      // control's label reading as nothing at all, rather than the
+      // static word every other view is supposed to show (see
+      // requirements/public.md -> Navigation -> Timeline's panel).
+      if (dateEl) dateEl.textContent = '';
+      if (dayEl) dayEl.textContent = 'Timeline';
+      // Clears the nav's own stale data-quarter too, falling back to its
+      // CSS default (--grove, shared/base.css -> .site-nav) — left set to
+      // whatever quarter you scrolled away from otherwise, which is wrong
+      // on Home/the transition screen per requirements/public.md -> Time-
+      // of-day background ("Grove... for anything that isn't a specific
+      // day/quarter").
+      if (navEl) navEl.removeAttribute('data-quarter');
+      applyStructuresMountRanges('');
+    }
+  }
+
   if (dayEl && dateEl && screens.length && 'IntersectionObserver' in window) {
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          dateEl.textContent = entry.target.getAttribute('data-date');
-          var quarterName = entry.target.getAttribute('data-quarter-name');
-          dayEl.textContent = quarterName ? ' · ' + quarterName : '';
-          if (navEl) {
-            navEl.setAttribute('data-quarter', entry.target.getAttribute('data-quarter'));
-          }
-        }
-      });
+    var observer = new IntersectionObserver(function () {
+      // Deliberately ignores the `entries` argument entirely — a real,
+      // confirmed bug (found live: the stage/label would flash correctly
+      // on scrolling into a new quarter, then immediately revert to
+      // empty, inconsistently, worse scrolling down than up) came from
+      // trusting it. An IntersectionObserver batch only reports elements
+      // whose OWN intersection state changed since the last callback —
+      // NOT "the full current truth of every observed element" — so when
+      // the outgoing screen's exit and the incoming screen's entry land
+      // in two SEPARATE callback invocations (common enough while
+      // scrolling, and not something this code controls), a batch
+      // containing only the exit looks — by the old logic — like "nothing
+      // is intersecting anywhere," incorrectly reverting the stage/label
+      // a moment after the correct one had already been shown by the
+      // entry's own (earlier or later) callback. The observer firing at
+      // all is only a "something changed, go check" trigger now — the
+      // actual answer always comes from currentQuarterScreen()'s own
+      // synchronous geometry walk (same helper the settle-time
+      // correction and play/pause use), which has no notion of "this
+      // batch" to be incomplete about: it re-derives the true current
+      // screen from scratch, every time.
+      //
+      // Skipped for the duration of a suspended multi-screen jump (see
+      // shared/nav.js -> jumpToSection() and window.__scrollJumpActive)
+      // so the stage doesn't flicker lit/dark through every structure
+      // relevant to the screens crossed in between — window.
+      // __syncStructuresStage() below settles it directly on the correct
+      // destination the instant the jump actually finishes, regardless
+      // of what this observer did or didn't fire in the meantime. The
+      // label freezing too for that same short window is a deliberate
+      // side effect, not a separate fix — it was already prone to the
+      // identical flicker-through-intermediate-quarters risk during a
+      // fast jump, just for text instead of color.
+      if (window.__scrollJumpActive) return;
+      applyCurrentScreen(currentQuarterScreen());
     }, { rootMargin: '-' + NAV_HEIGHT_PX + 'px 0px -90% 0px', threshold: 0 });
     screens.forEach(function (el) {
       observer.observe(el);
     });
   }
+
+  // A one-off, definitive correction run once a multi-screen jump
+  // actually finishes — called from shared/nav.js -> jumpToSection()'s
+  // own settle(), after window.__scrollJumpActive has already cleared.
+  // Not a second live-tracking mechanism: currentQuarterScreen()'s same
+  // one-off geometry lookup, applied once, so the label and stage end up
+  // definitively correct regardless of exactly when (or whether) the
+  // IntersectionObserver above managed to fire around the jump settling
+  // — see requirements/public.md -> The Structures stage -> "The map is
+  // decided once, in full, before the stage is ever shown". Exposed as a
+  // global (rather than staying a private
+  // closure variable) specifically so shared/nav.js, loaded and run
+  // before this file, can still reach it from its own settle() callback,
+  // which fires long after both files' own DOMContentLoaded setup has
+  // already completed.
+  window.__syncStructuresStage = function () {
+    applyCurrentScreen(currentQuarterScreen());
+  };
 
   // Time-of-day background blend — see requirements/public.md -> Time-of-
   // day background and timeline/shared.css -> .quarter-screen[data-quarter]
@@ -1659,6 +2155,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var lastOverridden = null;
     function updateQuarterBlend() {
       blendRafId = null;
+      // Closes a race scheduleQuarterBlendUpdate()'s own check can't catch
+      // alone: a frame can already be queued (blendRafId set from a
+      // 'scroll' event fired a moment before the jump started) and still
+      // fire after window.__scrollJumpActive flips true — bail here too
+      // rather than let that one stray frame paint a mid-jump color.
+      if (window.__scrollJumpActive) return;
       // The entering/current screen: among every quarter screen whose top
       // hasn't yet scrolled past the viewport top, the one closest to it.
       // At rest this is exactly the settled screen (its own top sits at
@@ -1689,6 +2191,21 @@ document.addEventListener('DOMContentLoaded', function () {
       navEl.style.setProperty('--quarter-bg', color);
     }
     function scheduleQuarterBlendUpdate() {
+      // window.__scrollJumpActive (set by jumpToSection() in shared/nav.js
+      // for a genuine multi-screen jump — see that function's own comment)
+      // is the fix for a real bug: without this check, every 'scroll'
+      // event fired during the browser's own smooth-scroll animation
+      // across several quarter screens used to schedule (and run) a fresh
+      // blend computation, racing through each crossed screen's color in
+      // well under a second — a strobe, not the gentle cross-fade this
+      // effect is supposed to be (see requirements/public.md -> Time-of-
+      // day background). The flag is never set for organic scrolling or a
+      // one-screen jump, so neither loses the live blend — only an actual
+      // multi-screen jump skips it, and jumpToSection()'s own settle()
+      // callback fires one final synthetic 'scroll' once the flag clears,
+      // so the destination still ends up painted correctly the instant
+      // the jump finishes, just without any of the in-between repaints.
+      if (window.__scrollJumpActive) return;
       if (blendRafId === null) {
         blendRafId = requestAnimationFrame(updateQuarterBlend);
       }
@@ -1732,27 +2249,23 @@ document.addEventListener('DOMContentLoaded', function () {
   var runButton = document.getElementById('run-toggle');
   var timelineCaret = document.getElementById('timeline-caret');
   var scrollRoot = document.documentElement;
-  var runSections = document.querySelectorAll('.quarter-screen');
-  if (runButton && runSections.length) {
+  if (runButton && screens.length) {
     var PAUSE_MS = 1800;
     var runTimerId = null;
     var runIndex = 0;
 
-    // The section whose top edge has scrolled up to (or past) the nav —
-    // i.e. whichever screen is currently occupying the viewport below the
-    // sticky nav — found by walking forward while sections keep starting
-    // at/above that line, same rootMargin logic as the nav-label observer
-    // above just applied as a one-off lookup instead of a live observer.
+    // Delegates to the shared currentQuarterScreen() lookup above (same
+    // one the Structures stage's settle-time correction uses) and turns
+    // its answer into an index into `screens` — falls back to 0 (the
+    // very first quarter screen) when nothing's currently in view, e.g.
+    // Play clicked from Home, matching this function's own original
+    // default before the geometry walk itself moved into the shared
+    // helper.
     function currentSectionIndex() {
-      var idx = 0;
-      for (var i = 0; i < runSections.length; i++) {
-        if (runSections[i].getBoundingClientRect().top <= NAV_HEIGHT_PX + 1) {
-          idx = i;
-        } else {
-          break;
-        }
-      }
-      return idx;
+      var current = currentQuarterScreen();
+      if (!current) return 0;
+      var idx = Array.prototype.indexOf.call(screens, current);
+      return idx < 0 ? 0 : idx;
     }
 
     function stopRun() {
@@ -1769,11 +2282,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function advanceRun() {
-      if (runIndex >= runSections.length) {
+      if (runIndex >= screens.length) {
         stopRun();
         return;
       }
-      runSections[runIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      screens[runIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
       runIndex++;
       runTimerId = setTimeout(advanceRun, PAUSE_MS);
     }

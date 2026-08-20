@@ -179,6 +179,56 @@ def esc(s):
     return nav.esc(s)
 
 
+def person_initials(name):
+    """A person's display `name` (already the exact string shown
+    everywhere else on the site — see requirements/public.md ->
+    people.json -> `name`), compressed to a short chip label for
+    render_person_chip() below. One letter per word for a multi-word name
+    ("Helen S" -> "HS") — the existing last-initial already disambiguates
+    those. A single-word name takes its own first TWO letters instead of
+    one ("Stella" -> "ST"), not one -- checked directly against this
+    roster: plain first-letter-only collided 5 ways on "S" alone (Stella,
+    Steven, Shawn, Shannon, Sandra), all single-word names. Two letters
+    narrows that considerably but doesn't eliminate it (Stella/Steven
+    both still land on "ST") -- a real, current, logged gap, see
+    open-questions.md -> "Person-chip initials can collide" for today's
+    actual colliding pairs; not solved here, and not validated against at
+    build time."""
+    words = name.split()
+    if len(words) == 1:
+        return words[0][:2].upper()
+    return "".join(w[0].upper() for w in words if w)
+
+
+def render_person_chip(name):
+    """One tap-to-reveal initials chip standing in for a person's name —
+    see requirements/public.md -> The Structures stage -> Nested box
+    display, and brand-guidelines.md -> Illustration / Imagery Style.
+    Used for a room/instance/bare-structure/Working occupant (via
+    render_variant_chips() below) and for a traveler's own name in an
+    Arrivals/Departures row (render_travel_row() below) -- NOT for a
+    driver mention inside a leg's free-text detail string, which stays
+    plain text (see render_travel_row()'s own comment).
+
+    Plain <details>/<summary>, not a JS-driven popover: shared/nav.py's
+    own jump-menu already uses this exact disclosure element for the
+    nav's panels, and shared/nav.js's existing "only one disclosure open
+    at a time" handling (close other open ones on open, close on outside
+    click, close on Escape) is generalized to cover every element with
+    this class too, not a second mechanism -- see that file. The revealed
+    name (timeline/shared.css -> .person-chip-name) is `position:
+    absolute`, so opening/closing one never changes the chip's own
+    layout size, or anyone else's -- the identical constraint the
+    Structures stage's own slot-dark mechanism exists to guarantee one
+    level up (see technical.md -> The Structures stage), just applied
+    here to what's INSIDE an already-lit box instead of the box itself."""
+    initials = esc(person_initials(name))
+    return (
+        f'<details class="person-chip"><summary>{initials}</summary>'
+        f'<span class="person-chip-name">{esc(name)}</span></details>'
+    )
+
+
 def load_json(path):
     try:
         return json.loads(path.read_text())
@@ -850,24 +900,33 @@ def group_legs_by_detail(pairs, people_by_id, driver_label="driving"):
 
 def render_travel_row(label, pairs, people_by_id, driver_label="driving"):
     """The Arriving:/Departing: row body — one line per distinct trip (see
-    group_legs_by_detail() above), not one per person. A `dogs` tag (see
-    requirements/public.md -> people.json -> dogs) rides along on
-    whichever name it belongs to, right where that person's name appears
-    in the joined list — same "+ <name>" shape used everywhere else a dog
-    shows (Family Tree, Attendees), just inline here instead of on its
-    own line, since this row is already one line per trip. `driver_label`
-    distinguishes an Arriving row's "<name> pickup" (someone meeting the
-    traveler at a hub) from a Departing row's "<name> driving" (someone
-    dropping the traveler off) — same `driver_id` fact, worded for which
-    direction it actually is (see the "Arriving:"/"Departing:" call sites
-    below)."""
+    group_legs_by_detail() above), not one per person. Each traveler's own
+    name renders as a tap-to-reveal initials chip (render_person_chip()
+    above), not the plain name — mode/time/hub/vehicle/detail all stay
+    plain visible text; only the "who" is chipped (see
+    requirements/public.md -> Row-by-row rules -> Arrivals). A driver
+    mentioned inside `group['detail']` (e.g. "David M driving") is NOT
+    chipped — that string is already fully composed and gets `esc()`'d as
+    one atomic block below, so embedding a second bit of pre-escaped chip
+    HTML inside it would either double-escape or break out of that
+    escaping; it's also not a structured person field the way `people`
+    here is, just free text that happens to include a name. A `dogs` tag
+    (see requirements/public.md -> people.json -> dogs) rides along right
+    after whichever chip it belongs to, same "+ <name>" shape used
+    everywhere else a dog shows (Family Tree, Attendees), just inline
+    here instead of on its own line, since this row is already one line
+    per trip. `driver_label` distinguishes an Arriving row's "<name>
+    pickup" (someone meeting the traveler at a hub) from a Departing
+    row's "<name> driving" (someone dropping the traveler off) — same
+    `driver_id` fact, worded for which direction it actually is (see the
+    "Arriving:"/"Departing:" call sites below)."""
     if not pairs:
         return ""
     lines = []
     for group in group_legs_by_detail(pairs, people_by_id, driver_label):
         names = []
         for p in group["people"]:
-            name = esc(p["name"])
+            name = render_person_chip(p["name"])
             if p.get("dogs"):
                 name += f' (+ {esc(", ".join(p["dogs"]))})'
             names.append(name)
@@ -932,14 +991,14 @@ def person_working_here(entry, day_iso, quarter):
 
 def compute_structure_relevance_windows(travel, people_by_id, meals, accommodation_structures):
     """Two precomputed lookups, both walking every quarter of the trip
-    exactly once, up front, so render_structures_row() never has to
+    exactly once, up front, so render_structures_frame() never has to
     recompute either per quarter screen:
 
     1. STRUCTURE windows — for every non-`permanent` `rooms`/`buildings`
        structure (see requirements/public.md -> Structures ->
        `permanent`/*Relevance window*), the earliest and latest (date,
        quarter) `quarter_key()` across the WHOLE trip that structure is
-       ever named by one of the same three sources render_structures_row()
+       ever named by one of the same three sources render_structures_frame()
        below already merges into the row: someone sleeping in one of its
        declared rooms (via `present`, resolved the identical way
        quarter_membership() does — parse_room() strips off the room
@@ -1001,7 +1060,7 @@ def compute_structure_relevance_windows(travel, people_by_id, meals, accommodati
 
 def structure_relevant(structure, day_iso, quarter, relevance_windows):
     """Whether a structure's outer box should force-render this exact
-    day+quarter — the single gate render_structures_row() below checks in
+    day+quarter — the single gate render_structures_frame() below checks in
     place of the old blanket "has rooms/buildings/always_shown" rule (see
     requirements/public.md -> Structures -> `permanent`/*Relevance
     window*). A `permanent` structure (Cottage, Red Shed) uses
@@ -1039,246 +1098,351 @@ def room_relevant(structure_name, room_name, day_iso, quarter, room_windows):
     return first_key <= quarter_key(day_iso, quarter) <= last_key
 
 
-def render_structures_row(present, working, kitchen_by_structure, accommodation_structures, day_iso, quarter, relevance_windows, room_windows):
-    """Labeled "Structures", not "Sleeping" — deliberately reframed away
-    from an overnight-only concept to "who's associated with which
-    structure right now, and why" (see requirements/public.md -> Homepage
-    = Timeline -> Row-by-row rules -> Structures). Merges three independent
-    sources into the same outer per-structure box, but keeps them visually
-    distinct within it: `present` (people actually staying there this
-    quarter, via room/room_by_date) render as today — a flat name list or
-    named room boxes — while `working` (people working from there this
-    quarter, via working_from — see person_working_here() below) always
-    get their own labeled "Working" sub-box, and `kitchen_by_structure`
-    (this exact day+quarter's meal note, if one is tagged to a structure —
-    see render_quarter_screen() below) gets its own labeled "Kitchen"
-    sub-box — neither ever merged into the sleeping-side list, so a name
-    (or a meal) showing up for one of these reasons reads as clearly
-    different from someone actually staying there. The same person can
-    land in two different structure boxes on one quarter screen (their
-    overnight structure, and wherever they're working from) since those
-    are independent facts, not one; a Kitchen sub-box's "occupant" is a
-    meal note string, not a person, since it says what's cooking, not
-    who's cooking (see requirements/public.md -> Structures -> spaces)."""
-    by_structure = {}
-    for p, room in present:
-        structure, detail = parse_room(room, accommodation_structures)
-        by_structure.setdefault(structure, {}).setdefault(detail, []).append(p["name"])
+def key_to_screen_id(key):
+    """Converts a quarter_key() tuple ((iso_date, quarter_index)) back to
+    the "qc-2026-08-05-06-12" screen id string every other per-quarter
+    lookup in this file already uses — QUARTERS[quarter_index] reverses
+    QUARTER_INDEX. Needed because compute_structure_relevance_windows()'s
+    two dicts (structure_windows/room_windows) store quarter_key() tuples
+    internally (comparable Python tuples), but the Structures stage's own
+    mount-range data attributes need the same string form JS already
+    compares screens by (see currentQuarterScreen() in timeline/shared.js
+    — plain string comparison works directly on "qc-..." ids since the
+    zero-padded ISO date and fixed quarter suffixes already sort in
+    chronological order as strings)."""
+    iso_date, quarter_index = key
+    return quarter_screen_id(iso_date, QUARTERS[quarter_index])
 
-    working_by_structure = {}
-    for p, structure_name in working:
-        working_by_structure.setdefault(structure_name, []).append(p["name"])
 
-    # A structure with a fixed `rooms` list or `buildings` is a real,
-    # physical place that doesn't disappear just because nobody's
-    # currently associated with it — it always gets a box (empty or not)
-    # for as long as it's SHOWING at all: the whole trip if it's
-    # `permanent` (Cottage, Red Shed), otherwise only within its own
-    # computed relevance window (see structure_relevant() and
-    # compute_structure_relevance_windows() above, and
-    # requirements/public.md -> Structures -> `permanent`/*Relevance
-    # window*). But a room inside that structure is its OWN, one-level-
-    # deeper relevance window (see room_relevant() above) — a specific
-    # room only gets its own force-rendered box across the stretch
-    # someone's actually slept in THAT room, even inside a structure
-    # (Cottage) whose outer box never disappears; a room nobody's ever
-    # used doesn't render at all, same as a whole never-used structure. A
-    # `permanent` structure with neither `rooms` nor `buildings` (Red
-    # Shed) just guarantees the outer box, with no room boxes to gate. A
-    # non-permanent structure with neither (Barb's Cottage, Moncton
-    # Hotel, The Field's `instances`) never hits this loop at all —
-    # structure_relevant() has no window to check for it, so it keeps
-    # the old occupancy-only behavior straight from
-    # by_structure/working_by_structure/kitchen_by_structure above.
-    for s in accommodation_structures:
-        if not structure_relevant(s, day_iso, quarter, relevance_windows):
-            continue
-        rooms = s.get("rooms")
-        buildings = s.get("buildings")
-        if rooms:
-            bucket = by_structure.setdefault(s["name"], {})
-            for room_name in rooms:
-                if room_relevant(s["name"], room_name, day_iso, quarter, room_windows):
-                    bucket.setdefault(room_name, [])
-        elif buildings:
-            bucket = by_structure.setdefault(s["name"], {})
-            for b in buildings:
-                for room_name in b["rooms"]:
-                    if room_relevant(s["name"], room_name, day_iso, quarter, room_windows):
-                        bucket.setdefault(room_name, [])
-        elif s.get("permanent"):
-            by_structure.setdefault(s["name"], {})
-
-    # working_by_structure/kitchen_by_structure can each name a structure
-    # with nobody sleeping there at all (e.g. Red Shed occupied only by
-    # day-workers, or a structure whose kitchen is in use but that nobody's
-    # currently staying at) — the outer box still needs to exist for it, so
-    # render every structure named by ANY of the three sources, not just
-    # the sleeping side.
-    all_structures = set(by_structure) | set(working_by_structure) | set(kitchen_by_structure)
-    if not all_structures:
-        return ""
-
-    def sort_key(k):
-        return (k is None, k or "")
-
-    # The outer structure boxes render in the order structures.json's own
-    # accommodation entries are written — Cottage, Red Shed, The Field,
-    # etc. — not alphabetically (see requirements/public.md -> Structures
-    # -> Nested box display). This mirrors the same "declared order, not
-    # alphabetical" rule a structure's own `rooms` list already gets
-    # below, just one level up: the file's own array order is the single
-    # place this is declared, so reordering the row means reordering that
-    # file, not touching this script. A structure absent from
-    # accommodation_structures (shouldn't happen — every name here came
-    # from validated data) sorts after every declared one rather than
-    # crashing; "Unassigned" (None) always sorts last regardless.
-    structure_order_index = {s["name"]: i for i, s in enumerate(accommodation_structures)}
-    permanent_names = {s["name"] for s in accommodation_structures if s.get("permanent")}
-
-    def structure_display_key(k):
-        if k is None:
-            return (True, 0)
-        return (False, structure_order_index.get(k, len(structure_order_index)))
-
-    # A structure's declared `rooms` list is a FIXED order (see
-    # requirements/public.md -> Structures -> Nested box display) — the
-    # order it's written in shared/data/structures.json, e.g. Cottage's
-    # Master Suite/Green Room/Blue Room — not alphabetical. Only structures
-    # with a `rooms` list get this; a structure with free-text `instances`
-    # (The Field) or no fixed list at all has no declared order to honor,
-    # so its details still sort alphabetically below.
-    rooms_order_by_structure = {s["name"]: s["rooms"] for s in accommodation_structures if s.get("rooms")}
-
-    # A structure with `buildings` instead of a flat `rooms` list gets one
-    # extra box level: each declared building, in declared order, always
-    # rendered, each containing its own declared rooms in declared order
-    # (see requirements/public.md -> Structures -> Nested box display).
-    buildings_by_structure = {s["name"]: s["buildings"] for s in accommodation_structures if s.get("buildings")}
-
-    boxes = []
-    for structure in sorted(all_structures, key=structure_display_key):
-        by_detail = by_structure.get(structure, {})
-        if structure is None:
-            names = sorted(by_detail.get(None, []))
-            boxes.append(
-                '<div class="structure-box unassigned-box">'
-                '<span class="structure-label">Unassigned</span>'
-                f'<span class="room-people">{esc(", ".join(names))}</span>'
-                '</div>'
-            )
-            continue
-
-        def render_room_box(detail):
-            names = sorted(by_detail[detail])
-            return (
-                '<div class="room-box">'
-                f'<span class="room-label">{esc(detail)}</span>'
-                f'<span class="room-people">{esc(", ".join(names))}</span>'
-                '</div>'
-            )
-
-        declared_buildings = buildings_by_structure.get(structure)
-        if declared_buildings:
-            # One box per declared building, in declared order, each shown
-            # for as long as at least one of its declared rooms is itself
-            # currently relevant (see room_relevant() above) — a room
-            # outside its own relevance window is simply not a key in
-            # by_detail at all (render_structures_row() never force-added
-            # it there), so `if detail in by_detail` is the same "only what
-            # actually has a box" filter the flat `rooms` branch below
-            # already uses. A building with EVERY one of its rooms
-            # currently irrelevant renders no room boxes and is skipped
-            # entirely — an empty building shell is exactly the clutter
-            # this whole mechanism exists to remove (see
-            # requirements/public.md -> Structures -> Nested box display).
-            # Working/Kitchen sub-boxes stay outside this, as siblings of
-            # the building boxes, added below.
-            inner = []
-            declared_flat = set()
-            for b in declared_buildings:
-                declared_flat.update(b["rooms"])
-                room_boxes = "".join(render_room_box(detail) for detail in b["rooms"] if detail in by_detail)
-                if not room_boxes:
-                    continue
-                inner.append(
-                    '<div class="building-box">'
-                    f'<span class="building-label">{esc(b["name"])}</span>'
-                    f'<div class="building-rooms">{room_boxes}</div>'
-                    '</div>'
-                )
-            # Anything unexpected (shouldn't happen — validate_room() only
-            # allows names declared in one of the buildings) still renders
-            # rather than being silently dropped, same tolerance the flat
-            # `rooms` branch below gives its own unexpected details.
-            leftover = [d for d in sorted(by_detail, key=sort_key) if d not in declared_flat]
-            for detail in leftover:
-                if detail is None:
-                    names = sorted(by_detail[None])
-                    inner.append(f'<span class="room-people">{esc(", ".join(names))}</span>')
-                else:
-                    inner.append(render_room_box(detail))
+def compact_runs(pairs):
+    """pairs: an ordered list of (screen_id, text) already restricted to
+    one slot's own relevance range (chronological, since `quarters` in
+    compute_structures_stage() below is built in trip order). Collapses
+    consecutive identical text into (first_id, last_id, text) runs, so a
+    room whose occupant text only actually changes a handful of times
+    across a multi-day stay gets a handful of pre-rendered <span>
+    variants, not one per quarter — see requirements/public.md -> The
+    Structures stage -> "The map is decided once, in full, before the
+    stage is ever shown"."""
+    runs = []
+    for screen_id, text in pairs:
+        if runs and runs[-1][2] == text:
+            runs[-1] = (runs[-1][0], screen_id, text)
         else:
-            declared_rooms = rooms_order_by_structure.get(structure)
-            if declared_rooms:
-                # Declared order first, then anything unexpected (shouldn't
-                # happen — validate_room() only allows declared names — but
-                # sorted alphabetically rather than silently dropped if it ever
-                # does), bare-structure occupants (detail=None) always last,
-                # matching sort_key's existing None-sorts-last convention.
-                detail_order = [d for d in declared_rooms if d in by_detail]
-                detail_order += [d for d in sorted(by_detail, key=sort_key) if d not in declared_rooms]
-            else:
-                detail_order = sorted(by_detail, key=sort_key)
+            runs.append((screen_id, screen_id, text))
+    return runs
 
-            inner = []
-            for detail in detail_order:
-                if detail is None:
-                    names = sorted(by_detail[None])
-                    inner.append(f'<span class="room-people">{esc(", ".join(names))}</span>')
-                else:
-                    inner.append(render_room_box(detail))
-        kitchen_note = kitchen_by_structure.get(structure)
-        if kitchen_note:
-            inner.append(
-                '<div class="room-box kitchen-box">'
-                '<span class="room-label">Kitchen</span>'
-                f'<span class="room-people">{esc(kitchen_note)}</span>'
-                '</div>'
-            )
-        working_names = sorted(working_by_structure.get(structure, []))
-        if working_names:
-            inner.append(
-                '<div class="room-box working-box">'
-                '<span class="room-label">Working</span>'
-                f'<span class="room-people">{esc(", ".join(working_names))}</span>'
-                '</div>'
-            )
-        # A NON-permanent `rooms`/`buildings` structure whose every
-        # declared room is currently outside its own relevance window (see
-        # room_relevant() above), with no Kitchen/Working sub-box either,
-        # renders no outer box at all — an empty "Little Shemogue Inn"
-        # shell with literally nothing inside it is exactly the clutter
-        # the whole relevance-window mechanism exists to remove. A
-        # `permanent` structure (Cottage, Red Shed) is exempt from this —
-        # its whole POINT is to always render regardless of occupancy, so
-        # an empty Cottage box on a quarter where every room has emptied
-        # out is correct, not clutter; only its individual room boxes
-        # come and go (see room_relevant() above), never the outer box
-        # itself, for as long as `permanent` keeps it active.
-        has_declared_rooms = bool(rooms_order_by_structure.get(structure) or buildings_by_structure.get(structure))
-        if has_declared_rooms and not inner and structure not in permanent_names:
-            continue
-        boxes.append(
-            '<div class="structure-box">'
-            f'<span class="structure-label">{esc(structure)}</span>'
-            f'<div class="structure-rooms">{"".join(inner)}</div>'
-            '</div>'
+
+def mount_range(pairs):
+    """pairs: an ordered list of (screen_id, bool). Returns (first_id,
+    last_id) spanning every True quarter, or None if never True — doesn't
+    require the True quarters to be contiguous (gaps in between stay
+    LIT, same "empty but still shown" rule a room's own relevance window
+    already followed — see room_relevant() above, now the general rule
+    every level of the stage follows). Despite the name, this no longer
+    controls whether an element is IN the DOM/layout at all (every slot
+    with a range is permanently both, from build time on) — only the
+    [from, to] range timeline/shared.js later compares the current quarter
+    against to decide lit vs dark (see render_room_slot()/
+    render_variant_spans() above and technical.md -> The Structures
+    stage). Kept as "mount range" rather than renamed, since it's still
+    genuinely the range of quarters this slot is relevant for — just no
+    longer literal DOM mounting."""
+    true_ids = [screen_id for screen_id, ok in pairs if ok]
+    return (true_ids[0], true_ids[-1]) if true_ids else None
+
+
+def render_variant_spans(pairs):
+    """Renders one slot's pre-rendered occupant-text variants (already
+    compact_runs()-collapsed) as a fixed-size stack, not a plain sequence
+    of hidden/shown spans — see technical.md -> The Structures stage for
+    why this, not a per-element mount/unmount, is what actually keeps a
+    slot's box from resizing as its occupant text changes over the trip.
+    Every variant span shares the SAME CSS grid cell (`grid-area: 1 / 1`
+    on `.room-people`, inside a `.room-people-variants` wrapper — see
+    timeline/shared.css), so a CSS grid track auto-sizes to the largest
+    INTRINSIC size among every item assigned to it regardless of that
+    item's own visibility: the wrapper's width/height are permanently
+    fixed to the max across every variant that slot will EVER show, from
+    the very first render, not just whichever one happens to be current.
+    Each span starts `class="room-people slot-dark"` — invisible
+    (`visibility: hidden`, never `hidden`/`display: none` — see
+    render_room_slot() below for the identical rule one level up)
+    but still fully laid out and sized. timeline/shared.js's generic
+    range-toggle function only ever flips the `slot-dark` class on an
+    already-present span, never adds or removes one."""
+    spans = "".join(
+        f'<span class="room-people slot-dark" data-mount-from="{esc(fr)}" data-mount-to="{esc(to)}">{esc(text)}</span>'
+        for fr, to, text in compact_runs(pairs)
+    )
+    return f'<span class="room-people-variants">{spans}</span>'
+
+
+def render_variant_chips(pairs):
+    """Like render_variant_spans() above, but for a slot whose content is
+    a LIST of people (a room/instance/bare-structure's sleeping
+    occupants, or a Working sub-box's own name list) rather than a single
+    line of prose (a Kitchen sub-box's meal note, which still goes
+    through render_variant_spans() directly, unchanged — see
+    requirements/public.md -> The Structures stage -> Nested box
+    display). `pairs` here is (screen_id, tuple-of-names), not
+    (screen_id, text) — compact_runs() doesn't care, it only ever
+    compares consecutive values with `==`, and a tuple compares exactly
+    as well as a string, so identical CONSECUTIVE occupant sets still
+    collapse into one run exactly as before. Each run renders one
+    render_person_chip() per name instead of escaped text. Same
+    grid-overlay reservation as render_variant_spans(): chips have a
+    uniform size (unlike free text), so the wrapper's width/height end up
+    fixed to whichever run has the MOST simultaneous occupants that slot
+    will EVER have, not any particular occupant's name length."""
+    spans = "".join(
+        f'<span class="room-people slot-dark" data-mount-from="{esc(fr)}" data-mount-to="{esc(to)}">'
+        + "".join(render_person_chip(name) for name in names)
+        + "</span>"
+        for fr, to, names in compact_runs(pairs)
+    )
+    return f'<span class="room-people-variants">{spans}</span>'
+
+
+def render_text_variants(quarters, structure_name, detail, rng, by_structure_index=3):
+    """Builds the (screen_id, names-tuple) pairs for one slot's
+    sleeping-occupant chips across its own relevance range `rng`
+    (first_id, last_id inclusive) — used for a room, an instance, and a
+    bare structure's own direct occupants — then hands them to
+    render_variant_chips() above. Working has its own equivalent local
+    closure inside compute_structures_stage() below (working_variants()),
+    since it reads from a differently-shaped dict (a flat name list, not
+    a nested by-detail dict), not this function — Kitchen's own
+    kitchen_variants() is the one that stays on render_variant_spans()
+    instead, since a meal note is prose, not a person list."""
+    pairs = [
+        (
+            q[0],
+            tuple(sorted(q[by_structure_index].get(structure_name, {}).get(detail, [])))
+        )
+        for q in quarters
+        if rng[0] <= q[0] <= rng[1]
+    ]
+    return render_variant_chips(pairs)
+
+
+def render_room_slot(label, extra_class, variants_html, rng):
+    """One fixed room/instance/Working/Kitchen sub-box — see
+    requirements/public.md -> The Structures stage -> "The map is decided
+    once, in full, before the stage is ever shown". Always rendered, and
+    always in this exact position in its parent's grid/flex row, for the
+    entire time #structures-stage itself is visible — data-mount-from/
+    data-mount-to no longer gate the box's PRESENCE (nothing here is ever
+    added to or removed from the layout after build time), only its
+    VISIBILITY: it starts `class="room-slot slot-dark"` (see
+    timeline/shared.css -> .slot-dark, `visibility: hidden` not `display:
+    none`, so its reserved space stays reserved even while dark), and
+    timeline/shared.js's single generic range-toggle function flips that
+    class, never the element's own presence in the DOM. The pre-rendered
+    variant spans inside it are gated the identical way, one level
+    deeper — see render_variant_spans() above."""
+    cls = "room-slot slot-dark" + (f" {extra_class}" if extra_class else "")
+    return (
+        f'<div class="{cls}" data-mount-from="{esc(rng[0])}" data-mount-to="{esc(rng[1])}">'
+        f'<span class="room-label">{esc(label)}</span>{variants_html}</div>'
+    )
+
+
+def compute_structures_stage(travel, people_by_id, meals, accommodation_structures, relevance_windows):
+    """Precomputes and renders the persistent Structures stage as a
+    complete, fixed map — structure > [building >] room/instance/
+    Working/Kitchen, plus a top-level Unassigned — decided once, in full,
+    before the stage is ever shown, per requirements/public.md -> Home &
+    Timeline -> The Structures stage -> "The map is decided once, in
+    full..."; see technical.md -> The Structures stage for the full
+    mechanism, including the two earlier iterations this one replaces.
+    Walks every quarter of the trip exactly once to build `quarters`,
+    then derives every slot's own relevance range and compacted text
+    content from that — nothing here is recomputed per quarter screen at
+    request time, since there is no request time; it's all baked in at
+    build time, same as everything else on this site.
+
+    HTML shape is entirely fixed once rendered: every structure, room,
+    instance, Working/Kitchen sub-box, and Unassigned that is EVER
+    relevant anywhere in the trip gets its own permanent element, always
+    present in the DOM in its own permanent layout position, starting
+    `class="... slot-dark"` (invisible, `visibility: hidden` — see
+    render_room_slot()/render_variant_spans() above). Only two things
+    ever change client-side: which slots currently have the `slot-dark`
+    class removed, and which of a handful of pre-rendered text variants
+    inside an already-lit slot is currently the visible one — see
+    timeline/shared.js's single generic data-mount-from/data-mount-to
+    range-toggle function, which treats a whole structure box and a
+    single text variant span identically, since "is this element's own
+    range showing right now" is exactly the same question at every
+    nesting level. Neither one is ever a layout change — see
+    technical.md for why that's the whole point."""
+    structure_windows, room_windows = relevance_windows
+
+    rooms_by_structure = {s["name"]: s["rooms"] for s in accommodation_structures if s.get("rooms")}
+    buildings_by_structure = {s["name"]: s["buildings"] for s in accommodation_structures if s.get("buildings")}
+    instances_by_structure = {s["name"]: s["instances"] for s in accommodation_structures if s.get("instances")}
+
+    # One pass over the whole trip — the same per-quarter membership
+    # render_structures_frame() (retired) used to compute fresh each
+    # quarter screen, computed once here instead. Each entry:
+    # (screen_id, day_iso, quarter, by_structure, working_by_structure,
+    # kitchen_by_structure).
+    quarters = []
+    for d in daterange(TRIP_START, TRIP_END):
+        day_iso = d.isoformat()
+        for quarter in QUARTERS:
+            key = quarter_key(day_iso, quarter)
+            screen_id = quarter_screen_id(day_iso, quarter)
+            _, _, present, working = quarter_membership(key, day_iso, quarter, travel, people_by_id)
+            by_structure = {}
+            for p, room in present:
+                structure, detail = parse_room(room, accommodation_structures)
+                by_structure.setdefault(structure, {}).setdefault(detail, []).append(p["name"])
+            working_by_structure = {}
+            for p, structure_name in working:
+                working_by_structure.setdefault(structure_name, []).append(p["name"])
+            meal_entry = meals.get(day_iso, {}).get(quarter)
+            kitchen_by_structure = {}
+            if meal_entry and meal_entry.get("structure"):
+                kitchen_by_structure[meal_entry["structure"]] = meal_entry["note"]
+            quarters.append((screen_id, day_iso, quarter, by_structure, working_by_structure, kitchen_by_structure))
+
+    def working_variants(structure_name, rng):
+        # Chipped, same as any other occupant list — see
+        # render_variant_chips() above.
+        pairs = [
+            (q[0], tuple(sorted(q[4].get(structure_name, []))))
+            for q in quarters if rng[0] <= q[0] <= rng[1]
+        ]
+        return render_variant_chips(pairs)
+
+    def kitchen_variants(structure_name, rng):
+        # NOT chipped — a meal note is prose, not a person list, so this
+        # stays on the plain-text renderer (see render_variant_spans()
+        # above and requirements/public.md -> Nested box display).
+        pairs = [
+            (q[0], q[5].get(structure_name, ""))
+            for q in quarters if rng[0] <= q[0] <= rng[1]
+        ]
+        return render_variant_spans(pairs)
+
+    structure_slots = []
+    for s in accommodation_structures:
+        name = s["name"]
+
+        structure_showing = [
+            (q[0], structure_relevant(s, q[1], q[2], structure_windows)
+                   or name in q[3] or name in q[4] or name in q[5])
+            for q in quarters
+        ]
+        structure_rng = mount_range(structure_showing)
+        if structure_rng is None:
+            continue  # never once relevant anywhere in the trip
+
+        inner = []
+
+        declared_buildings = buildings_by_structure.get(name)
+        declared_rooms = rooms_by_structure.get(name)
+        declared_instances = instances_by_structure.get(name)
+
+        if declared_buildings:
+            for b in declared_buildings:
+                room_slots = []
+                for room_name in b["rooms"]:
+                    key_range = room_windows.get((name, room_name))
+                    if key_range is None:
+                        continue
+                    rng = (key_to_screen_id(key_range[0]), key_to_screen_id(key_range[1]))
+                    variants = render_text_variants(quarters, name, room_name, rng)
+                    room_slots.append(render_room_slot(room_name, None, variants, rng))
+                if not room_slots:
+                    continue  # every declared room in this building never relevant
+                # Building's own mount range is the union of its rooms' —
+                # a building only exists on the stage for as long as at
+                # least one of its rooms does (see requirements/public.md
+                # -> The Structures stage -> Nested box display).
+                b_first = min(key_to_screen_id(room_windows[(name, r)][0]) for r in b["rooms"] if (name, r) in room_windows)
+                b_last = max(key_to_screen_id(room_windows[(name, r)][1]) for r in b["rooms"] if (name, r) in room_windows)
+                inner.append(
+                    f'<div class="building-slot slot-dark" data-mount-from="{esc(b_first)}" data-mount-to="{esc(b_last)}">'
+                    f'<span class="building-label">{esc(b["name"])}</span>'
+                    f'<div class="building-rooms">{"".join(room_slots)}</div></div>'
+                )
+        elif declared_rooms:
+            for room_name in declared_rooms:
+                key_range = room_windows.get((name, room_name))
+                if key_range is None:
+                    continue
+                rng = (key_to_screen_id(key_range[0]), key_to_screen_id(key_range[1]))
+                variants = render_text_variants(quarters, name, room_name, rng)
+                inner.append(render_room_slot(room_name, None, variants, rng))
+        elif declared_instances:
+            for instance_name in declared_instances:
+                showing = [(q[0], instance_name in q[3].get(name, {})) for q in quarters]
+                rng = mount_range(showing)
+                if rng is None:
+                    continue
+                variants = render_text_variants(quarters, name, instance_name, rng)
+                inner.append(render_room_slot(instance_name, None, variants, rng))
+        # A structure with none of rooms/buildings/instances (Barb's
+        # Cottage, Moncton Hotel) has no room-level nesting at all — its
+        # own direct occupants (detail=None) render straight inside the
+        # structure box instead, handled below via bare_variants once
+        # structure_rng is known to be final (it already is, computed
+        # above before this if/elif chain).
+
+        # Kitchen before Working, matching the box order
+        # render_structures_frame() (retired) always used.
+        kitchen_showing = [(q[0], name in q[5]) for q in quarters]
+        kitchen_rng = mount_range(kitchen_showing)
+        if kitchen_rng is not None:
+            inner.append(render_room_slot("Kitchen", "kitchen-box", kitchen_variants(name, kitchen_rng), kitchen_rng))
+
+        working_showing = [(q[0], name in q[4]) for q in quarters]
+        working_rng = mount_range(working_showing)
+        if working_rng is not None:
+            inner.append(render_room_slot("Working", "working-box", working_variants(name, working_rng), working_rng))
+
+        bare_variants = ""
+        if not (declared_buildings or declared_rooms or declared_instances):
+            bare_variants = render_text_variants(quarters, name, None, structure_rng)
+
+        structure_slots.append(
+            f'<div class="structure-slot slot-dark" data-mount-from="{esc(structure_rng[0])}" data-mount-to="{esc(structure_rng[1])}">'
+            f'<span class="structure-label">{esc(name)}</span>'
+            + bare_variants
+            + f'<div class="structure-rooms">{"".join(inner)}</div></div>'
         )
 
+    # Unassigned — people with no `room` set at all (structure=None,
+    # detail=None in by_structure), a single plain box, not nested under
+    # any structure, same fixed-slot treatment as everything else.
+    unassigned_showing = [(q[0], bool(q[3].get(None, {}).get(None))) for q in quarters]
+    unassigned_rng = mount_range(unassigned_showing)
+    if unassigned_rng is not None:
+        variants = render_text_variants(quarters, None, None, unassigned_rng)
+        structure_slots.append(
+            f'<div class="structure-slot unassigned-slot slot-dark" data-mount-from="{esc(unassigned_rng[0])}" data-mount-to="{esc(unassigned_rng[1])}">'
+            f'<span class="structure-label">Unassigned</span>'
+            + variants + '</div>'
+        )
+
+    # #structures-stage itself is the one deliberate exception that keeps
+    # the native `hidden` attribute (display:none) rather than the
+    # `slot-dark` class every descendant below it uses (see
+    # render_room_slot()/render_variant_spans() above and technical.md ->
+    # The Structures stage) — hiding the WHOLE stage on Home/the
+    # transition screen can't reflow anything else on the page, since
+    # it's `position: fixed`, already outside document flow; only a
+    # descendant staying IN flow while invisible (visibility:hidden) is
+    # what the "never moves" promise actually needs.
+    trip_first = quarter_screen_id(TRIP_START.isoformat(), QUARTERS[0])
+    trip_last = quarter_screen_id(TRIP_END.isoformat(), QUARTERS[-1])
     return (
-        '<div class="quarter-row"><span class="quarter-row-label">Structures:</span>'
-        f'<div class="structure-boxes">{"".join(boxes)}</div></div>'
+        f'<div id="structures-stage" hidden aria-label="Structures" aria-live="polite" '
+        f'data-mount-from="{esc(trip_first)}" data-mount-to="{esc(trip_last)}">'
+        f'<div class="structures-stage-inner">{"".join(structure_slots)}</div></div>'
     )
 
 
@@ -1339,9 +1503,19 @@ def quarter_membership(key, day_iso, quarter, travel, people_by_id):
     return arrivals, departures, present, working
 
 
-def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities, accommodation_structures, relevance_windows, is_first=False):
+def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities, is_first=False):
     key = quarter_key(day.isoformat(), quarter)
-    arrivals, departures, present, working = quarter_membership(key, day.isoformat(), quarter, travel, people_by_id)
+    # present/working (the third/fourth values) fed the old inline
+    # Structures row — that row is now the persistent stage instead,
+    # computed once for the whole trip by compute_structures_stage()
+    # (see build_timeline_html() below), not per quarter screen here, so
+    # this screen only needs arrivals/departures from quarter_membership()
+    # now. Still calls the one shared function (not a narrower one) since
+    # scripts/report.py and compute_structures_stage() both also rely on
+    # quarter_membership() staying the single source of truth for "who's
+    # where, when" — narrowing its signature would mean three places to
+    # keep in sync instead of one.
+    arrivals, departures, _present, _working = quarter_membership(key, day.isoformat(), quarter, travel, people_by_id)
 
     rows = []
 
@@ -1353,22 +1527,8 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
     if departing_row:
         rows.append(departing_row)
 
-    # A meal entry's optional `structure` tag (see requirements/public.md ->
-    # Data -> meals.json) puts the SAME note text into that structure's own
-    # "Kitchen" sub-box on the Structures row below — never a second,
-    # separately-authored string. kitchen_by_structure is at most one entry
-    # today, since meals.json holds one note per day+quarter, but is built
-    # as a dict (not a bare tuple) so render_structures_row() doesn't need
-    # to care how many there are.
     meal_entry = meals.get(day.isoformat(), {}).get(quarter)
-    kitchen_by_structure = {}
-    if meal_entry and meal_entry.get("structure"):
-        kitchen_by_structure[meal_entry["structure"]] = meal_entry["note"]
-
-    structure_windows, room_windows = relevance_windows
-    structures_row = render_structures_row(present, working, kitchen_by_structure, accommodation_structures, day.isoformat(), quarter, structure_windows, room_windows)
-    if structures_row:
-        rows.append(structures_row)
+    screen_id = quarter_screen_id(day.isoformat(), quarter)
 
     if meal_entry:
         rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Meal:</span> {esc(meal_entry["note"])}</div>')
@@ -1377,7 +1537,11 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
     if activity:
         rows.append(f'<div class="quarter-row"><span class="quarter-row-label">Activities:</span> {esc(activity)}</div>')
 
-    body = "".join(rows) if rows else '<div class="quarter-empty-hint">Nothing scheduled</div>'
+    # No "Nothing scheduled" placeholder text — an empty canvas (rows is
+    # empty) just renders blank, same four-part-shape rule as ever, minus
+    # a hint that review found unhelpful rather than reassuring (see
+    # requirements/public.md -> What each day quarter canvas shows).
+    body = "".join(rows)
     # Two pieces (see render_nav() and timeline/shared.js): the abbreviated
     # weekday+date (e.g. "Wed, Aug 5", from format_date_abbrev() — weekday
     # always leads, this one-row control just doesn't have room for the
@@ -1407,7 +1571,7 @@ def render_quarter_screen(day, quarter, travel, people_by_id, meals, activities,
     # whose true previous screen is the Grove intro, not an Evening that never
     # happened.
     first_quarter_class = " first-quarter-screen" if is_first else ""
-    return f"""<section class="quarter-screen{first_quarter_class}" id="{quarter_screen_id(day.isoformat(), quarter)}" \
+    return f"""<section class="quarter-screen{first_quarter_class}" id="{screen_id}" \
 data-date="{esc(date_label)}" data-quarter-name="{esc(quarter_name)}" data-quarter="{quarter}">
 <div class="quarter-canvas-padding"></div>
 <div class="quarter-canvas">
@@ -1511,14 +1675,22 @@ def build_timeline_html(people, travel, meals, activities, accommodation_structu
     # compute_structure_relevance_windows() above).
     relevance_windows = compute_structure_relevance_windows(travel, people_by_id, meals, accommodation_structures)
 
+    # The Structures stage is computed once for the whole trip, entirely
+    # separately from the quarter-screen loop below — see
+    # compute_structures_stage() above and requirements/public.md -> Home
+    # & Timeline -> The Structures stage for why: every structure/room/
+    # sub-box that's EVER relevant gets exactly one fixed, independently-
+    # mounted slot, not one freshly-computed box tree per quarter screen.
+    structures_stage_html = compute_structures_stage(travel, people_by_id, meals, accommodation_structures, relevance_windows)
+
     screens = [render_intro_screen(), render_transition_screen()]
     is_first = True
     for d in daterange(TRIP_START, TRIP_END):
         for q in QUARTERS:
-            screens.append(render_quarter_screen(d, q, travel, people_by_id, meals, activities, accommodation_structures, relevance_windows, is_first=is_first))
+            screens.append(render_quarter_screen(d, q, travel, people_by_id, meals, activities, is_first=is_first))
             is_first = False
 
-    return "\n".join(screens)
+    return "\n".join(screens), structures_stage_html
 
 
 def build_page_html(people, travel, meals, activities, structures, shared_base_css, shared_css, shared_nav_js, shared_js):
@@ -1540,7 +1712,7 @@ def build_page_html(people, travel, meals, activities, structures, shared_base_c
         include_play=True,
     )
     accommodation_structures = [s for s in structures if s["category"] == "accommodation"]
-    timeline_html = build_timeline_html(people, travel, meals, activities, accommodation_structures)
+    timeline_html, structures_stage_html = build_timeline_html(people, travel, meals, activities, accommodation_structures)
     return f"""<!DOCTYPE html>
 <html lang="en" class="timeline-page">
 <head>
@@ -1554,6 +1726,7 @@ def build_page_html(people, travel, meals, activities, structures, shared_base_c
 </head>
 <body>
 {nav_row}
+{structures_stage_html}
 <main>
 {timeline_html}
 </main>
