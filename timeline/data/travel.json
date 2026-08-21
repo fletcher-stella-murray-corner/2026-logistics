@@ -75,7 +75,7 @@
     "person_id": 444018,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["22:00", "22:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
     "departure": { "date": "2026-08-10", "quarter": "06-12", "mode": "plane", "hub": "Moncton Airport", "detail": "Left Lakes General Store Sunday evening — stayed at Moncton Hotel overnight" },
-    "room": "Lakes General Store — Top Room",
+    "room": "Lakes General Store — Top Apartment",
     "room_by_date": { "2026-08-10": "Moncton Hotel" },
     "room_by_quarter": { "2026-08-09": { "18-24": "Moncton Hotel" } }
   },
@@ -83,7 +83,7 @@
     "person_id": 881406,
     "arrival": { "date": "2026-08-06", "quarter": "18-24", "time_range": ["22:00", "22:00"], "mode": "plane", "hub": "Moncton Airport", "driver_id": 821712 },
     "departure": { "date": "2026-08-10", "quarter": "06-12", "mode": "plane", "hub": "Moncton Airport", "detail": "Left Lakes General Store Sunday evening — stayed at Moncton Hotel overnight" },
-    "room": "Lakes General Store — Top Room",
+    "room": "Lakes General Store — Top Apartment",
     "room_by_date": { "2026-08-10": "Moncton Hotel" },
     "room_by_quarter": { "2026-08-09": { "18-24": "Moncton Hotel" } }
   },
@@ -156,6 +156,7 @@
       "2026-08-11": "Cottage — Blue Room"
     },
     "room_by_quarter": {
+      "2026-08-05": { "00-06": "Cottage — Master Suite", "06-12": "Cottage — Master Suite" },
       "2026-08-07": { "00-06": "The Field — old worn out tent", "06-12": "The Field — old worn out tent" }
     }
   },

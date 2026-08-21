@@ -412,6 +412,21 @@ def validate_structures_file(structures):
                         f"'spaces' kind {kind!r} more than once."
                     )
                 seen_kinds.add(kind)
+                label = sp.get("label")
+                if label is not None:
+                    if kind != "working":
+                        raise ValueError(
+                            f"Structure {s['name']!r} in shared/data/structures.json sets a "
+                            f"'label' on a {kind!r} space — only 'working' supports a custom "
+                            f"label today (a Kitchen sub-box's own heading isn't customizable "
+                            f"the same way, since its content is always the meal note, not a "
+                            f"name list)."
+                        )
+                    if not isinstance(label, str) or not label.strip():
+                        raise ValueError(
+                            f"Structure {s['name']!r} in shared/data/structures.json has a "
+                            f"non-string or empty 'label' on its 'working' space."
+                        )
 
 
 def structure_active(structure, iso_date):
@@ -1165,12 +1180,16 @@ def render_variant_spans(pairs):
     item's own visibility: the wrapper's width/height are permanently
     fixed to the max across every variant that slot will EVER show, from
     the very first render, not just whichever one happens to be current.
-    Each span starts `class="room-people slot-dark"` — invisible
-    (`visibility: hidden`, never `hidden`/`display: none` — see
-    render_room_slot() below for the identical rule one level up)
-    but still fully laid out and sized. timeline/shared.js's generic
-    range-toggle function only ever flips the `slot-dark` class on an
-    already-present span, never adds or removes one."""
+    Each span starts `class="room-people slot-dark"` — genuinely
+    invisible when dark (`visibility: hidden` — see timeline/shared.css
+    -> `.room-people.slot-dark`, a deliberate exception to the ghost
+    treatment every BOX-level dark element gets one level up, see
+    render_room_slot() below: multiple variants share this one grid
+    cell, so if more than one were faintly visible at once their text
+    would overlap into an unreadable mess) but still fully laid out and
+    sized regardless. timeline/shared.js's generic range-toggle function
+    only ever flips the `slot-dark` class on an already-present span,
+    never adds or removes one."""
     spans = "".join(
         f'<span class="room-people slot-dark" data-mount-from="{esc(fr)}" data-mount-to="{esc(to)}">{esc(text)}</span>'
         for fr, to, text in compact_runs(pairs)
@@ -1235,15 +1254,20 @@ def render_room_slot(label, extra_class, variants_html, rng):
     data-mount-to no longer gate the box's PRESENCE (nothing here is ever
     added to or removed from the layout after build time), only its
     VISIBILITY: it starts `class="room-slot slot-dark"` (see
-    timeline/shared.css -> .slot-dark, `visibility: hidden` not `display:
-    none`, so its reserved space stays reserved even while dark), and
-    timeline/shared.js's single generic range-toggle function flips that
-    class, never the element's own presence in the DOM. The pre-rendered
-    variant spans inside it are gated the identical way, one level
-    deeper — see render_variant_spans() above."""
+    timeline/shared.css -> .slot-dark — a faint ghost, `opacity`, not
+    `display: none`/`visibility: hidden`, so its reserved space stays
+    reserved AND it stays visible, just very faint, while dark) plus
+    `aria-hidden="true"` (matching what timeline/shared.js sets once it
+    runs, so a screen reader doesn't announce every not-yet-relevant
+    place from the very first paint either), and timeline/shared.js's
+    single generic range-toggle function flips both, never the element's
+    own presence in the DOM. The pre-rendered variant spans inside it are
+    gated the identical way, one level deeper, EXCEPT they stay genuinely
+    invisible (not ghosted) when dark — see render_variant_spans()
+    above's own comment for why."""
     cls = "room-slot slot-dark" + (f" {extra_class}" if extra_class else "")
     return (
-        f'<div class="{cls}" data-mount-from="{esc(rng[0])}" data-mount-to="{esc(rng[1])}">'
+        f'<div class="{cls}" data-mount-from="{esc(rng[0])}" data-mount-to="{esc(rng[1])}" aria-hidden="true">'
         f'<span class="room-label">{esc(label)}</span>{variants_html}</div>'
     )
 
@@ -1365,7 +1389,7 @@ def compute_structures_stage(travel, people_by_id, meals, accommodation_structur
                 b_first = min(key_to_screen_id(room_windows[(name, r)][0]) for r in b["rooms"] if (name, r) in room_windows)
                 b_last = max(key_to_screen_id(room_windows[(name, r)][1]) for r in b["rooms"] if (name, r) in room_windows)
                 inner.append(
-                    f'<div class="building-slot slot-dark" data-mount-from="{esc(b_first)}" data-mount-to="{esc(b_last)}">'
+                    f'<div class="building-slot slot-dark" data-mount-from="{esc(b_first)}" data-mount-to="{esc(b_last)}" aria-hidden="true">'
                     f'<span class="building-label">{esc(b["name"])}</span>'
                     f'<div class="building-rooms">{"".join(room_slots)}</div></div>'
                 )
@@ -1402,14 +1426,22 @@ def compute_structures_stage(travel, people_by_id, meals, accommodation_structur
         working_showing = [(q[0], name in q[4]) for q in quarters]
         working_rng = mount_range(working_showing)
         if working_rng is not None:
-            inner.append(render_room_slot("Working", "working-box", working_variants(name, working_rng), working_rng))
+            # A structure can override this sub-box's own heading via its
+            # `spaces` list (e.g. Red Shed's "working" space sets
+            # `"label": "Office"`, see requirements/public.md -> Structures
+            # -> spaces) — defaults to the generic "Working" otherwise.
+            # Purely cosmetic: still the exact same working_from-driven
+            # mechanism/data underneath, just a different heading text.
+            working_space = next((sp for sp in s.get("spaces", []) if sp.get("kind") == "working"), {})
+            working_label = working_space.get("label") or "Working"
+            inner.append(render_room_slot(working_label, "working-box", working_variants(name, working_rng), working_rng))
 
         bare_variants = ""
         if not (declared_buildings or declared_rooms or declared_instances):
             bare_variants = render_text_variants(quarters, name, None, structure_rng)
 
         structure_slots.append(
-            f'<div class="structure-slot slot-dark" data-mount-from="{esc(structure_rng[0])}" data-mount-to="{esc(structure_rng[1])}">'
+            f'<div class="structure-slot slot-dark" data-mount-from="{esc(structure_rng[0])}" data-mount-to="{esc(structure_rng[1])}" aria-hidden="true">'
             f'<span class="structure-label">{esc(name)}</span>'
             + bare_variants
             + f'<div class="structure-rooms">{"".join(inner)}</div></div>'
@@ -1423,7 +1455,7 @@ def compute_structures_stage(travel, people_by_id, meals, accommodation_structur
     if unassigned_rng is not None:
         variants = render_text_variants(quarters, None, None, unassigned_rng)
         structure_slots.append(
-            f'<div class="structure-slot unassigned-slot slot-dark" data-mount-from="{esc(unassigned_rng[0])}" data-mount-to="{esc(unassigned_rng[1])}">'
+            f'<div class="structure-slot unassigned-slot slot-dark" data-mount-from="{esc(unassigned_rng[0])}" data-mount-to="{esc(unassigned_rng[1])}" aria-hidden="true">'
             f'<span class="structure-label">Unassigned</span>'
             + variants + '</div>'
         )
@@ -1435,8 +1467,13 @@ def compute_structures_stage(travel, people_by_id, meals, accommodation_structur
     # The Structures stage) — hiding the WHOLE stage on Home/the
     # transition screen can't reflow anything else on the page, since
     # it's `position: fixed`, already outside document flow; only a
-    # descendant staying IN flow while invisible (visibility:hidden) is
-    # what the "never moves" promise actually needs.
+    # descendant staying IN flow while dark (ghosted via opacity, or —
+    # for a text/chip variant specifically — invisible via
+    # visibility:hidden) is what the "never moves" promise actually
+    # needs. There's also no "ghost of the whole stage" to show on Home
+    # anyway — nothing on it is relevant to ANY quarter there, so full
+    # display:none is still the right call for the stage container
+    # itself, unlike every individual place nested inside it.
     trip_first = quarter_screen_id(TRIP_START.isoformat(), QUARTERS[0])
     trip_last = quarter_screen_id(TRIP_END.isoformat(), QUARTERS[-1])
     return (

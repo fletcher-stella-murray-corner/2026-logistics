@@ -496,25 +496,50 @@ a.jump-link[data-quarter="18-24"] { background: #b0cede; }
 /* The lit/dark toggle — the ONE mechanism every mountable element in the
    stage uses to go from "not currently relevant" to "currently relevant"
    and back, regardless of nesting depth (a whole structure box, a
-   building, a room/instance/Working/Kitchen sub-box, or a single
-   pre-rendered text variant span — see requirements/public.md -> The
-   Structures stage -> "The map is decided once, in full, before the
-   stage is ever shown": "is this element's own range showing right now"
-   is the same question at every level, and going lit or dark is now a
-   PURE VISIBILITY change, never a layout one). `visibility: hidden`, not
-   `display: none`, is the entire fix this file exists to make: unlike
-   `display: none`, it still hides the element from view, from screen
-   readers, and from the tab order, but it does NOT remove the element
-   from layout — its reserved space stays reserved whether the element is
-   lit or dark, which is exactly what "a place never moves, even when a
-   neighbor mounts or unmounts" requires (see technical.md -> The
-   Structures stage for the full before/after). Relies on one real
-   invariant enforced in Python, not CSS — a lit descendant's range is
-   always inside its ancestor's own lit range, so a dark ancestor never
-   actually contains a lit descendant needing an explicit override — see
-   timeline/scripts/build.py -> compute_structures_stage()'s own comment
-   on this. */
-[data-mount-from].slot-dark { visibility: hidden; }
+   building, or a room/instance/Working/Kitchen sub-box — see
+   requirements/public.md -> The Structures stage -> "The map is decided
+   once, in full, before the stage is ever shown": "is this element's own
+   range showing right now" is the same question at every level, and
+   going lit or dark is now a PURE VISUAL change, never a layout one).
+   Dark reads as a GHOST, not an absence — faint, but still legibly
+   there, the same way a building directory lists a not-yet-occupied
+   office rather than removing it from the board (brand-guidelines.md ->
+   Materials / Design Language). 0.4, not something closer to 0 — tuned
+   up from an initial 0.15 after review found that read as too close to
+   fully gone, not "dim." `opacity`, not `display: none` or
+   `visibility: hidden`, is what makes that possible: unlike either of
+   those, it doesn't remove the element from view entirely, but — same
+   as they do — it does NOT remove the element from layout either; its
+   reserved space stays reserved whether the element is lit or ghosted,
+   which is exactly what "a place never moves, even when a neighbor
+   mounts or unmounts" requires (see technical.md -> The Structures stage
+   for the full before/after). `pointer-events: none` keeps a ghosted
+   box inert — nothing to tap on a place that isn't currently relevant.
+   Relies on one real invariant enforced in Python, not CSS — a lit
+   descendant's range is always inside its ancestor's own lit range, so a
+   ghosted ancestor never actually contains a lit descendant needing an
+   explicit override — see timeline/scripts/build.py ->
+   compute_structures_stage()'s own comment on this. */
+[data-mount-from].slot-dark {
+  opacity: 0.4;
+  pointer-events: none;
+}
+/* The ONE exception: a pre-rendered text/chip VARIANT (.room-people)
+   must still go fully invisible when dark, not ghosted — every variant
+   for a slot shares the same CSS grid cell (.room-people-variants
+   below), so if more than one were simultaneously ghost-visible their
+   text/chips would visibly overlap into an unreadable mess. Only the
+   BOX itself (structure/building/room) reads as a ghost; its own
+   occupant text is either fully shown (the one current variant) or
+   fully absent (every other variant, including all of them at once
+   when the box itself is dark and has no current variant to begin
+   with) — never partially, faintly visible. Higher specificity
+   (two classes) wins over the general rule above without needing
+   `!important`. */
+.room-people.slot-dark {
+  visibility: hidden;
+  opacity: 1;
+}
 
 /* Structures stage boxes — nested (structure, then room/detail or a
    "Working"/"Kitchen" sub-box inside it), same plain flat-box motif as

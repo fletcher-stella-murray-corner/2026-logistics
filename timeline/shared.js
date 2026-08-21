@@ -171,6 +171,15 @@ document.addEventListener('DOMContentLoaded', function () {
         el.hidden = !inRange;
       } else {
         el.classList.toggle('slot-dark', !inRange);
+        // A ghosted (dark) box stays visually present on purpose (see
+        // .slot-dark in timeline/shared.css — opacity, not display:none
+        // or visibility:hidden), but a screen reader shouldn't announce
+        // every not-currently-relevant place on the stage just because
+        // it's still faintly paintable — aria-hidden keeps assistive
+        // tech's own notion of "present" matching what a sighted visitor
+        // would actually treat as relevant right now, independent of the
+        // CSS that handles the visual side.
+        el.setAttribute('aria-hidden', String(!inRange));
       }
     });
   }
